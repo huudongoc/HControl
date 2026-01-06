@@ -1,0 +1,29 @@
+name: HControl
+version: '1.0.0'
+main: hcontrol.plugin.Main
+api-version: '1.20'
+author: YourName
+description: HControl RPG System - PHASE 1
+
+commands:
+  exp:
+    description: Check your level and exp
+    usage: /exp [add <amount>]
+  hc:
+    description: HControl RPG main command
+    usage: /hc [profile|addexp|setlevel|reset]
+    permission: hcontrol.use
+    
+  hcreload:
+    description: Reload HControl RPG
+    usage: /hcreload
+    permission: hcontrol.admin
+
+permissions:
+  hcontrol.use:
+    description: Use basic commands
+    default: true
+    
+  hcontrol.admin:
+    description: Admin commands
+    default: op

@@ -20,17 +20,20 @@ public class ExpCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) return true;
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cOnly players can use this command");
+            return true;
+        }
 
         PlayerProfile profile = playerManager.get(player.getUniqueId());
-        if (profile == null) return true;
+        if (profile == null) {
+            player.sendMessage("§cProfile not found");
+            return true;
+        }
 
         // Check level
         if (args.length == 0) {
-            long currentExp = profile.getExp();
-            long requiredExp = levelService.getExpToNext(profile.getLevel());
-            player.sendMessage(String.format("§aLevel: §e%d §7| §aEXP: §e%d§7/§e%d", 
-                profile.getLevel(), currentExp, requiredExp));
+            levelService.sendLevelInfo(player, profile);
             return true;
         }
 
@@ -40,18 +43,26 @@ public class ExpCommand implements CommandExecutor {
             try {
                 exp = Long.parseLong(args[1]);
             } catch (NumberFormatException e) {
+                player.sendMessage("§cInvalid number: " + args[1]);
+                return true;
+            }
+
+            if (exp <= 0) {
+                player.sendMessage("§cExp must be positive");
                 return true;
             }
 
             levelService.addExp(profile, exp);
+            player.sendMessage("§a+§e" + exp + " §aEXP");
             player.sendMessage(
-    "DEBUG | Level=" + profile.getLevel() +
-    " | Exp=" + profile.getExp()
-);
-
+                "§7DEBUG | Level=§f" + profile.getLevel() +
+                " §7| Exp=§f" + profile.getExp()
+            );
             return true;
         }
 
+        // Wrong usage
+        player.sendMessage("§cUsage: /exp [add <amount>]");
         return true;
     }
 }

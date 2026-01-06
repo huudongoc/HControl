@@ -2,34 +2,48 @@ package hcontrol.plugin.player;
 
 import hcontrol.plugin.event.PlayerLevelUpEvent;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 public class LevelService {
 
-    private static final double BASE_EXP = 100.0;
-    private static final double POWER = 1.5;
+    // EXP curve: level^2 * 100
+    public long getRequiredExp(int level) {
+        return (long) level * level * 100;
+    }
 
-    public long getExpToNext(int level) {
-        return (long) (BASE_EXP * Math.pow(level, POWER));
+    public void sendLevelInfo(Player player, PlayerProfile profile) {
+        long currentExp = profile.getExp();
+        long requiredExp = getRequiredExp(profile.getLevel() + 1);
+        long progress = currentExp * 100 / requiredExp;
+        
+        player.sendMessage(String.format(
+            "§aLevel: §e%d §7[§e%d%%§7] §7| §aEXP: §e%d§7/§e%d", 
+            profile.getLevel(), progress, currentExp, requiredExp
+        ));
     }
 
     public void addExp(PlayerProfile profile, long amount) {
-        if (amount <= 0) return;
-
-        profile.setExp(profile.getExp() + amount);
-
-        while (profile.getExp() >= getExpToNext(profile.getLevel())) {
-            long need = getExpToNext(profile.getLevel());
-            profile.setExp(profile.getExp() - need);
-
-            int oldLevel = profile.getLevel();
-            profile.setLevel(oldLevel + 1);
-
-            Bukkit.getPluginManager().callEvent(
-                new PlayerLevelUpEvent(profile, oldLevel, profile.getLevel())
-            );
+        long newExp = profile.getExp() + amount;
+        profile.setExp(newExp);
+        
+        // Check level up
+        while (canLevelUp(profile)) {
+            levelUp(profile);
         }
     }
-    public long getRequiredExp(int level) {
-        return getExpToNext(level);
+
+    private boolean canLevelUp(PlayerProfile profile) {
+        long required = getRequiredExp(profile.getLevel() + 1);
+        return profile.getExp() >= required;
+    }
+
+    private void levelUp(PlayerProfile profile) {
+        int newLevel = profile.getLevel() + 1;
+        long required = getRequiredExp(newLevel);
+        
+        profile.setLevel(newLevel);
+        profile.setExp(profile.getExp() - required); // Carry over excess EXP
+        
+        // TODO: Level up event, stat point reward
     }
 }

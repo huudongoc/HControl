@@ -97,7 +97,7 @@ public class CoreContext {
             playerUIService = new PlayerUIService();
             
             // Register Listeners
-            joinListener = new JoinServerListener(playerUIService);
+            joinListener = new JoinServerListener(playerUIService,playerManager);
             outListener = new OutServerListener(playerUIService);
             
             Bukkit.getPluginManager().registerEvents(joinListener, plugin);

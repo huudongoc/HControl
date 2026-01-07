@@ -16,10 +16,19 @@ public class LevelService {
         long requiredExp = getRequiredExp(profile.getLevel() + 1);
         long progress = currentExp * 100 / requiredExp;
         
+        player.sendMessage("§7§m--------------------");
         player.sendMessage(String.format(
-            "§aLevel: §e%d §7[§e%d%%§7] §7| §aEXP: §e%d§7/§e%d", 
-            profile.getLevel(), progress, currentExp, requiredExp
+            "§e§lLEVEL INFO"
         ));
+        player.sendMessage(String.format(
+            "§7Level: §f%d §7| §7EXP: §e%d§7/§e%d §7(§e%d%%§7)", 
+            profile.getLevel(), currentExp, requiredExp, progress
+        ));
+        player.sendMessage(String.format(
+            "§7Stat Points: §a%d", 
+            profile.getStatPoints()
+        ));
+        player.sendMessage("§7§m--------------------");
     }
 
     public void addExp(PlayerProfile profile, long amount) {
@@ -38,12 +47,29 @@ public class LevelService {
     }
 
     private void levelUp(PlayerProfile profile) {
-        int newLevel = profile.getLevel() + 1;
+        int oldLevel = profile.getLevel();
+        int newLevel = oldLevel + 1;
         long required = getRequiredExp(newLevel);
         
         profile.setLevel(newLevel);
         profile.setExp(profile.getExp() - required); // Carry over excess EXP
         
-        // TODO: Level up event, stat point reward
+        // cong 5 stat point
+        profile.addStatPoints(5);
+        
+        // thong bao level up
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline()) {
+            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            player.sendMessage("§e§lLEVEL UP!");
+            player.sendMessage("§7Ban da len cap §f" + newLevel);
+            player.sendMessage("§7+§a5 §7Stat Points");
+            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            player.playSound(player.getLocation(), "entity.player.levelup", 1.0f, 1.0f);
+        }
+        
+        // fire event
+        PlayerLevelUpEvent event = new PlayerLevelUpEvent(profile, oldLevel, newLevel);
+        Bukkit.getPluginManager().callEvent(event);
     }
 }

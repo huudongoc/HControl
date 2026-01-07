@@ -5,13 +5,16 @@ import org.bukkit.Bukkit;
 import hcontrol.plugin.Main;
 import hcontrol.plugin.command.ExpCommand;
 import hcontrol.plugin.command.ReloadCommand;
+import hcontrol.plugin.command.StatCommand;
 import hcontrol.plugin.listener.PlayerCombatListener;
 import hcontrol.plugin.player.LevelService;
 import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.player.PlayerStorage;
 import hcontrol.plugin.listener.JoinServerListener;
 import hcontrol.plugin.listener.OutServerListener;
 import hcontrol.plugin.service.DisableDameService;
-import hcontrol.plugin.service.PlayerService;
+import hcontrol.plugin.service.StatService;
 import hcontrol.plugin.ui.PlayerUIService;
 
 /**
@@ -25,6 +28,8 @@ public class CoreContext {
     private final LifecycleManager lifecycleManager;
     private final PlayerManager playerManager;
     private final LevelService levelService;
+    private final PlayerStorage playerStorage;
+    private final StatService statService;
     
     //ui
     private PlayerUIService playerUIService;
@@ -42,7 +47,9 @@ public class CoreContext {
         this.plugin = plugin;
         this.lifecycleManager = lifecycleManager;
         this.playerManager = new PlayerManager();
+        this.playerStorage = new PlayerStorage(plugin.getDataFolder());
         this.levelService = new LevelService();
+        this.statService = new StatService();
     }
     
     /**
@@ -97,8 +104,8 @@ public class CoreContext {
             playerUIService = new PlayerUIService();
             
             // Register Listeners
-            joinListener = new JoinServerListener(playerUIService,playerManager);
-            outListener = new OutServerListener(playerUIService);
+            joinListener = new JoinServerListener(playerUIService, playerManager, playerStorage, lifecycleManager);
+            outListener = new OutServerListener(playerUIService, playerManager, playerStorage, lifecycleManager);
             
             Bukkit.getPluginManager().registerEvents(joinListener, plugin);
             Bukkit.getPluginManager().registerEvents(outListener, plugin);
@@ -110,11 +117,23 @@ public class CoreContext {
         lifecycleManager.registerOnDisable(() -> {
             plugin.getLogger().info("[PHASE 1] Đang tắt Player System...");
             
+            // save tat ca player dang online
+            plugin.getLogger().info("[PHASE 1] Đang lưu dữ liệu " + playerManager.getAllOnline().size() + " player...");
+            for (PlayerProfile profile : playerManager.getAllOnline()) {
+                try {
+                    playerStorage.save(profile);
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Lỗi khi lưu player " + profile.getUuid() + ": " + e.getMessage());
+                }
+            }
+            playerManager.clear();
+            
             playerUIService = null;
             joinListener = null;
             outListener = null;
             
             lifecycleManager.disableModule("PlayerSystem");
+            plugin.getLogger().info("[PHASE 1] ✓ Player System đã tắt!");
         });
     }
     
@@ -155,6 +174,7 @@ public class CoreContext {
             
             plugin.getCommand("hc").setExecutor(new ReloadCommand(lifecycleManager));
             plugin.getCommand("exp").setExecutor(new ExpCommand(playerManager, levelService));
+            plugin.getCommand("stat").setExecutor(new StatCommand(playerManager, statService));
             
             plugin.getLogger().info("[PHASE 0] ✓ Commands đã được đăng ký!");
         });
@@ -162,6 +182,10 @@ public class CoreContext {
     
     // ===== GETTERS =====
     public Main getPlugin() { return plugin; }
+    public PlayerManager getPlayerManager() { return playerManager; }
+    public LevelService getLevelService() { return levelService; }
+    public PlayerStorage getPlayerStorage() { return playerStorage; }
+    public StatService getStatService() { return statService; }
     public LifecycleManager getLifecycleManager() { return lifecycleManager; }
     public PlayerUIService getPlayerUIService() { return playerUIService; }
     public DisableDameService getDisableDameService() { return disableDameService; }

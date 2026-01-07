@@ -54,10 +54,7 @@ public class ExpCommand implements CommandExecutor {
 
             levelService.addExp(profile, exp);
             player.sendMessage("§a+§e" + exp + " §aEXP");
-            player.sendMessage(
-                "§7DEBUG | Level=§f" + profile.getLevel() +
-                " §7| Exp=§f" + profile.getExp()
-            );
+            levelService.sendLevelInfo(player, profile);
             return true;
         }
 

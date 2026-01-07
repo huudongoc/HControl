@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import hcontrol.plugin.Main;
+import hcontrol.plugin.player.PlayerProfile;
 
 /**
  * PHASE 0 — Quản lý lifecycle của tất cả module
@@ -15,6 +17,8 @@ public class LifecycleManager {
     private final Main plugin;
     private final List<Runnable> onEnableCallbacks = new ArrayList<>();
     private final List<Runnable> onDisableCallbacks = new ArrayList<>();
+    private final List<Consumer<PlayerProfile>> onPlayerLoadCallbacks = new ArrayList<>();
+    private final List<Consumer<PlayerProfile>> onPlayerSaveCallbacks = new ArrayList<>();
     private final Map<String, Boolean> moduleStates = new HashMap<>();
     
     public LifecycleManager(Main plugin) {
@@ -33,6 +37,46 @@ public class LifecycleManager {
      */
     public void registerOnDisable(Runnable callback) {
         onDisableCallbacks.add(callback);
+    }
+    
+    /**
+     * Đăng ký callback khi player load data
+     */
+    public void registerOnPlayerLoad(Consumer<PlayerProfile> callback) {
+        onPlayerLoadCallbacks.add(callback);
+    }
+    
+    /**
+     * Đăng ký callback khi player save data
+     */
+    public void registerOnPlayerSave(Consumer<PlayerProfile> callback) {
+        onPlayerSaveCallbacks.add(callback);
+    }
+    
+    /**
+     * Gọi callback khi player load
+     */
+    public void onPlayerLoad(PlayerProfile profile) {
+        for (Consumer<PlayerProfile> callback : onPlayerLoadCallbacks) {
+            try {
+                callback.accept(profile);
+            } catch (Exception e) {
+                plugin.getLogger().severe("LỖI khi load player: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Gọi callback khi player save
+     */
+    public void onPlayerSave(PlayerProfile profile) {
+        for (Consumer<PlayerProfile> callback : onPlayerSaveCallbacks) {
+            try {
+                callback.accept(profile);
+            } catch (Exception e) {
+                plugin.getLogger().severe("LỖI khi save player: " + e.getMessage());
+            }
+        }
     }
     
     /**

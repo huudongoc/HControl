@@ -6,6 +6,9 @@ author: YourName
 description: HControl RPG System - PHASE 1
 
 commands:
+  stat:
+    description: Check your RPG stats
+    usage: /stat
   exp:
     description: Check your level and exp
     usage: /exp [add <amount>]

@@ -1,21 +1,25 @@
 package hcontrol.plugin.stats;
 
+/**
+ * PHASE 2 - TU TIEN STATS
+ * Thuoc tinh tu tien thay vi RPG vanilla
+ */
 public enum StatType {
-    // Primary stats (base)
-    STRENGTH("STR", "Suc manh"),
-    AGILITY("AGI", "Nhanh nhen"),
-    INTELLIGENCE("INT", "Tri tue"),
-    VITALITY("VIT", "Sinh luc"),
-    LUCK("LCK", "May man"),
+    // Primary stats (can ban - co the cong diem)
+    ROOT("ROOT", "Can Cot"),
+    SPIRIT("SPR", "Linh Luc"),
+    PHYSIQUE("PHY", "The Phach"),
+    COMPREHENSION("COM", "Ngo Tinh"),
+    FORTUNE("FOR", "Khi Van"),
     
-    // Derived stats (tinh tu primary)
-    MAX_HP("HP", "Mau toi da"),
-    MAX_MANA("MANA", "Mana toi da"),
-    ATTACK("ATK", "Sat thuong vat ly"),
-    MAGIC_ATTACK("MATK", "Sat thuong phep"),
-    DEFENSE("DEF", "Phong thu"),
-    CRIT_RATE("CRIT", "Ti le chi mang"),
-    DODGE("DODGE", "Ne tranh");
+    // Derived stats (tu dong tinh)
+    MAX_HP("HP", "Sinh Menh"),
+    MAX_LINGQI("QI", "Linh Khi"),
+    ATTACK("ATK", "Cong Kich"),
+    MAGIC_ATTACK("MATK", "Phap Luc"),
+    DEFENSE("DEF", "Phong Ngu"),
+    CRIT_RATE("CRIT", "Bao Kich"),
+    DODGE("DODGE", "Than Phap");
     
     private final String shortName;
     private final String displayName;

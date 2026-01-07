@@ -37,29 +37,29 @@ public class ExpCommand implements CommandExecutor {
             return true;
         }
 
-        // Add exp
+        // Add cultivation (thay cho exp)
         if (args.length == 2 && args[0].equalsIgnoreCase("add")) {
-            long exp;
+            long cultivation;
             try {
-                exp = Long.parseLong(args[1]);
+                cultivation = Long.parseLong(args[1]);
             } catch (NumberFormatException e) {
-                player.sendMessage("§cInvalid number: " + args[1]);
+                player.sendMessage("§cSố không hợp lệ: " + args[1]);
                 return true;
             }
 
-            if (exp <= 0) {
-                player.sendMessage("§cExp must be positive");
+            if (cultivation <= 0) {
+                player.sendMessage("§cTu vi phải > 0");
                 return true;
             }
 
-            levelService.addExp(profile, exp);
-            player.sendMessage("§a+§e" + exp + " §aEXP");
+            levelService.addCultivation(profile, cultivation);
+            player.sendMessage("§a+§e" + cultivation + " §dTu vi");
             levelService.sendLevelInfo(player, profile);
             return true;
         }
 
         // Wrong usage
-        player.sendMessage("§cUsage: /exp [add <amount>]");
+        player.sendMessage("§cCách dùng: /exp [add <số>]");
         return true;
     }
 }

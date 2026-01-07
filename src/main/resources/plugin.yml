@@ -3,24 +3,49 @@ version: '1.0.0'
 main: hcontrol.plugin.Main
 api-version: '1.20'
 author: YourName
-description: HControl RPG System - PHASE 1
+description: HControl Tu Tien RPG System - 修仙
 
 commands:
   stat:
-    description: Check your RPG stats
+    description: Check your cultivation stats
     usage: /stat
   exp:
     description: Check your level and exp
     usage: /exp [add <amount>]
+  breakthrough:
+    description: Breakthrough to next cultivation realm
+    usage: /breakthrough
+    aliases: [dotpha]
   hc:
-    description: HControl RPG main command
-    usage: /hc [profile|addexp|setlevel|reset]
+    description: HControl main command
+    usage: /hc [profile|addexp|setlevel|reset|reload]
     permission: hcontrol.use
-    
-  hcreload:
-    description: Reload HControl RPG
-    usage: /hcreload
+  hc:
+    description: HControl main admin command
+    usage: /hc [profile]
     permission: hcontrol.admin
+    
+    
+  spawnboss:
+    description: Spawn test boss (debug)
+    usage: /spawnboss <name> [type]
+    permission: hcontrol.admin
+    aliases: [boss]
+    
+  cultivator:
+    description: Tu si info (linh can, dao tam, tu vi...)
+    usage: /cultivator
+    aliases: [tusi]
+    
+  title:
+    description: Quan ly danh hieu
+    usage: /title [list|equip|unequip]
+    aliases: [danhhieu]
+    
+  unlock:
+    description: Mo khoa dieu kien level up (quest/kill/achievement/pill)
+    usage: /unlock [quest|kill|achievement|pill|force]
+    aliases: [mokhoa]
 
 permissions:
   hcontrol.use:

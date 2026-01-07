@@ -48,6 +48,15 @@ public class StatService {
         profile.getStats().addPrimaryStat(type, amount);
         profile.removeStatPoints(amount);
         
+        // update scoreboard ngay
+        var player = profile.getPlayer();
+        if (player != null && player.isOnline()) {
+            var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getScoreboardService();
+            if (scoreboardService != null) {
+                scoreboardService.updateScoreboard(player);
+            }
+        }
+        
         return true;
     }
 

@@ -9,176 +9,64 @@ PHASE 0 — FOUNDATION (KHÔNG BAO GIỜ LÀM LẠI)
 ==================================================
 
 ## Core Architecture
-- [x] Tách listener / command / service / model
-- [x] Main chỉ làm wiring
-- [x] CoreContext (singleton context)
-- [x] Plugin lifecycle manager (LifecycleManager)
-- [x] Module enable / disable system
+
 
 ==================================================
 PHASE 1 — PLAYER SYSTEM (LINH HỒN RPG)
 ==================================================
 
 ## Player Profile
-- [x] PlayerProfile class
-- [x] UUID-based profile map (PlayerManager)
-- [x] Create profile on join
-- [x] Remove profile on quit
-- [x] Save profile on quit (PlayerStorage YAML)
-- [x] Load profile on join
-
-## Player Progression
-- [x] Level system (LevelService)
-- [x] EXP gain logic
-- [x] EXP curve (configurable - level^2 * 100)
-- [x] Level up event (PlayerLevelUpEvent)
-- [x] Stat point reward (+5 mỗi level)
 
 ==================================================
 PHASE 2 — STAT SYSTEM (CỐT LÕI RPG)
 ==================================================
 
-## Stat Core
-- [x] StatType enum (STR, AGI, INT, VIT, LCK + derived)
-- [x] StatContainer (base + bonus)
-- [x] Base stat
-- [x] Bonus stat (structure có rồi)
-- [x] Temporary stat (clearBonus() method)
-
-## Stat Scaling
-- [x] Stat scale theo level (HP/Mana)
-- [ ] Stat scale theo class (PHASE 5 - chưa có class)
-- [x] Derived stat (HP, Mana, ATK, MATK, DEF, Crit, Dodge)
 
 ==================================================
 PHASE 3 — COMBAT SYSTEM (THAY DAMAGE VANILLA)
 ==================================================
 
 ## Combat Core
-- [ ] CombatListener
-- [ ] Cancel vanilla damage
-- [ ] Custom damage calculation
-- [ ] Defense calculation
-- [ ] Crit system
-- [ ] Miss / dodge
 
-## Damage Formula
-- [ ] Physical damage
-- [ ] Magic damage
-- [ ] True damage
-- [ ] Damage reduction formula
 
 ==================================================
 PHASE 4 — MANA & RESOURCE
 ==================================================
 
-## Mana System
-- [ ] Mana stat
-- [ ] Mana regen
-- [ ] Mana cost check
-- [ ] Out of mana handling
 
-## Resource Extension
-- [ ] Rage (warrior)
-- [ ] Energy (assassin)
-- [ ] Custom resource support
 
 ==================================================
 PHASE 5 — CLASS / JOB SYSTEM
 ==================================================
 
-## Class Core
-- [ ] ClassType enum
-- [ ] Base class stats
-- [ ] Class selection command
-- [ ] One class per player
 
-## Advanced Class
-- [ ] Sub-class / job change
-- [ ] Class passive skill
-- [ ] Class scaling formula
 
 ==================================================
 PHASE 6 — SKILL SYSTEM (KHÔNG HARD-CODE)
 ==================================================
 
-## Skill Core
-- [ ] Skill interface
-- [ ] SkillContext
-- [ ] SkillTargeting
-- [ ] SkillCondition
-- [ ] SkillCooldown
 
-## Skill Execution
-- [ ] Instant skill
-- [ ] Cast time skill
-- [ ] Channel skill
-- [ ] Area skill
 
 ==================================================
 PHASE 7 — AI & MOB RPG
 ==================================================
 
-## AI Core
-- [ ] AIAgent interface
-- [ ] AIState machine
-- [ ] Target selection
-- [ ] Aggro table
-- [ ] AI memory
-
-## Mob Types
-- [ ] Normal mob AI
-- [ ] Elite mob AI
-- [ ] Boss AI (phase system)
-- [ ] Enrage mechanic
 
 ==================================================
 PHASE 8 — ITEM & EQUIPMENT
 ==================================================
 
-## Item Core
-- [ ] Custom item metadata
-- [ ] Stat item
-- [ ] Rarity system
-- [ ] Random stat roll
-
-## Equipment
-- [ ] Weapon system
-- [ ] Armor system
-- [ ] Set bonus
-- [ ] Upgrade / enchant
 
 ==================================================
 PHASE 9 — WORLD & CONTENT
 ==================================================
 
-## PvE Content
-- [ ] Dungeon system
-- [ ] Dungeon mob spawn
-- [ ] Dungeon boss
-- [ ] Dungeon reward
-
-## Quest System
-- [ ] Quest model
-- [ ] Quest objective
-- [ ] Quest reward
-- [ ] Daily / weekly quest
 
 ==================================================
 PHASE 10 — ECONOMY & SOCIAL
 ==================================================
 
-## Economy
-- [ ] Gold system
-- [ ] Drop rate
-- [ ] Trade
-- [ ] Shop NPC
 
-## Party / Guild
-- [ ] Party system
-- [ ] Shared EXP
-- [ ] Guild system
-- [ ] Guild buff
 
 ==================================================
 PHASE 11 — UI & UX
@@ -752,3 +640,481 @@ public class PlayerStats {
 ==================================================
 DONE = SERVER SỐNG
 ==================================================
+---
+
+# ☯️ TRIẾT LÝ TU TIÊN - DAMAGE & LEVEL SYSTEM
+
+> **CÂU CHỐT NÃO:**
+> Tu tiên không phải ai đánh mạnh hơn thì thắng
+> Mà là: **cảnh giới > công pháp > căn cơ > pháp thuật**
+
+## 🧠 DAMAGE TU TIÊN - 4 TẦNG NHÂN
+
+**Damage cuối KHÔNG BAO GIỜ chỉ là 1 con số.**
+
+```
+FinalDamage = BaseRealmDamage 
+            × RealmSuppression 
+            × TechniqueModifier 
+            × (1 - DefenseMitigation) 
+            × RandomDaoFactor
+```
+
+### 🔹 (1) BaseRealmDamage — SỨC MẠNH CẢNH GIỚI
+
+**Damage tăng theo cảnh giới, KHÔNG theo level nhỏ.**
+
+| Cảnh giới    | Base Damage |
+|--------------|-------------|
+| Luyện Khí    | 10          |
+| Trúc Cơ      | 25          |
+| Kim Đan      | 70          |
+| Nguyên Anh   | 200         |
+| Hóa Thần     | 600         |
+
+📌 **Không crit, không luck ở đây.**
+
+### 🔹 (2) RealmSuppression — UY ÁP CẢNH GIỚI (CỰC QUAN TRỌNG)
+
+**Cao cảnh giới đánh thấp = áp chế**  
+**Thấp đánh cao = phản phệ**
+
+```java
+int diff = attackerRealm - targetRealm;
+
+double realmModifier;
+if (diff >= 1) realmModifier = 1 + diff * 0.5;
+else realmModifier = Math.max(0.1, 1 + diff * 0.7);
+```
+
+| Chênh lệch | Modifier |
+|------------|----------|
+| +2 realm   | ×2.0     |
+| +1 realm   | ×1.5     |
+| 0          | ×1.0     |
+| -1         | ×0.3     |
+| -2         | ×0.1     |
+
+👉 **Đánh vượt cấp gần như không hiệu quả**  
+👉 **Nhưng không phải 0 damage (có hy vọng)**
+
+### 🔹 (3) TechniqueModifier — CÔNG PHÁP / PHÁP THUẬT
+
+**Damage không đến từ stat, mà từ công pháp.**
+
+| Cấp bậc    | Modifier |
+|------------|----------|
+| Phàm pháp  | ×1.0     |
+| Linh cấp   | ×1.3     |
+| Địa cấp    | ×1.7     |
+| Thiên cấp  | ×2.5     |
+| Cấm thuật  | ×4.0 (có phản phệ) |
+
+📌 **Đây là nơi build khác nhau.**
+
+### 🔹 (4) DefenseMitigation — PHÒNG THỦ TU TIÊN
+
+**Không dùng armor kiểu RPG.**
+
+```java
+double mitigate = defense / (defense + attackerBase * 3);
+```
+
+👉 **Không bao giờ giảm quá 80%.**
+
+### 🔹 (5) RandomDaoFactor — "NGỘ ĐẠO"
+
+**Không phải crit chí mạng.**
+
+```java
+double daoFactor = random(0.9, 1.1);
+```
+
+✔ Nhẹ  
+✔ Có cảm giác "linh động"  
+❌ **Không one-shot**
+
+---
+
+## ⚔️ VƯỢT CẢNH GIỚI ĐÁNH NHAU THẾ NÀO?
+
+### ❌ Cách ngu
+
+- Thấp cảnh giới vẫn crit 1k damage
+
+### ✅ Cách tu tiên đúng
+
+**Damage rất thấp, nhưng có:**
+
+- Nội thương
+- Tâm ma
+- Phá pháp bảo
+- Tạo cơ hội chạy
+
+**Ví dụ:**
+```
+Luyện Khí đánh Kim Đan
+→ damage 3–5
+→ nhưng gây nội thương +5%
+```
+
+👉 **Tu tiên = đánh để sống, không phải thắng.**
+
+---
+
+## 🧪 VÍ DỤ SỐ THỰC
+
+### Kim Đan đánh Trúc Cơ
+
+```
+BaseRealmDamage = 70
+RealmSuppression = 1.5
+Technique = ×1.3
+Defense = 20%
+
+70 × 1.5 × 1.3 × 0.8 ≈ 109
+```
+
+✔ Đánh mạnh  
+❌ **Không one-shot**
+
+### Trúc Cơ đánh Kim Đan
+
+```
+Base = 25
+Suppression = 0.3
+Technique = ×1.7
+Defense = 30%
+
+25 × 0.3 × 1.7 × 0.7 ≈ 9
+```
+
+👉 **Có tác dụng, nhưng không vô lý**
+
+---
+
+## ⚡ THIÊN KIẾP DAMAGE (KHÔNG GIỐNG COMBAT)
+
+**Thiên kiếp không dùng công thức combat.**
+
+```
+TribulationDamage = MaxHP × RealmMultiplier × Random(0.8 – 1.2)
+```
+
+| Cảnh giới  | % HP      |
+|------------|-----------|
+| Kim Đan    | 40–60%    |
+| Nguyên Anh | 60–80%    |
+| Hóa Thần   | 80–120%   |
+
+👉 **Có thể chết thật**  
+👉 **Không armor, không né**
+
+---
+
+## ☯️ 3 NGUYÊN TẮC VÀNG DAMAGE TU TIÊN
+
+1. **Cảnh giới > tất cả**
+2. **Không crit damage kiểu RPG**
+3. **Vượt cấp = sống sót, không phải thắng**
+
+---
+
+# 🌱 LEVEL TRONG TU TIÊN LÀ GÌ?
+
+> **CÂU CHỐT:**  
+> Level trả lời câu hỏi: **"Ngươi đã luyện đủ chưa?"**  
+> Cảnh giới trả lời câu hỏi: **"Ngươi mạnh tới đâu?"**
+
+## ☯️ LEVEL KHÔNG PHẢI SỨC MẠNH
+
+**Level = độ hoàn thiện trong cùng cảnh giới**
+
+### ❌ LEVEL KHÔNG DÙNG ĐỂ
+
+- ❌ Quyết định damage chính
+- ❌ One-shot người khác
+- ❌ Vượt cảnh giới
+
+**Nếu level làm mấy việc này → tu tiên giả.**
+
+### ✅ LEVEL NÊN DÙNG ĐỂ
+
+#### 1️⃣ LEVEL = TIẾN ĐỘ TRONG CÙNG CẢNH GIỚI
+
+```
+Luyện Khí tầng 1 → tầng 9
+Trúc Cơ sơ kỳ → trung kỳ → hậu kỳ
+```
+
+👉 Vẫn là cùng 1 cảnh giới, nhưng:
+- ổn định hơn
+- ít rủi ro hơn
+- dễ đột phá hơn
+
+📌 **Damage chỉ tăng rất nhẹ.**
+
+#### 2️⃣ LEVEL = GIẢM RỦI RO ĐỘT PHÁ (CỐT LÕI)
+
+```java
+breakthroughChance += level * 0.5;
+tribulationDamage -= level * 0.3;
+```
+
+| Level      | Đột phá              |
+|------------|----------------------|
+| Level thấp | Rất dễ thất bại      |
+| Level cao  | Ổn định, an toàn     |
+
+👉 **Level = chuẩn bị, không phải sức mạnh.**
+
+#### 3️⃣ LEVEL = MỞ KHÓA CÔNG PHÁP / PHÁP THUẬT
+
+**Không phải ai lên cảnh giới là xài được skill mạnh.**
+
+```
+Kim Đan level 1 → không dùng cấm thuật
+Kim Đan level 7 → mở
+```
+
+👉 **Tạo cảm giác tu luyện có chiều sâu, không nhảy cóc.**
+
+#### 4️⃣ LEVEL = GIỚI HẠN STAT TRONG CẢNH GIỚI
+
+```java
+maxSpirit = realmCap + level * smallScale;
+```
+
+👉 Level giúp:
+- Khai thác hết tiềm năng cảnh giới
+- Không cho "mới lên cảnh giới đã max"
+
+#### 5️⃣ LEVEL = KHẢ NĂNG KIỂM SOÁT LINH LỰC
+
+```java
+manaCost *= (1 - level * 0.02);
+```
+
+**Level thấp:**
+- Skill tốn nhiều linh lực
+- Dễ nội thương
+
+**Level cao:**
+- Skill ổn định
+- Ít phản phệ
+
+---
+
+## ⚔️ LEVEL ẢNH HƯỞNG DAMAGE NHƯ THẾ NÀO LÀ ĐÚNG?
+
+**Rất nhẹ, chỉ để phân biệt "lão luyện vs mới đột phá".**
+
+```java
+damage *= 1 + (level * 0.01);
+```
+
+| Level | Damage bonus |
+|-------|--------------|
+| 1     | +1%          |
+| 9     | +9%          |
+
+📌 **Không bao giờ vượt realm.**
+
+---
+
+## 🧠 SO SÁNH RPG THƯỜNG VS TU TIÊN
+
+| Thứ         | RPG thường      | Tu tiên             |
+|-------------|-----------------|---------------------|
+| **Level**   | Sức mạnh        | Độ hoàn thiện       |
+| **Realm**   | Không có        | Sức mạnh thật       |
+| **Damage**  | Theo level      | Theo realm          |
+| **Đột phá** | Auto            | Rủi ro              |
+
+---
+
+# 🧱 LEVEL SYSTEM TRONG 1 CẢNH GIỚI
+
+## ☯️ ĐỊNH NGHĨA
+
+**Level = độ thuần thục trong cùng cảnh giới**
+
+Không phải sức mạnh nhảy vọt, mà là:
+- ổn định linh lực
+- giảm rủi ro
+- mở khóa tiềm năng
+
+📌 **Cảnh giới quyết định trần sức mạnh**  
+📌 **Level quyết định "đi vững hay đi liều"**
+
+## 🧱 CẤU TRÚC LEVEL TRONG 1 CẢNH GIỚI
+
+Mỗi cảnh giới có:
+- `minLevel = 1`
+- `maxLevel` = cố định (ví dụ 9 hoặc 10)
+
+### Ví dụ chuẩn:
+
+| Cảnh giới   | Level  |
+|-------------|--------|
+| Luyện Khí   | 1 → 9  |
+| Trúc Cơ     | 1 → 9  |
+| Kim Đan     | 1 → 9  |
+| Nguyên Anh  | 1 → 7  |
+| Hóa Thần    | 1 → 5  |
+
+👉 **Cảnh giới cao → level ít hơn → mỗi level nặng hơn**
+
+### Enum gợi ý:
+
+```java
+enum CultivationRealm {
+    LUYEN_KHI(9),
+    TRUC_CO(9),
+    KIM_DAN(9),
+    NGUYEN_ANH(7),
+    HOA_THAN(5);
+
+    private final int maxLevel;
+
+    CultivationRealm(int maxLevel) {
+        this.maxLevel = maxLevel;
+    }
+
+    public int getMaxLevel() {
+        return maxLevel;
+    }
+}
+```
+
+---
+
+## 🌱 TU VI → LEVEL
+
+**Nguyên tắc:**
+- Level không tăng tự động
+- Phải tích đủ tu vi
+- Không vượt quá maxLevel
+
+```java
+requiredCultivation = base × realmMultiplier × level²
+```
+
+### Ví dụ số:
+
+| Level  | Tu vi cần |
+|--------|-----------|
+| 1 → 2  | 100       |
+| 2 → 3  | 400       |
+| 3 → 4  | 900       |
+| 4 → 5  | 1600      |
+
+👉 **Level cao = grind nặng, đúng tu tiên.**
+
+### Pseudo-code:
+
+```java
+boolean tryLevelUp(profile) {
+    if (profile.level >= realm.getMaxLevel()) return false;
+    if (profile.cultivation < requiredCultivation) return false;
+
+    profile.level++;
+    profile.cultivation -= requiredCultivation;
+    return true;
+}
+```
+
+---
+
+## ⚙️ LEVEL ẢNH HƯỞNG NHỮNG GÌ?
+
+### ❌ LEVEL KHÔNG ẢNH HƯỞNG
+
+- ❌ Damage chính
+- ❌ Realm suppression
+- ❌ One-shot
+
+### ✅ LEVEL ẢNH HƯỞNG 5 THỨ SAU
+
+#### 🔹 1. Giảm rủi ro đột phá (CỐT LÕI)
+
+```java
+breakthroughChance += level * 0.5;
+```
+
+| Level | Bonus  |
+|-------|--------|
+| 1     | +0.5%  |
+| 9     | +4.5%  |
+
+👉 **Level cao = đột phá an toàn hơn.**
+
+#### 🔹 2. Giảm damage thiên kiếp
+
+```java
+tribulationDamage -= level * 3%; // cap 30%
+```
+
+👉 **Level cao = sống sót dễ hơn.**
+
+#### 🔹 3. Ổn định linh lực (skill cost)
+
+```java
+manaCost *= (1 - level * 0.02);
+```
+
+👉 **Level cao:**
+- skill rẻ hơn
+- ít phản phệ
+
+#### 🔹 4. Mở khóa công pháp / pháp thuật
+
+```
+Kim Đan level 1 → pháp thường
+Kim Đan level 5 → bí thuật
+Kim Đan level 8 → cấm thuật
+```
+
+👉 **Không có chuyện vừa đột phá xong là dùng skill max.**
+
+#### 🔹 5. Kháng tâm ma / nội thương
+
+```java
+innerDemonChance -= level * 0.5;
+```
+
+👉 **Level cao = tâm cảnh vững.**
+
+---
+
+## 🧠 FLOW CHUẨN CỦA LEVEL SYSTEM
+
+```
+Tu luyện
+  ↓
+Tích tu vi
+  ↓
+Lên level (trong realm)
+  ↓
+Ổn định linh lực
+  ↓
+Giảm rủi ro đột phá
+  ↓
+Khi đủ → ĐỘT PHÁ
+```
+
+👉 **Level là bước chuẩn bị, không phải mục tiêu cuối.**
+
+---
+
+## ☯️ CÂU CHỐT NÃO (NHỚ KỸ)
+
+> **Level không làm ngươi mạnh hơn nhiều**  
+> **Level làm ngươi chết ít hơn**
+
+Nếu giữ đúng câu này:
+- ✅ Tu luyện có ý nghĩa
+- ✅ Đột phá có căng thẳng
+- ✅ Damage không vỡ
+
+---

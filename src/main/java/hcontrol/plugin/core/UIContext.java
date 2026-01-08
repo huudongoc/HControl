@@ -3,10 +3,13 @@ package hcontrol.plugin.core;
 import hcontrol.plugin.Main;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.ui.ActionBarService;
+import hcontrol.plugin.ui.ActionBarUpdateTask;
 import hcontrol.plugin.ui.ChatBubbleService;
 import hcontrol.plugin.ui.EntityDialogService;
 import hcontrol.plugin.ui.EntityNameplateService;
 import hcontrol.plugin.ui.NameplateService;
+import hcontrol.plugin.ui.PlayerStatusProviderImpl;
 import hcontrol.plugin.ui.PlayerUIService;
 import hcontrol.plugin.ui.ScoreboardService;
 import hcontrol.plugin.ui.ScoreboardUpdateTask;
@@ -26,6 +29,7 @@ public class UIContext {
     private ScoreboardService scoreboardService;
     private NameplateService nameplateService;
     private ChatBubbleService chatBubbleService;
+    private ActionBarService actionBarService;
     
     // Entity UI
     private EntityNameplateService entityNameplateService;
@@ -37,6 +41,7 @@ public class UIContext {
     
     // Runtime tasks
     private ScoreboardUpdateTask scoreboardUpdateTask;
+    private ActionBarUpdateTask actionBarUpdateTask;
     
     public UIContext(Main plugin) {
         this.plugin = plugin;
@@ -50,6 +55,10 @@ public class UIContext {
         this.scoreboardService = new ScoreboardService(playerManager);
         this.nameplateService = new NameplateService(playerManager);
         this.chatBubbleService = new ChatBubbleService(plugin);
+        
+        // Action Bar (thanh thong tin duoi man hinh)
+        PlayerStatusProviderImpl statusProvider = new PlayerStatusProviderImpl(playerManager);
+        this.actionBarService = new ActionBarService(statusProvider);
         
         // Tribulation UI
         this.uiStateService = new UiStateService();
@@ -70,6 +79,7 @@ public class UIContext {
     public ScoreboardService getScoreboardService() { return scoreboardService; }
     public NameplateService getNameplateService() { return nameplateService; }
     public ChatBubbleService getChatBubbleService() { return chatBubbleService; }
+    public ActionBarService getActionBarService() { return actionBarService; }
     
     public EntityNameplateService getEntityNameplateService() { return entityNameplateService; }
     public EntityDialogService getEntityDialogService() { return entityDialogService; }
@@ -78,10 +88,15 @@ public class UIContext {
     public TribulationUI getTribulationUI() { return tribulationUI; }
     
     public ScoreboardUpdateTask getScoreboardUpdateTask() { return scoreboardUpdateTask; }
+    public ActionBarUpdateTask getActionBarUpdateTask() { return actionBarUpdateTask; }
     
     // ========== SETTERS (cho lifecycle) ==========
     
     public void setScoreboardUpdateTask(ScoreboardUpdateTask scoreboardUpdateTask) {
         this.scoreboardUpdateTask = scoreboardUpdateTask;
+    }
+    
+    public void setActionBarUpdateTask(ActionBarUpdateTask actionBarUpdateTask) {
+        this.actionBarUpdateTask = actionBarUpdateTask;
     }
 }

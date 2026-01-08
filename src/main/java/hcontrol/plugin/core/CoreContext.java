@@ -36,6 +36,7 @@ import hcontrol.plugin.service.SoundService;
 import hcontrol.plugin.service.StatService;
 import hcontrol.plugin.service.TitleService;
 import hcontrol.plugin.service.TribulationService;
+import hcontrol.plugin.ui.ActionBarUpdateTask;
 import hcontrol.plugin.ui.ChatBubbleService;
 import hcontrol.plugin.ui.EntityDialogService;
 import hcontrol.plugin.ui.EntityNameplateService;
@@ -252,6 +253,14 @@ public class CoreContext {
             scoreboardUpdateTask.start(plugin);
             uiContext.setScoreboardUpdateTask(scoreboardUpdateTask);
             
+            // Start action bar update task (0.5 giay)
+            ActionBarUpdateTask actionBarUpdateTask = new ActionBarUpdateTask(
+                uiContext.getActionBarService(),
+                playerContext.getPlayerManager()
+            );
+            actionBarUpdateTask.start(plugin);
+            uiContext.setActionBarUpdateTask(actionBarUpdateTask);
+            
             lifecycleManager.enableModule("PlayerSystem");
             plugin.getLogger().info("[PHASE 1] ✓ Player System đã sẵn sàng!");
         });
@@ -271,6 +280,13 @@ public class CoreContext {
             if (scoreboardUpdateTask != null) {
                 scoreboardUpdateTask.cancel();
                 uiContext.setScoreboardUpdateTask(null);
+            }
+            
+            // Stop action bar update task
+            ActionBarUpdateTask actionBarUpdateTask = uiContext.getActionBarUpdateTask();
+            if (actionBarUpdateTask != null) {
+                actionBarUpdateTask.cancel();
+                uiContext.setActionBarUpdateTask(null);
             }
             
             // Remove all chat bubbles

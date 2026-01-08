@@ -56,17 +56,17 @@ public class StatContainer {
     
     // === DEBUG ===
     
-    public String toDebugString() {
-        StringBuilder sb = new StringBuilder();
-        for (StatType type : StatType.values()) {
-            if (type.isPrimary()) {
-                int base = getBase(type);
-                int bonus = getBonus(type);
-                int total = getTotal(type);
-                sb.append(String.format("%s: %d (+%d) = %d\n", 
-                    type.getShortName(), base, bonus, total));
-            }
-        }
-        return sb.toString();
-    }
+    // public String toDebugString() {
+    //     StringBuilder sb = new StringBuilder();
+    //     for (StatType type : StatType.values()) {
+    //         if (type.isPrimary()) {
+    //             int base = getBase(type);
+    //             int bonus = getBonus(type);
+    //             int total = getTotal(type);
+    //             sb.append(String.format("%s: %d (+%d) = %d\n", 
+    //                 type.getShortName(), base, bonus, total));
+    //         }
+    //     }
+    //     return sb.toString();
+    // }
 }

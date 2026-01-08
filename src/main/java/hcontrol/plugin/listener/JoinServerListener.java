@@ -50,8 +50,16 @@ public class JoinServerListener implements Listener {
         // callback lifecycle
         lifecycleManager.onPlayerLoad(profile);
         
+        // sync vanilla health with tu tien stats
+        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+        healthService.syncHealth(player, profile);
+        
         // set attack speed based on AGI (danh nhanh hon vanilla)
         updateAttackSpeed(player, profile);
+        
+        // TAT HUNGER - tu si khong can an (set full de khong bi hien hieu ung doi)
+        player.setFoodLevel(20);
+        player.setSaturation(20.0f);
         
         // create scoreboard ben phai
         scoreboardService.createScoreboard(player);

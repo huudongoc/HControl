@@ -1,0 +1,76 @@
+package hcontrol.plugin.player;
+
+import org.bukkit.attribute.Attribute;
+import org.bukkit.entity.Player;
+
+/**
+ * PLAYER HEALTH SERVICE
+ * Dong bo vanilla health voi tu tien HP system
+ * SCALE VANILLA HEALTH: Tu tien HP co the rat lon (100-1000+)
+ * Vanilla health luon la 20 hearts max de tranh tran man hinh
+ */
+public class PlayerHealthService {
+    
+    // Vanilla health max = 20 hearts (tranh tran man hinh)
+    private static final double VANILLA_MAX_HEALTH = 20.0;
+    
+    /**
+     * Sync vanilla health voi tu tien profile
+     * Goi khi: join, level up, add stat, breakthrough, etc.
+     * 
+     * Scale: Tu tien HP (0-maxHP) -> Vanilla (0-20)
+     */
+    public void syncHealth(Player player, PlayerProfile profile) {
+        if (player == null || !player.isOnline()) return;
+        
+        // Set vanilla max health = 20 hearts (co dinh)
+        var maxHealthAttr = player.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        if (maxHealthAttr != null) {
+            maxHealthAttr.setBaseValue(VANILLA_MAX_HEALTH);
+        }
+        
+        // Scale current HP tu tien -> vanilla
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getStats().getMaxHP();
+        
+        // Clamp current HP trong range [0, maxHP]
+        currentHP = Math.max(0, Math.min(currentHP, maxHP));
+        
+        // Scale: (currentHP / maxHP) * 20
+        double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
+        vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth)); // min 0.5 de khong chet
+        
+        player.setHealth(vanillaHealth);
+        
+        // Update profile neu HP bi clamp
+        if (currentHP != profile.getCurrentHP()) {
+            profile.setCurrentHP(currentHP);
+        }
+    }
+    
+    /**
+     * Update vanilla health khi currentHP thay doi (sau combat)
+     * Chi update current, khong update max
+     * 
+     * Scale: Tu tien HP (0-maxHP) -> Vanilla (0-20)
+     */
+    public void updateCurrentHealth(Player player, PlayerProfile profile) {
+        if (player == null || !player.isOnline()) return;
+        
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getStats().getMaxHP();
+        
+        // Clamp
+        currentHP = Math.max(0, Math.min(currentHP, maxHP));
+        
+        // Scale: (currentHP / maxHP) * 20
+        double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
+        vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
+        
+        player.setHealth(vanillaHealth);
+        
+        if (currentHP != profile.getCurrentHP()) {
+            profile.setCurrentHP(currentHP);
+        }
+    }
+}

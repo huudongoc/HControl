@@ -6,20 +6,20 @@ package hcontrol.plugin.stats;
  */
 public enum StatType {
     // Primary stats (can ban - co the cong diem)
-    ROOT("ROOT", "Can Cot"),
-    SPIRIT("SPR", "Linh Luc"),
-    PHYSIQUE("PHY", "The Phach"),
-    COMPREHENSION("COM", "Ngo Tinh"),
-    FORTUNE("FOR", "Khi Van"),
+    CAN_COT("CC", "Can Cot"),
+    LINH_LUC("LL", "Linh Luc"),
+    THE_PHACH("TP", "The Phach"),
+    NGO_TINH("NT", "Ngo Tinh"),
+    KHI_VAN("KV", "Khi Van"),
     
     // Derived stats (tu dong tinh)
-    MAX_HP("HP", "Sinh Menh"),
-    MAX_LINGQI("QI", "Linh Khi"),
-    ATTACK("ATK", "Cong Kich"),
-    MAGIC_ATTACK("MATK", "Phap Luc"),
-    DEFENSE("DEF", "Phong Ngu"),
-    CRIT_RATE("CRIT", "Bao Kich"),
-    DODGE("DODGE", "Than Phap");
+    SINH_MENH("SM", "Sinh Menh"),
+    LINH_KHI("LK", "Linh Khi"),
+    CONG_KICH("CK", "Cong Kich"),
+    PHAP_LUC("PL", "Phap Luc"),
+    PHONG_NGU("PN", "Phong Ngu"),
+    BAO_KICH("BK", "Bao Kich"),
+    THAN_PHAP("TF", "Than Phap");
     
     private final String shortName;
     private final String displayName;

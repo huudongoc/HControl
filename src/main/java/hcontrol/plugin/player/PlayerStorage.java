@@ -36,7 +36,6 @@ public class PlayerStorage {
         
         // load co ban
         profile.setLevel(yaml.getInt("level", 1));
-        profile.setExp(yaml.getLong("exp", 0L));
         profile.setStatPoints(yaml.getInt("statPoints", 0));
         
         // load cultivation realm (tu tien)
@@ -111,11 +110,11 @@ public class PlayerStorage {
         var stats = profile.getStats();
         var container = stats.getStatContainer();
         
-        container.setBase(StatType.ROOT, yaml.getInt("stats.root", 2));
-        container.setBase(StatType.SPIRIT, yaml.getInt("stats.spirit", 2));
-        container.setBase(StatType.PHYSIQUE, yaml.getInt("stats.physique", 2));
-        container.setBase(StatType.COMPREHENSION, yaml.getInt("stats.comprehension", 2));
-        container.setBase(StatType.FORTUNE, yaml.getInt("stats.fortune", 2));
+        container.setBase(StatType.CAN_COT, yaml.getInt("stats.canCot", 2));
+        container.setBase(StatType.LINH_LUC, yaml.getInt("stats.linhLuc", 2));
+        container.setBase(StatType.THE_PHACH, yaml.getInt("stats.thePhach", 2));
+        container.setBase(StatType.NGO_TINH, yaml.getInt("stats.ngoTinh", 2));
+        container.setBase(StatType.KHI_VAN, yaml.getInt("stats.khiVan", 2));
         
         // load HP/Linh Khi
         profile.setCurrentHP(yaml.getDouble("currentHP", stats.getMaxHP()));
@@ -130,7 +129,6 @@ public class PlayerStorage {
 
         // save co ban
         yaml.set("level", profile.getLevel());
-        yaml.set("exp", profile.getExp());
         yaml.set("statPoints", profile.getStatPoints());
         
         // save cultivation realm (tu tien)
@@ -177,11 +175,11 @@ public class PlayerStorage {
         var stats = profile.getStats();
         var container = stats.getStatContainer();
         
-        yaml.set("stats.root", container.getBase(StatType.ROOT));
-        yaml.set("stats.spirit", container.getBase(StatType.SPIRIT));
-        yaml.set("stats.physique", container.getBase(StatType.PHYSIQUE));
-        yaml.set("stats.comprehension", container.getBase(StatType.COMPREHENSION));
-        yaml.set("stats.fortune", container.getBase(StatType.FORTUNE));
+        yaml.set("stats.canCot", container.getBase(StatType.CAN_COT));
+        yaml.set("stats.linhLuc", container.getBase(StatType.LINH_LUC));
+        yaml.set("stats.thePhach", container.getBase(StatType.THE_PHACH));
+        yaml.set("stats.ngoTinh", container.getBase(StatType.NGO_TINH));
+        yaml.set("stats.khiVan", container.getBase(StatType.KHI_VAN));
         
         // save HP/Linh Khi
         yaml.set("currentHP", profile.getCurrentHP());

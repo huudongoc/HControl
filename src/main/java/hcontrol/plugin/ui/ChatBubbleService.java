@@ -48,12 +48,12 @@ public class ChatBubbleService {
         activeBubbles.put(player.getUniqueId(), bubble);
         
         // Task di theo player va tu dong xoa sau duration
-        int[] tick = {0};
-        int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            tick[0]++;
-            
-            // Neu player offline hoac qua thoi gian
-            if (!player.isOnline() || tick[0] >= duration) {
+        final int[] taskIdHolder = {-1};
+        
+        taskIdHolder[0] = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
+            // Neu player offline hoac bubble da bi xoa
+            if (!player.isOnline() || !activeBubbles.containsKey(player.getUniqueId())) {
+                Bukkit.getScheduler().cancelTask(taskIdHolder[0]);
                 removeChatBubble(player);
                 return;
             }
@@ -66,7 +66,7 @@ public class ChatBubbleService {
         
         // Huy task sau khi het thoi gian
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            Bukkit.getScheduler().cancelTask(taskId);
+            Bukkit.getScheduler().cancelTask(taskIdHolder[0]);
             removeChatBubble(player);
         }, duration);
     }

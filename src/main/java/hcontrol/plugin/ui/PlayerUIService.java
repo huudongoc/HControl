@@ -1,6 +1,6 @@
 package hcontrol.plugin.ui;
 
-import hcontrol.plugin.model.CultivatorProfile;
+
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import org.bukkit.Bukkit;
@@ -51,10 +51,15 @@ public class PlayerUIService {
         player.sendMessage("§6§l━━━━━━━━━━━━━ §e⚡ TU SI THONG TIN §6§l━━━━━━━━━━━━━");
         player.sendMessage("");
         
-        // Canh gioi + Level
-        player.sendMessage("§7  ► Canh gioi: " + profile.getRealm().toString());
-        player.sendMessage("§7  ► Level: §fLv." + profile.getLevel() + " §7/ " + profile.getRealm().getRequiredLevel());
-        player.sendMessage("§7  ► Kinh nghiem: §e" + profile.getExp() + " §7/ " + getRequiredExp(profile));
+        // Canh gioi + tier (KHONG hien thi level so)
+        String tierName = getTierName(profile.getLevel());
+        player.sendMessage("§7  ► Canh gioi: " + profile.getRealm().getColor() + profile.getRealm().getDisplayName() + " " + tierName);
+        
+        // Tu vi progress
+        long currentCult = profile.getCultivation();
+        long requiredCult = getRequiredCultivation(profile);
+        double cultPercent = requiredCult > 0 ? (double)currentCult / requiredCult * 100 : 100.0;
+        player.sendMessage("§7  ► Tu vi: §e" + String.format("%.1f%%", cultPercent) + " §8(" + currentCult + "/" + requiredCult + ")");
         
         player.sendMessage("");
         
@@ -97,8 +102,35 @@ public class PlayerUIService {
     }
     
     /**
-     * Tinh exp can thiet len level ke tiep
+     * Tinh cultivation can thiet len level ke tiep
      */
+    private long getRequiredCultivation(PlayerProfile profile) {
+        int level = profile.getLevel();
+        int maxLevel = getMaxLevelForRealm(profile.getRealm());
+        if (level >= maxLevel) return 0;
+        
+        return (long) (100 * Math.pow(level + 1, 2));
+    }
+    
+    private int getMaxLevelForRealm(hcontrol.plugin.model.CultivationRealm realm) {
+        switch(realm) {
+            case MORTAL: return 10;
+            case QI_REFINING: return 9;
+            case FOUNDATION: return 9;
+            case GOLDEN_CORE: return 9;
+            default: return 10;
+        }
+    }
+    
+    /**
+     * Lay tier name tu level
+     */
+    private String getTierName(int level) {
+        if (level <= 3) return "§7Hạ";
+        if (level <= 6) return "§eTrung";
+        if (level <= 9) return "§6Thượng";
+        return "§cĐỉnh";
+    }
     private long getRequiredExp(PlayerProfile profile) {
         int level = profile.getLevel();
         return (long) (Math.pow(level, 2) * 100);

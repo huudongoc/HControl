@@ -1,18 +1,16 @@
 package hcontrol.plugin.service;
 
+import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.util.DamageFormula;
-import hcontrol.plugin.model.CultivatorProfile;
 import hcontrol.plugin.model.PlayerStats;
+import hcontrol.plugin.model.LivingActor;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.ui.NameplateService;
+import hcontrol.plugin.entity.EntityManager;
+import hcontrol.plugin.entity.EntityProfile;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Sound;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -23,17 +21,23 @@ import java.util.Random;
 /**
  * PHASE 3 — Combat calculation service
  * Logic tinh damage theo TRIET LY TU TIEN
+ * REFACTORED: Unified combat using LivingActor (Milestone 4)
  */
 public class CombatService {
     
     private final Random random = new Random();
     private final PlayerManager playerManager;
     private final Plugin plugin;
+    private final DamageEffectService effectService;
+    private final EntityManager entityManager;
     private NameplateService nameplateService;  // inject sau tu CoreContext
     
-    public CombatService(PlayerManager playerManager, Plugin plugin) {
+    public CombatService(PlayerManager playerManager, Plugin plugin, 
+                        DamageEffectService effectService, EntityManager entityManager) {
         this.playerManager = playerManager;
         this.plugin = plugin;
+        this.effectService = effectService;
+        this.entityManager = entityManager;
     }
     
     /**
@@ -43,78 +47,142 @@ public class CombatService {
         this.nameplateService = nameplateService;
     }
     
+    // ===== MILESTONE 4: UNIFIED COMBAT (LIVING ACTOR) =====
+    
     /**
-     * Xu ly player danh player/mob (TU TIEN DAMAGE ONLY)
-     * CHI DUNG DamageFormula - LOAI BO CACH TINH CU
+     * UNIFIED COMBAT - thong nhat PvP + PvE + Mob vs Player
+     * Dung LivingActor interface
+     * @param attacker ke tan cong (Player hoac Entity)
+     * @param defender nguoi bi danh (Player hoac Entity)
+     * @param techniqueModifier modifier cong phap (1.0 = pham phap)
      */
-    public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile) {
-        // LOAI BO he thong RPG cu
-        // Damage tu REALM, khong tu stat
+    public void handleCombat(LivingActor attacker, LivingActor defender, double techniqueModifier) {
+        // ===== TINH DAMAGE =====
         
-        double finalDamage;
-        double techniqueModifier = DamageFormula.TECHNIQUE_MORTAL; // mac dinh Pham Phap
+        // Base damage theo realm
+        double baseDamage = attacker.getRealm().getBaseDamage();
         
-        // Lay realm damage
-        CultivationRealm attackerRealm = attackerProfile.getRealm();
-        double baseDamage = attackerRealm.getBaseDamage();
-        
-        // Neu target la player -> ap dung realm suppression
-        if (target instanceof Player targetPlayer) {
-            PlayerProfile targetProfile = getPlayerProfile(targetPlayer);
-            if (targetProfile != null) {
-                // Tinh realm suppression
-                CultivationRealm defenderRealm = targetProfile.getRealm();
-                int diff = attackerRealm.ordinal() - defenderRealm.ordinal();
-                
-                double realmSuppression;
-                if (diff >= 1) {
-                    realmSuppression = 1.0 + (diff * 0.5);  // ap che
-                } else if (diff < 0) {
-                    realmSuppression = 1.0 + (diff * 0.7);  // phan phe
-                    realmSuppression = Math.max(0.1, realmSuppression);
-                } else {
-                    realmSuppression = 1.0;
-                }
-                
-                // Defense mitigation
-                double defense = targetProfile.getStats().getDefense();
-                double mitigation = defense / (defense + baseDamage * 3);
-                mitigation = Math.min(0.8, mitigation);
-                
-                // Final damage
-                finalDamage = baseDamage * realmSuppression * (1 - mitigation);
-                
-                // Check noi thuong neu vuot cap danh
-                if (diff < -1) {
-                    double injuryChance = Math.abs(diff) * 5.0;
-                    if (random.nextDouble() * 100 < injuryChance) {
-                        double injury = Math.abs(diff) * 2.0;
-                        attackerProfile.addInnerInjury(injury);
-                        attacker.sendMessage(String.format("§c⚠ Bi noi thuong +%.1f%% (vuot cap!)", injury));
-                    }
-                }
-            } else {
-                finalDamage = baseDamage * 0.5;
-            }
+        // Realm suppression (CỐT LÕI TU TIÊN)
+        int realmDiff = attacker.getRealm().ordinal() - defender.getRealm().ordinal();
+        double realmSuppression;
+        if (realmDiff >= 1) {
+            realmSuppression = 1.0 + (realmDiff * 0.5);  // ap che (cao danh thap)
+        } else if (realmDiff < 0) {
+            realmSuppression = 1.0 + (realmDiff * 0.7);  // phan phe (thap danh cao)
+            realmSuppression = Math.max(0.1, realmSuppression);  // min 10%
         } else {
-            // Danh mob -> base damage
-            finalDamage = baseDamage;
+            realmSuppression = 1.0;  // bang nhau
         }
         
-        // deal damage
-        dealDamage(target, finalDamage);
+        // Defense mitigation
+        double defense = defender.getDefense();
+        double mitigation = defense / (defense + baseDamage * 3);
+        mitigation = Math.min(0.8, mitigation);  // max giam 80%
         
-        // hieu ung knockback (bat lui)
-        applyKnockback(attacker, target, finalDamage, false);
+        // Random dao factor (nho - khong phai crit)
+        double daoFactor = 0.9 + (random.nextDouble() * 0.2);  // 0.9 - 1.1
         
-        // hieu ung particle
-        spawnHitParticles(target, false);
+        // FINAL DAMAGE
+        double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
         
-        // sound effect
-        playHitSound(attacker, target, false);
+        // ===== APPLY DAMAGE =====
         
-        // hien thi damage indicator
-        showDamageIndicator(attacker, target, finalDamage, false);
+        double newHP = Math.max(0, defender.getCurrentHP() - damage);
+        defender.setCurrentHP(newHP);
+        
+        // ===== SYNC VANILLA HEALTH (NEU CO BUKKIT ENTITY) =====
+        
+        LivingEntity defenderEntity = defender.getEntity();
+        if (defenderEntity != null) {
+            double healthPercent = newHP / defender.getMaxHP();
+            double vanillaHealth = defenderEntity.getMaxHealth() * healthPercent;
+            defenderEntity.setHealth(Math.max(0.1, vanillaHealth));
+            
+            // Check chet
+            if (newHP <= 0) {
+                defenderEntity.setHealth(0);
+            }
+        }
+        
+        // ===== HIEU UNG =====
+        
+        LivingEntity attackerEntity = attacker.getEntity();
+        
+        // Hieu ung bi danh (defender)
+        if (defenderEntity != null) {
+            boolean defenderVIP = (defenderEntity instanceof Player) && effectService.isVIP((Player) defenderEntity);
+            effectService.playHitEffect(defenderEntity instanceof Player ? (Player) defenderEntity : null, 
+                                       defender.getRealm(), damage, defenderVIP);
+            
+            // Floating damage
+            String damageColor = getDamageColor(attacker.getRealm(), defender.getRealm());
+            effectService.spawnFloatingDamage(defenderEntity.getLocation(), damage, damageColor, false);
+        }
+        
+        // ActionBar feedback cho attacker (neu la player)
+        if (attackerEntity instanceof Player attackerPlayer) {
+            attackerPlayer.sendActionBar(String.format("§e⚔ %.1f §7| %s §7| §c%.0f§7/§e%.0f HP", 
+                damage, defender.getDisplayName(), newHP, defender.getMaxHP()));
+        }
+        
+        // ActionBar feedback cho defender (neu la player)
+        if (defenderEntity instanceof Player defenderPlayer) {
+            defenderPlayer.sendActionBar(String.format("§c-%.1f HP §7| %s §7[%s] | §c%.0f§7/§e%.0f", 
+                damage, attacker.getDisplayName(), attacker.getRealm().getDisplayName(),
+                newHP, defender.getMaxHP()));
+        }
+        
+        // Update nameplate (neu co)
+        if (defenderEntity instanceof Player defenderPlayer) {
+            // Player nameplate
+            if (nameplateService != null) {
+                nameplateService.updateNameplate(defenderPlayer);
+            }
+        } else if (defenderEntity != null && !(defenderEntity instanceof Player)) {
+            // Entity nameplate
+            var entityNameplateService = CoreContext.getInstance().getEntityNameplateService();
+            if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (defenderEntity.isValid() && !defenderEntity.isDead()) {
+                        entityNameplateService.updateNameplate(defenderEntity, entityProfile);
+                    }
+                });
+            }
+        }
+        
+        // Knockback (neu co attacker entity)
+        if (attackerEntity != null && defenderEntity != null) {
+            applyKnockback(attackerEntity.getLocation(), defenderEntity, damage);
+        }
+    }
+    
+    /**
+     * Xu ly player danh player/mob (TU TIEN DAMAGE ONLY)
+     * REFACTORED: Wrapper around handleCombat()
+     */
+    /**
+     * Xu ly player danh player/mob (TU TIEN DAMAGE ONLY)
+     * REFACTORED: Wrapper around handleCombat()
+     */
+    public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile) {
+        // TODO: Technique modifier (kiem, phap bao...)
+        double techniqueModifier = 1.0;
+        
+        // CASE 1: Player danh Player (PvP)
+        if (target instanceof Player targetPlayer) {
+            PlayerProfile targetProfile = playerManager.get(targetPlayer.getUniqueId());
+            if (targetProfile == null) return;
+            
+            // Dung unified combat
+            handleCombat(attackerProfile, targetProfile, techniqueModifier);
+            return;
+        }
+        
+        // CASE 2: Player danh Mob (PvE - DUNG ENTITY PROFILE)
+        EntityProfile mobProfile = entityManager.getOrCreate(target);
+        
+        // Dung unified combat
+        handleCombat(attackerProfile, mobProfile, techniqueModifier);
     }
     
     // LOAI BO calculateDamage / checkCrit / checkDodge
@@ -132,18 +200,18 @@ public class CombatService {
     /**
      * Apply knockback effect (bat lui)
      */
-    private void applyKnockback(Player attacker, LivingEntity target, double damage, boolean isCrit) {
-        // tinh knockback strength (crit manh hon)
-        double knockbackStrength = isCrit ? 0.5 : 0.3;
+    private void applyKnockback(Location attackerLoc, LivingEntity target, double damage) {
+        // tinh knockback strength
+        double knockbackStrength = 0.3;
         
         // tinh huong bat lui
         Vector direction = target.getLocation().toVector()
-            .subtract(attacker.getLocation().toVector());
+            .subtract(attackerLoc.toVector());
         
         // check neu direction = 0 (cung vi tri) thi dung default direction
         if (direction.lengthSquared() < 0.0001) {
-            // dung huong attacker dang nhin
-            direction = attacker.getLocation().getDirection();
+            // dung huong tu attackerLoc
+            direction = attackerLoc.getDirection();
         } else {
             direction.normalize();
         }
@@ -153,106 +221,6 @@ public class CombatService {
         direction.multiply(knockbackStrength);
         
         target.setVelocity(direction);
-    }
-    
-    /**
-     * Spawn hit particles
-     */
-    private void spawnHitParticles(LivingEntity target, boolean isCrit) {
-        Location loc = target.getLocation().add(0, 1, 0); // giua nguoi
-        
-        if (isCrit) {
-            // crit: particle vang nhieu hon
-            target.getWorld().spawnParticle(
-                Particle.CRIT, 
-                loc, 
-                15,           // so luong
-                0.3, 0.5, 0.3, // spread (x, y, z)
-                0.1           // speed
-            );
-            target.getWorld().spawnParticle(
-                Particle.CRIT_MAGIC, 
-                loc, 
-                10, 
-                0.3, 0.5, 0.3,
-                0.1
-            );
-        } else {
-            // hit binh thuong: particle trang
-            target.getWorld().spawnParticle(
-                Particle.CRIT, 
-                loc, 
-                5, 
-                0.2, 0.3, 0.2,
-                0.05
-            );
-        }
-    }
-    
-    /**
-     * Play hit sound
-     */
-    private void playHitSound(Player attacker, LivingEntity target, boolean isCrit) {
-        if (isCrit) {
-            // crit sound
-            attacker.playSound(attacker.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 1.0f);
-            target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 0.5f, 1.0f);
-        } else {
-            // normal hit sound
-            attacker.playSound(attacker.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, 1.0f);
-        }
-        
-        // hurt sound (vanilla)
-        target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.8f, 1.0f);
-    }
-    
-    // ========== TU TIEN COMBAT (NEW) ==========
-    
-    /**
-     * Xu ly combat TU TIEN giua 2 cultivator
-     * Dung DamageFormula 4 tang nhan
-     */
-    public void handleCultivatorCombat(Player attackerPlayer, Player defenderPlayer, 
-                                      CultivatorProfile attacker, CultivatorProfile defender,
-                                      double techniqueModifier) {
-        
-        // Tinh damage theo cong thuc tu tien
-        double damage = DamageFormula.calculateCultivationDamage(attacker, defender, techniqueModifier);
-        
-        // Kiem tra noi thuong (neu vuot cap danh)
-        double innerInjury = DamageFormula.calculateInnerInjuryFromAttack(attacker, defender);
-        if (innerInjury > 0) {
-            attacker.addInnerInjury(innerInjury);
-            attackerPlayer.sendMessage(String.format("§c⚠ Bi noi thuong +%.1f%% (danh vuot cap!)", innerInjury));
-        }
-        
-        // Apply damage
-        double newHP = defender.getCurrentHP() - damage;
-        defender.setCurrentHP(newHP);
-        
-        // Update nameplate de hien % HP moi
-        if (nameplateService != null) {
-            // Convert CultivatorProfile -> Player
-            Player defenderPlayerForUpdate = defender.getPlayer();
-            if (defenderPlayerForUpdate != null) {
-                nameplateService.updateNameplate(defenderPlayerForUpdate);
-            }
-        }
-        
-        // Hieu ung combat
-        String damageColor = getDamageColor(attacker.getRealm(), defender.getRealm());
-        spawnFloatingText(defenderPlayer, damageColor + String.format("%.0f", damage));
-        playTuTienHitSound(attackerPlayer, defenderPlayer, techniqueModifier);
-        spawnTuTienHitParticles(defenderPlayer.getLocation(), techniqueModifier);
-        
-        // ActionBar feedback
-        attackerPlayer.sendActionBar(String.format("§e⚡ %.1f §7(%s)", damage, getTechniqueRank(techniqueModifier)));
-        defenderPlayer.sendActionBar(String.format("§c-%.1f HP §7| §4%s", damage, attacker.getRealm().getDisplayName()));
-        
-        // Check chet
-        if (newHP <= 0) {
-            defenderPlayer.setHealth(0);
-        }
     }
     
     /**
@@ -280,49 +248,8 @@ public class CombatService {
         return "Pham Phap";
     }
     
-    /**
-     * Sound hieu ung tu tien
-     */
-    private void playTuTienHitSound(Player attacker, Player defender, double techniqueModifier) {
-        if (techniqueModifier >= 2.5) {
-            // Thien cap / Cam thuat
-            attacker.playSound(attacker.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 0.5f, 1.5f);
-            defender.getWorld().playSound(defender.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.7f, 1.2f);
-        } else if (techniqueModifier >= 1.3) {
-            // Linh cap / Dia cap
-            attacker.playSound(attacker.getLocation(), Sound.ENTITY_PLAYER_ATTACK_CRIT, 1.0f, 0.8f);
-            defender.getWorld().playSound(defender.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.8f, 0.9f);
-        } else {
-            // Pham phap
-            attacker.playSound(attacker.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 1.0f, 1.0f);
-        }
-    }
+
     
-    /**
-     * Particle hieu ung tu tien
-     */
-    private void spawnTuTienHitParticles(Location loc, double techniqueModifier) {
-        loc = loc.clone().add(0, 1, 0);
-        
-        if (techniqueModifier >= 4.0) {
-            // Cam thuat - explosion + lightning
-            loc.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, loc, 1);
-            loc.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, loc, 20, 0.5, 0.5, 0.5, 0.1);
-        } else if (techniqueModifier >= 2.5) {
-            // Thien cap - flash + flame
-            loc.getWorld().spawnParticle(Particle.FLASH, loc, 3, 0.3, 0.3, 0.3, 0);
-            loc.getWorld().spawnParticle(Particle.FLAME, loc, 15, 0.4, 0.4, 0.4, 0.05);
-        } else if (techniqueModifier >= 1.7) {
-            // Dia cap - soul fire flame
-            loc.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, loc, 20, 0.5, 0.5, 0.5, 0.01);
-        } else if (techniqueModifier >= 1.3) {
-            // Linh cap - cloud
-            loc.getWorld().spawnParticle(Particle.CLOUD, loc, 10, 0.3, 0.3, 0.3, 0.05);
-        } else {
-            // Pham phap - crit
-            loc.getWorld().spawnParticle(Particle.CRIT, loc, 5, 0.2, 0.3, 0.2, 0.05);
-        }
-    }
     
     /**
      * Hien thi floating damage text bay len tu dau target
@@ -332,86 +259,26 @@ public class CombatService {
         String critText = isCrit ? " ✦" : "";
         String damageText = color + "⚔ " + String.format("%.1f", damage) + critText;
         
-        spawnFloatingText(target, damageText);
+        // dung service de spawn floating text
+        effectService.spawnFloatingDamage(target.getLocation(), damage, color, isCrit);
         
         // van giu ActionBar cho attacker biet damage
         attacker.sendActionBar(damageText);
     }
     
     /**
-     * Spawn floating text bay len tu entity
-     */
-    private void spawnFloatingText(LivingEntity entity, String text) {
-        // vi tri spawn: tren dau entity + random offset
-        Location loc = entity.getLocation().add(
-            (random.nextDouble() - 0.5) * 0.5,  // random x (-0.25 to 0.25)
-            entity.getHeight() + 0.5,            // tren dau
-            (random.nextDouble() - 0.5) * 0.5   // random z
-        );
-        
-        // spawn invisible armor stand (CHI hien custom name)
-        ArmorStand armorStand = (ArmorStand) entity.getWorld().spawnEntity(loc, EntityType.ARMOR_STAND);
-        armorStand.setVisible(false);           // an body
-        armorStand.setGravity(false);           // khong roi
-        armorStand.setCustomName(text);         // damage text
-        armorStand.setCustomNameVisible(true);  // hien name
-        armorStand.setMarker(true);             // khong collision, an base plate
-        armorStand.setInvulnerable(true);       // khong bi danh
-        armorStand.setSmall(true);              // nho lai (optional)
-        armorStand.setBasePlate(false);         // an base plate (gia do)
-        armorStand.setArms(false);              // an tay
-        
-        // animate bay len (0.1 block moi tick, 20 tick = 1 giay)
-        final int[] tickCount = {0};
-        final int duration = 20; // 1 second
-        
-        int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, () -> {
-            tickCount[0]++;
-            
-            // bay len
-            Location currentLoc = armorStand.getLocation();
-            currentLoc.add(0, 0.05, 0); // bay len 0.05 block/tick
-            armorStand.teleport(currentLoc);
-            
-            // fade out (giam alpha - lam mo dan)
-            if (tickCount[0] > duration * 0.7) {
-                // sau 70% thoi gian, bat dau fade
-                armorStand.setCustomNameVisible(tickCount[0] % 2 == 0); // nhap nhay
-            }
-            
-            // remove sau duration
-            if (tickCount[0] >= duration) {
-                armorStand.remove();
-                Bukkit.getScheduler().cancelTask(tickCount[0]);
-            }
-        }, 0L, 1L); // chay moi tick
-        
-        // fallback: remove sau 2 giay (phong truong hop task loi)
-        Bukkit.getScheduler().runTaskLater(plugin, armorStand::remove, duration + 20L);
-    }
-    
-    /**
-     * Xu ly mob danh player (MOB DAMAGE THEO REALM NEU CO)
+     * Xu ly mob danh player (DUNG ENTITY PROFILE)
+     * REFACTORED: Wrapper around handleCombat()
      */
     public void handleMobAttackPlayer(LivingEntity mob, Player player, PlayerProfile playerProfile) {
-        // tinh base damage (mob damage)
-        double baseDamage = mob.getAttribute(org.bukkit.attribute.Attribute.GENERIC_ATTACK_DAMAGE).getValue();
+        // Lay hoac tao mob profile
+        EntityProfile mobProfile = entityManager.getOrCreate(mob);
         
-        // LOAI BO dodge - tu tien khong co dodge
-        // Ap dung defense formula tu tien
-        double defense = playerProfile.getStats().getDefense();
-        double mitigation = defense / (defense + baseDamage * 3);
-        mitigation = Math.min(0.8, mitigation);
-        double finalDamage = baseDamage * (1 - mitigation);
+        // TODO: Technique modifier
+        double techniqueModifier = 1.0;
         
-        // deal damage
-        dealDamage(player, finalDamage);
-        
-        // hieu ung nhe hon (khong bat lui player qua manh)
-        spawnHitParticles(player, false);
-        
-        // floating damage text
-        spawnFloatingText(player, "§c♥ -" + String.format("%.1f", finalDamage));
+        // Dung unified combat
+        handleCombat(mobProfile, playerProfile, techniqueModifier);
     }
     
     /**

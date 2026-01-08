@@ -23,7 +23,10 @@ public enum BreakthroughResult {
     CRIPPLED_PERMANENT("Dot pha that bai - dao co sup do! (tro thanh pham nhan)"),
     
     // THAT BAI LOAI 3: CHET (hiem, chi khi cuong ep)
-    DEATH("Dot pha that bai - tu si tu vong!");
+    DEATH("Dot pha that bai - tu si tu vong!"),
+    
+    // THAT BAI THIEN KIEP
+    TRIBULATION_FAILED("Thien kiep that bai!");
     
     private final String message;
     

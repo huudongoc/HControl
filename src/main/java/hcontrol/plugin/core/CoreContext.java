@@ -4,78 +4,105 @@ import org.bukkit.Bukkit;
 
 import hcontrol.plugin.Main;
 import hcontrol.plugin.command.BreakthroughCommand;
-import hcontrol.plugin.command.CultivatorCommand;
-import hcontrol.plugin.command.ExpCommand;
+import hcontrol.plugin.command.TuviCommand;
 import hcontrol.plugin.command.ReloadCommand;
 import hcontrol.plugin.command.StatCommand;
 import hcontrol.plugin.command.SpawnBossCommand;
 import hcontrol.plugin.command.TitleCommand;
 import hcontrol.plugin.command.UnlockCommand;
-import hcontrol.plugin.player.BreakthroughService;
 import hcontrol.plugin.listener.PlayerCombatListener;
+import hcontrol.plugin.listener.PlayerDeathListener;
+import hcontrol.plugin.listener.EntityLifecycleListener;
 import hcontrol.plugin.listener.PlayerChatListener;
 import hcontrol.plugin.player.AutoSaveTask;
+import hcontrol.plugin.player.BreakthroughService;
 import hcontrol.plugin.player.LevelService;
+import hcontrol.plugin.player.PlayerHealthService;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.player.PlayerStorage;
 import hcontrol.plugin.listener.JoinServerListener;
 import hcontrol.plugin.listener.OutServerListener;
+import hcontrol.plugin.listener.PlayerRespawnListener;
+import hcontrol.plugin.entity.EntityManager;
+import hcontrol.plugin.entity.EntityRegistry;
+import hcontrol.plugin.entity.EntityService;
+import hcontrol.plugin.module.boss.BossManager;
 import hcontrol.plugin.service.CombatService;
+import hcontrol.plugin.service.DamageEffectService;
+import hcontrol.plugin.service.EventEffectService;
+import hcontrol.plugin.service.LevelUpEffectService;
+import hcontrol.plugin.service.SoundService;
 import hcontrol.plugin.service.StatService;
 import hcontrol.plugin.service.TitleService;
+import hcontrol.plugin.service.TribulationService;
+import hcontrol.plugin.ui.ChatBubbleService;
+import hcontrol.plugin.ui.EntityDialogService;
+import hcontrol.plugin.ui.EntityNameplateService;
+import hcontrol.plugin.ui.NameplateService;
 import hcontrol.plugin.ui.PlayerUIService;
 import hcontrol.plugin.ui.ScoreboardService;
 import hcontrol.plugin.ui.ScoreboardUpdateTask;
-import hcontrol.plugin.ui.NameplateService;
-import hcontrol.plugin.ui.ChatBubbleService;
-import hcontrol.plugin.module.boss.BossManager;
+import hcontrol.plugin.ui.TribulationUI;
+import hcontrol.plugin.ui.UiStateService;
+import hcontrol.plugin.ui.listener.TribulationInputListener;
 
 /**
- * PHASE 0 — FOUNDATION
- * Singleton context chứa tất cả dependencies
+ * PHASE 0 — FOUNDATION (REFACTORED)
+ * Singleton context CHI chua SubContext
+ * Moi SubContext quan ly services theo domain rieng
  */
 public class CoreContext {
     private static CoreContext instance;
     
+    // System-level dependencies
     private final Main plugin;
     private final LifecycleManager lifecycleManager;
-    private final PlayerManager playerManager;
-    private final LevelService levelService;
-    private final PlayerStorage playerStorage;
-    private final StatService statService;
-    private final CombatService combatService;
-    private final BossManager bossManager;
-    private final BreakthroughService breakthroughService;
-    private final TitleService titleService;
     
-    //ui
-    private PlayerUIService playerUIService;
-    private ScoreboardService scoreboardService;
-    private ScoreboardUpdateTask scoreboardUpdateTask;
-    private NameplateService nameplateService;
-    private ChatBubbleService chatBubbleService;
+    // Domain Contexts (5 SubContext)
+    private final PlayerContext playerContext;
+    private final CombatContext combatContext;
+    private final EntityContext entityContext;
+    private final UIContext uiContext;
+    private final CultivationContext cultivationContext;
     
-    // Auto-save
-    private AutoSaveTask autoSaveTask;
-    
-    // Listeners
+    // Listeners (lifecycle-managed, KHONG nen de trong SubContext)
     private JoinServerListener joinListener;
     private OutServerListener outListener;
     private PlayerCombatListener combatListener;
+    private PlayerDeathListener deathListener;
     private PlayerChatListener chatListener;
+    private PlayerRespawnListener respawnListener;
+    private EntityLifecycleListener entityLifecycleListener;
+    private TribulationInputListener tribulationInputListener;
     
     private CoreContext(Main plugin, LifecycleManager lifecycleManager) {
         this.plugin = plugin;
         this.lifecycleManager = lifecycleManager;
-        this.playerManager = new PlayerManager();
-        this.playerStorage = new PlayerStorage(plugin.getDataFolder());
-        this.levelService = new LevelService();
-        this.statService = new StatService();
-        this.combatService = new CombatService(playerManager, plugin); // inject PlayerManager + Plugin
-        this.breakthroughService = new BreakthroughService();
-        this.titleService = new TitleService();
-        this.bossManager = new BossManager();
+        
+        // Khoi tao SubContexts theo thu tu phu thuoc
+        // 1. Entity Context (khong phu thuoc ai)
+        this.entityContext = new EntityContext();
+        
+        // 2. Player Context (khong phu thuoc ai, nhung LevelService se inject sau)
+        this.playerContext = new PlayerContext(plugin);
+        
+        // 3. Combat Context (phu thuoc PlayerManager, EntityManager)
+        this.combatContext = new CombatContext(
+            plugin,
+            playerContext.getPlayerManager(),
+            entityContext.getEntityManager()
+        );
+        
+        // 4. Inject LevelService vao PlayerContext (sau khi CombatContext da co LevelUpEffectService)
+        LevelService levelService = new LevelService(combatContext.getLevelUpEffectService());
+        playerContext.setLevelService(levelService);
+        
+        // 5. Cultivation Context (phu thuoc Plugin)
+        this.cultivationContext = new CultivationContext(plugin);
+        
+        // 6. UI Context (init sau trong lifecycle callbacks)
+        this.uiContext = new UIContext(plugin);
     }
     
     /**
@@ -119,7 +146,7 @@ public class CoreContext {
         registerCombatSystem();
    
     }
-       /**
+    /**
      * Register Commands
      */
     private void registerCommands() {
@@ -127,18 +154,33 @@ public class CoreContext {
             plugin.getLogger().info("[PHASE 0] Đang đăng ký commands...");
             
             plugin.getCommand("hc").setExecutor(new ReloadCommand(lifecycleManager));
-            plugin.getCommand("exp").setExecutor(new ExpCommand(playerManager, levelService));
-            plugin.getCommand("stat").setExecutor(new StatCommand(playerManager, statService));
-            plugin.getCommand("breakthrough").setExecutor(new BreakthroughCommand(playerManager, breakthroughService));
-            plugin.getCommand("spawnboss").setExecutor(new SpawnBossCommand(bossManager));
-            plugin.getCommand("cultivator").setExecutor(new CultivatorCommand(playerManager, null)); // CultivationService chua co
-            plugin.getCommand("title").setExecutor(new TitleCommand(playerManager, titleService));
-            plugin.getCommand("unlock").setExecutor(new UnlockCommand(playerManager));
+            plugin.getCommand("tuvi").setExecutor(new TuviCommand(
+                playerContext.getPlayerManager(), 
+                playerContext.getLevelService()
+            ));
+            plugin.getCommand("stat").setExecutor(new StatCommand(
+                playerContext.getPlayerManager(), 
+                playerContext.getStatService()
+            ));
+            plugin.getCommand("dokiep").setExecutor(new BreakthroughCommand(
+                playerContext.getPlayerManager(), 
+                cultivationContext.getBreakthroughService()
+            ));
+            plugin.getCommand("spawnboss").setExecutor(new SpawnBossCommand(
+                entityContext.getBossManager()
+            ));
+            plugin.getCommand("title").setExecutor(new TitleCommand(
+                playerContext.getPlayerManager(), 
+                cultivationContext.getTitleService()
+            ));
+            plugin.getCommand("unlock").setExecutor(new UnlockCommand(
+                playerContext.getPlayerManager(), 
+                playerContext.getLevelService()
+            ));
             
             plugin.getLogger().info("[PHASE 0] ✓ Commands đã được đăng ký!");
         });
     }
-    
     
     /**
      * PHASE 1 — PLAYER SYSTEM
@@ -147,30 +189,68 @@ public class CoreContext {
         lifecycleManager.registerOnEnable(() -> {
             plugin.getLogger().info("[PHASE 1] Đang khởi tạo Player System...");
             
-            // Init PlayerService
-            playerUIService = new PlayerUIService(playerManager);
-            scoreboardService = new ScoreboardService(playerManager);
-            nameplateService = new NameplateService(playerManager);
-            chatBubbleService = new ChatBubbleService(plugin);
+            // Init Player UI trong UIContext
+            uiContext.initPlayerUI(playerContext.getPlayerManager());
             
             // Register Listeners
-            joinListener = new JoinServerListener(playerUIService, scoreboardService, nameplateService, playerManager, playerStorage, lifecycleManager);
-            outListener = new OutServerListener(playerUIService, playerManager, playerStorage, lifecycleManager);
+            joinListener = new JoinServerListener(
+                uiContext.getPlayerUIService(),
+                uiContext.getScoreboardService(),
+                uiContext.getNameplateService(),
+                playerContext.getPlayerManager(),
+                playerContext.getPlayerStorage(),
+                lifecycleManager
+            );
+            outListener = new OutServerListener(
+                uiContext.getPlayerUIService(),
+                playerContext.getPlayerManager(),
+                playerContext.getPlayerStorage(),
+                lifecycleManager
+            );
+            respawnListener = new PlayerRespawnListener(
+                playerContext.getPlayerManager(),
+                playerContext.getPlayerHealthService(),
+                uiContext.getPlayerUIService(),
+                uiContext.getScoreboardService()
+            );
             
             Bukkit.getPluginManager().registerEvents(joinListener, plugin);
             Bukkit.getPluginManager().registerEvents(outListener, plugin);
+            Bukkit.getPluginManager().registerEvents(respawnListener, plugin);
             
             // Chat bubble listener
-            chatListener = new PlayerChatListener(chatBubbleService);
+            chatListener = new PlayerChatListener(
+                uiContext.getChatBubbleService(), 
+                plugin
+            );
             Bukkit.getPluginManager().registerEvents(chatListener, plugin);
             
+            // Breakthrough input listener (F/Q keys)
+            tribulationInputListener = new TribulationInputListener(
+                uiContext.getUiStateService(),
+                uiContext.getTribulationUI(),
+                cultivationContext.getBreakthroughService(),
+                playerContext.getPlayerManager()
+            );
+            Bukkit.getPluginManager().registerEvents(tribulationInputListener, plugin);
+            
             // Start auto-save task (5 phut)
-            autoSaveTask = new AutoSaveTask(plugin, playerManager, playerStorage, 5 * 60 * 20L);
+            AutoSaveTask autoSaveTask = new AutoSaveTask(
+                plugin, 
+                playerContext.getPlayerManager(), 
+                playerContext.getPlayerStorage(), 
+                5 * 60 * 20L
+            );
             autoSaveTask.start();
+            playerContext.setAutoSaveTask(autoSaveTask);
             
             // Start scoreboard update task (1 giay)
-            scoreboardUpdateTask = new ScoreboardUpdateTask(scoreboardService, playerManager);
+            ScoreboardUpdateTask scoreboardUpdateTask = new ScoreboardUpdateTask(
+                uiContext.getScoreboardService(), 
+                playerContext.getPlayerManager()
+            );
             scoreboardUpdateTask.start(plugin);
+            uiContext.setScoreboardUpdateTask(scoreboardUpdateTask);
             
             lifecycleManager.enableModule("PlayerSystem");
             plugin.getLogger().info("[PHASE 1] ✓ Player System đã sẵn sàng!");
@@ -179,37 +259,48 @@ public class CoreContext {
         lifecycleManager.registerOnDisable(() -> {
             plugin.getLogger().info("[PHASE 1] Đang tắt Player System...");
             
-            // stop auto-save task
+            // Stop auto-save task
+            AutoSaveTask autoSaveTask = playerContext.getAutoSaveTask();
             if (autoSaveTask != null) {
                 autoSaveTask.stop();
-                autoSaveTask = null;
+                playerContext.setAutoSaveTask(null);
             }
             
-            // stop scoreboard update task
+            // Stop scoreboard update task
+            ScoreboardUpdateTask scoreboardUpdateTask = uiContext.getScoreboardUpdateTask();
             if (scoreboardUpdateTask != null) {
                 scoreboardUpdateTask.cancel();
-                scoreboardUpdateTask = null;
+                uiContext.setScoreboardUpdateTask(null);
             }
             
-            // remove all chat bubbles
-            if (chatBubbleService != null) {
-                chatBubbleService.removeAllBubbles();
+            // Remove all chat bubbles
+            if (uiContext.getChatBubbleService() != null) {
+                uiContext.getChatBubbleService().removeAllBubbles();
             }
             
-            // save tat ca player dang online
-            plugin.getLogger().info("[PHASE 1] Đang lưu dữ liệu " + playerManager.getAllOnline().size() + " player...");
-            for (PlayerProfile profile : playerManager.getAllOnline()) {
+            // Clear all UI states
+            if (uiContext.getUiStateService() != null) {
+                playerContext.getPlayerManager().getAllOnline()
+                    .forEach(p -> uiContext.getUiStateService().clear(p.getUuid()));
+            }
+            
+            // Save tat ca player dang online
+            plugin.getLogger().info("[PHASE 1] Đang lưu dữ liệu " + 
+                playerContext.getPlayerManager().getAllOnline().size() + " player...");
+            for (PlayerProfile profile : playerContext.getPlayerManager().getAllOnline()) {
                 try {
-                    playerStorage.save(profile);
+                    playerContext.getPlayerStorage().save(profile);
                 } catch (Exception e) {
                     plugin.getLogger().severe("Lỗi khi lưu player " + profile.getUuid() + ": " + e.getMessage());
                 }
             }
-            playerManager.clear();
+            playerContext.getPlayerManager().clear();
             
-            playerUIService = null;
+            // Clear listeners
             joinListener = null;
             outListener = null;
+            chatListener = null;
+            tribulationInputListener = null;
             
             lifecycleManager.disableModule("PlayerSystem");
             plugin.getLogger().info("[PHASE 1] ✓ Player System đã tắt!");
@@ -224,14 +315,32 @@ public class CoreContext {
             plugin.getLogger().info("[PHASE 3] Đang khởi tạo Combat System...");
             
             // Inject NameplateService vao CombatService
-            combatService.setNameplateService(nameplateService);
+            combatContext.getCombatService().setNameplateService(uiContext.getNameplateService());
             
             // Inject NameplateService vao TitleService
-            titleService.setNameplateService(nameplateService);
+            cultivationContext.getTitleService().setNameplateService(uiContext.getNameplateService());
             
             // Register CombatListener
-            combatListener = new PlayerCombatListener(playerManager, combatService);
+            combatListener = new PlayerCombatListener(
+                playerContext.getPlayerManager(), 
+                combatContext.getCombatService()
+            );
             Bukkit.getPluginManager().registerEvents(combatListener, plugin);
+            
+            // Register DeathListener
+            deathListener = new PlayerDeathListener(playerContext.getPlayerManager());
+            Bukkit.getPluginManager().registerEvents(deathListener, plugin);
+            
+            // Init Entity UI Services
+            uiContext.initEntityUI(entityContext.getEntityManager());
+            
+            // Register EntityLifecycleListener (mob spawn/death tracking + nameplate)
+            entityLifecycleListener = new EntityLifecycleListener(
+                entityContext.getEntityManager(),
+                entityContext.getEntityService(),
+                uiContext.getEntityNameplateService()
+            );
+            Bukkit.getPluginManager().registerEvents(entityLifecycleListener, plugin);
             
             lifecycleManager.enableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã sẵn sàng!");
@@ -240,27 +349,117 @@ public class CoreContext {
         lifecycleManager.registerOnDisable(() -> {
             plugin.getLogger().info("[PHASE 3] Đang tắt Combat System...");
             
+            // Clear listeners
             combatListener = null;
+            deathListener = null;
+            entityLifecycleListener = null;
+            
+            // Cleanup entity UI
+            if (uiContext.getEntityNameplateService() != null) {
+                uiContext.getEntityNameplateService().stopAllTasks();
+            }
+            if (uiContext.getEntityDialogService() != null) {
+                uiContext.getEntityDialogService().removeAllDialogs();
+            }
+            
+            // Cleanup entity profiles
+            entityContext.getEntityManager().clear();
             
             lifecycleManager.disableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã tắt!");
         });
     }
     
- 
-    // ===== GETTERS =====
+
+    // ===== GETTERS — SubContext (PRIMARY) =====
+    
+    public PlayerContext getPlayerContext() { return playerContext; }
+    public CombatContext getCombatContext() { return combatContext; }
+    public EntityContext getEntityContext() { return entityContext; }
+    public UIContext getUIContext() { return uiContext; }
+    public CultivationContext getCultivationContext() { return cultivationContext; }
+    
+    // ===== GETTERS — System Level =====
+    
     public Main getPlugin() { return plugin; }
-    public PlayerManager getPlayerManager() { return playerManager; }
-    public LevelService getLevelService() { return levelService; }
-    public PlayerStorage getPlayerStorage() { return playerStorage; }
-    public StatService getStatService() { return statService; }
-    public CombatService getCombatService() { return combatService; }
-    public BreakthroughService getBreakthroughService() { return breakthroughService; }
-    public TitleService getTitleService() { return titleService; }
     public LifecycleManager getLifecycleManager() { return lifecycleManager; }
-    public PlayerUIService getPlayerUIService() { return playerUIService; }
-    public ScoreboardService getScoreboardService() { return scoreboardService; }
-    public NameplateService getNameplateService() { return nameplateService; }
-    public ChatBubbleService getChatBubbleService() { return chatBubbleService; }
-    public BossManager getBossManager() { return bossManager; }
+    
+    // ===== GETTERS — Backward Compatibility (DEPRECATED) =====
+    // De tranh break code cu, giu lai getters
+    // TODO: Thay the dần bang SubContext getters
+    
+    @Deprecated
+    public PlayerManager getPlayerManager() { return playerContext.getPlayerManager(); }
+    
+    @Deprecated
+    public LevelService getLevelService() { return playerContext.getLevelService(); }
+    
+    @Deprecated
+    public PlayerStorage getPlayerStorage() { return playerContext.getPlayerStorage(); }
+    
+    @Deprecated
+    public StatService getStatService() { return playerContext.getStatService(); }
+    
+    @Deprecated
+    public PlayerHealthService getPlayerHealthService() { return playerContext.getPlayerHealthService(); }
+    
+    @Deprecated
+    public CombatService getCombatService() { return combatContext.getCombatService(); }
+    
+    @Deprecated
+    public SoundService getSoundService() { return combatContext.getSoundService(); }
+    
+    @Deprecated
+    public LevelUpEffectService getLevelUpEffectService() { return combatContext.getLevelUpEffectService(); }
+    
+    @Deprecated
+    public DamageEffectService getDamageEffectService() { return combatContext.getDamageEffectService(); }
+    
+    @Deprecated
+    public EventEffectService getEventEffectService() { return combatContext.getEventEffectService(); }
+    
+    @Deprecated
+    public EntityManager getEntityManager() { return entityContext.getEntityManager(); }
+    
+    @Deprecated
+    public EntityRegistry getEntityRegistry() { return entityContext.getEntityRegistry(); }
+    
+    @Deprecated
+    public EntityService getEntityService() { return entityContext.getEntityService(); }
+    
+    @Deprecated
+    public BossManager getBossManager() { return entityContext.getBossManager(); }
+    
+    @Deprecated
+    public BreakthroughService getBreakthroughService() { return cultivationContext.getBreakthroughService(); }
+    
+    @Deprecated
+    public TitleService getTitleService() { return cultivationContext.getTitleService(); }
+    
+    @Deprecated
+    public TribulationService getTribulationService() { return cultivationContext.getTribulationService(); }
+    
+    @Deprecated
+    public PlayerUIService getPlayerUIService() { return uiContext.getPlayerUIService(); }
+    
+    @Deprecated
+    public ScoreboardService getScoreboardService() { return uiContext.getScoreboardService(); }
+    
+    @Deprecated
+    public NameplateService getNameplateService() { return uiContext.getNameplateService(); }
+    
+    @Deprecated
+    public ChatBubbleService getChatBubbleService() { return uiContext.getChatBubbleService(); }
+    
+    @Deprecated
+    public EntityNameplateService getEntityNameplateService() { return uiContext.getEntityNameplateService(); }
+    
+    @Deprecated
+    public EntityDialogService getEntityDialogService() { return uiContext.getEntityDialogService(); }
+    
+    @Deprecated
+    public UiStateService getUiStateService() { return uiContext.getUiStateService(); }
+    
+    @Deprecated
+    public TribulationUI getTribulationUI() { return uiContext.getTribulationUI(); }
 }

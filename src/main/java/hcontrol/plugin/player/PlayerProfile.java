@@ -1,6 +1,7 @@
 package hcontrol.plugin.player;
 
 import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.model.LivingActor;
 import hcontrol.plugin.model.SpiritualRoot;
 import hcontrol.plugin.model.RootQuality;
 import hcontrol.plugin.model.PlayerStats;
@@ -12,12 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class PlayerProfile {
+public class PlayerProfile implements LivingActor {
 
     private final UUID uuid;
     private String playerName;
     private int level;
-    private long exp;
     private int statPoints;
     
     // TU TIEN - Cultivation Realm
@@ -72,7 +72,6 @@ public class PlayerProfile {
         Player player = Bukkit.getPlayer(uuid);
         this.playerName = player != null ? player.getName() : "Unknown";
         this.level = 1;
-        this.exp = 0L;
         this.statPoints = 0;
         this.realm = CultivationRealm.MORTAL;  // bat dau tu Pham Nhan
         this.realmLevel = 1;  // level 1 trong canh gioi
@@ -137,7 +136,7 @@ public class PlayerProfile {
         return Bukkit.getPlayer(uuid);
     }
 
-    // === LEVEL & EXP ===
+    // === LEVEL ===
 
     public int getLevel() {
         return level;
@@ -150,22 +149,6 @@ public class PlayerProfile {
 
     public void addLevel(int amount) {
         setLevel(this.level + amount);
-    }
-
-    public long getExp() {
-        return exp;
-    }
-
-    public void setExp(long exp) {
-        this.exp = exp;
-    }
-
-    public void addExp(long amount) {
-        this.exp += amount;
-    }
-
-    public void removeExp(long amount) {
-        this.exp = Math.max(0, this.exp - amount);
     }
 
     // === STAT POINTS ===
@@ -200,25 +183,27 @@ public class PlayerProfile {
     
     public void setRealm(CultivationRealm realm) {
         this.realm = realm;
+        // Ensure stats level is synced (can affect maxHP calculation)
+        this.stats.setLevel(this.level);
     }
     
     public boolean canBreakthrough() {
-        // Check level du (can dat max level trong realm)
-        if (!realm.canBreakthrough(level)) {
-            return false;
-        }
-        
-        // Check tu vi du (can du cultivation de dot pha)
         CultivationRealm nextRealm = realm.getNext();
         if (nextRealm == null) {
             return false;  // da max realm
         }
         
+        // BAT BUOC LEVEL 10 (Dinh) moi duoc do kiep
+        if (level < realm.getMaxLevelInRealm()) {
+            return false;  // chua max level
+        }
+        
+        // Check tu vi du (can du cultivation de dot pha)
         if (cultivation < nextRealm.getRequiredCultivation()) {
             return false;
         }
         
-        // Check da mo khoa dot pha chua (NEW!)
+        // Check da mo khoa dot pha chua
         return breakthroughUnlocked;
     }
     
@@ -654,4 +639,52 @@ public class PlayerProfile {
     public int getTribulationSurvived() {
         return tribulationSurvived;
     }
+    
+    // ========== LIVING ACTOR IMPLEMENTATION ==========
+    // Cac method da co roi, chi can them @Override cho cac method chua co
+    
+    @Override
+    public UUID getUUID() {
+        return uuid;
+    }
+    
+    @Override
+    public String getDisplayName() {
+        return playerName;
+    }
+    
+    // getRealm(), getLevel(), getCurrentHP(), setCurrentHP(), getCurrentLingQi(), setCurrentLingQi()
+    // DA CO ROI (không cần duplicate)
+    
+    @Override
+    public double getMaxHP() {
+        return stats.getMaxHP();
+    }
+    
+    @Override
+    public double getAttack() {
+        // Tu tien damage DEN TU REALM, khong phai stat
+        // Tra ve base attack de CombatService tinh theo realm
+        int root = stats.getRoot();  // Can Cot
+        return root * 1.5;  // base attack tu can cot
+    }
+    
+    @Override
+    public double getDefense() {
+        return stats.getDefense();
+    }
+    
+    @Override
+    public double getMaxLingQi() {
+        return stats.getMaxLingQi();
+    }
+    
+    // getCurrentLingQi(), setCurrentLingQi() DA CO ROI
+    
+    @Override
+    public org.bukkit.entity.LivingEntity getEntity() {
+        return Bukkit.getPlayer(uuid);
+    }
 }
+
+

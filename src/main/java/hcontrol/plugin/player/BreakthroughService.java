@@ -1,5 +1,6 @@
 package hcontrol.plugin.player;
 
+import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.model.CultivationRealm;
 import org.bukkit.entity.Player;
@@ -144,6 +145,13 @@ public class BreakthroughService {
         profile.setInnerInjury(0.0);
         profile.setTribulationPower(0.0);
         
+        // Sync vanilla health (realm va level thay doi -> maxHP thay doi)
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline()) {
+            var healthService = CoreContext.getInstance().getPlayerHealthService();
+            healthService.syncHealth(player, profile);
+        }
+        
         // Set cooldown ngan (5 phut)
         setCooldown(profile.getUuid(), COOLDOWN_MS);
         
@@ -225,31 +233,57 @@ public class BreakthroughService {
         long cultivationLoss;
         
         if (successRate > 70) {
-            // Nhe
+            // Nhe - lui 1 tang
             result = BreakthroughResult.INTERNAL_INJURY_MINOR;
             injuryAmount = 10 + Math.random() * 10;  // 10-20%
             cultivationLoss = profile.getCultivation() * 30 / 100;  // mat 30% tu vi
             profile.addDaoHeart(-5);  // mat dao tam nhe
+            
+            // Lui 1 tang
+            if (profile.getLevel() > 1) {
+                profile.setLevel(profile.getLevel() - 1);
+            }
         } else if (successRate > 40) {
-            // Trung binh
+            // Trung binh - lui 2-3 tang
             result = BreakthroughResult.INTERNAL_INJURY_MODERATE;
             injuryAmount = 20 + Math.random() * 20;  // 20-40%
             cultivationLoss = profile.getCultivation() * 50 / 100;  // mat 50%
             profile.addDaoHeart(-15);
             profile.addTribulationPower(10);  // thien kiep luc tang
+            
+            // Lui 2-3 tang
+            int newLevel = Math.max(1, profile.getLevel() - 2);
+            profile.setLevel(newLevel);
         } else {
-            // Nang
+            // Nang - lui ve Dinh canh gioi truoc
             result = BreakthroughResult.INTERNAL_INJURY_SEVERE;
             injuryAmount = 40 + Math.random() * 20;  // 40-60%
             cultivationLoss = profile.getCultivation() * 70 / 100;  // mat 70%
             profile.addDaoHeart(-30);
             profile.addTribulationPower(25);
             profile.addKarmaPoints(-10);  // am nghiep
+            
+            // Lui ve Dinh (level 10) canh gioi truoc
+            CultivationRealm previousRealm = profile.getRealm().getPrevious();
+            if (previousRealm != null) {
+                profile.setRealm(previousRealm);
+                profile.setLevel(previousRealm.getMaxLevelInRealm()); // Level 10
+            } else {
+                // Neu khong co realm truoc, chi lui ve tang 1
+                profile.setLevel(1);
+            }
         }
         
         // Apply penalty
         profile.addInnerInjury(injuryAmount);
         profile.setCultivation(profile.getCultivation() - cultivationLoss);
+        
+        // Sync vanilla health (realm/level thay doi -> maxHP thay doi)
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline()) {
+            var healthService = CoreContext.getInstance().getPlayerHealthService();
+            healthService.syncHealth(player, profile);
+        }
         
         // Set cooldown (30 phut)
         setCooldown(profile.getUuid(), FAILURE_COOLDOWN_MS);
@@ -285,6 +319,13 @@ public class BreakthroughService {
         profile.addInnerInjury(60 + Math.random() * 30);  // 60-90% noi thuong
         profile.setDaoHeart(10 + Math.random() * 10);  // dao tam chi con 10-20%
         profile.addKarmaPoints(-50);  // am nghiep nang
+        
+        // Sync vanilla health (tan phe -> maxHP co the thay doi)
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline()) {
+            var healthService = CoreContext.getInstance().getPlayerHealthService();
+            healthService.syncHealth(player, profile);
+        }
         
         // Cooldown cuc dai (7 ngay)
         setCooldown(profile.getUuid(), 7 * 24 * 60 * 60 * 1000L);

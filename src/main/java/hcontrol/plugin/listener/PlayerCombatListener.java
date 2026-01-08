@@ -75,17 +75,80 @@ public class PlayerCombatListener implements Listener {
     
     /**
      * Cancel tat ca damage khac (fall, fire, drown...)
+     * VA sync vanilla damage -> tu tien HP
      */
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
     public void onEntityDamage(EntityDamageEvent event) {
-        // chi cancel damage cua player (giu vanilla cho mob)
+        // chi xu ly player damage
+        if (!(event.getEntity() instanceof Player player)) return;
+        
+        // BO QUA neu la EntityDamageByEntityEvent - da xu ly o tren
+        if (event instanceof EntityDamageByEntityEvent) return;
+        
+        PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile == null) return;
+        
+        // Lay damage tu event (fall, fire, drown, void...)
+        double vanillaDamage = event.getFinalDamage();
+        
+        // Cancel vanilla damage
+        event.setCancelled(true);
+        
+        // Apply damage vao tu tien HP
+        double currentHP = profile.getCurrentHP();
+        double newHP = Math.max(0, currentHP - vanillaDamage);
+        profile.setCurrentHP(newHP);
+        
+        // Sync vanilla health (scale)
+        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+        healthService.updateCurrentHealth(player, profile);
+        
+        // Check chet
+        if (newHP <= 0) {
+            player.setHealth(0);
+        }
+        
+        // Feedback message (optional)
+        String causeMsg = switch(event.getCause()) {
+            case FALL -> "§cRơi từ cao";
+            case FIRE, FIRE_TICK, LAVA -> "§6Lửa";
+            case DROWNING -> "§9Đuối nước";
+            case SUFFOCATION -> "§7Ngạt";
+            case VOID -> "§5Hư không";
+            default -> "§cSát thương";
+        };
+        
+        player.sendActionBar(String.format("§c-%.1f HP §7| %s §7| §c%.0f§7/§e%d", 
+            vanillaDamage, causeMsg, newHP, profile.getStats().getMaxHP()));
+    }
+    
+    /**
+     * TAT HUNGER VANILLA - sau nay lam thanh co che tu tien
+     * Tu si khong can an uong, chi can linh khi
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onFoodLevelChange(org.bukkit.event.entity.FoodLevelChangeEvent event) {
         if (event.getEntity() instanceof Player) {
-            if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK &&
-                event.getCause() != EntityDamageEvent.DamageCause.ENTITY_SWEEP_ATTACK &&
-                event.getCause() != EntityDamageEvent.DamageCause.PROJECTILE) {
-                // fall, fire, drown... van giu vanilla
-                // sau nay co the lam custom
-            }
+            event.setCancelled(true);
+            // TODO PHASE 4: Replace voi co che Linh Khi / Tu Luyen
+            // - An dan duoc: tang Linh Khi
+            // - Thien dinh: hoi phuc Linh Khi
+            // - Doi = het Linh Khi
+        }
+    }
+    
+    /**
+     * TAT VANILLA HEALTH REGENERATION
+     * Tu tien HP khong hoi phuc tu dong tu hunger
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onEntityRegainHealth(org.bukkit.event.entity.EntityRegainHealthEvent event) {
+        if (!(event.getEntity() instanceof Player)) return;
+        
+        // Chi tat regen tu hunger/saturation, giu lai healing khac (dan duoc, skill...)
+        if (event.getRegainReason() == org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.SATIATED) {
+            event.setCancelled(true);
+            // TODO PHASE 4: Tu tien HP chi hoi tu dan duoc, thien dinh, linh thach...
         }
     }
     

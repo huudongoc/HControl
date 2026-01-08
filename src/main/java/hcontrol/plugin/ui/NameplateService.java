@@ -53,10 +53,12 @@ public class NameplateService {
             titleDisplay = profile.getActiveTitle().getIcon();
         }
         
-        // Format: [Title Icon] [Realm] Lv.XX ❤ HP% PlayerName
+        // Tier name (Ha/Trung/Thuong/Dinh)
+        String tierName = getTierName(level);
+        
+        // Format: [Title Icon] [Realm Tier] ❤ HP% PlayerName (KHONG hien thi level so)
         String prefix = titleDisplay + 
-                       realm.getColor() + "[" + realm.getDisplayName() + "] " +
-                       "§7Lv." + level + " " +
+                       realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
                        hpColor + "❤ " + String.format("%.0f", hpPercent) + "% §f";
         
         // Set vao scoreboard team (khong lam mat custom name)
@@ -115,5 +117,15 @@ public class NameplateService {
                 otherTeam.unregister();
             }
         }
+    }
+    
+    /**
+     * Lay tier name tu level
+     */
+    private String getTierName(int level) {
+        if (level <= 3) return "§7Hạ";
+        if (level <= 6) return "§eTrung";
+        if (level <= 9) return "§6Thượng";
+        return "§cĐỉnh";
     }
 }

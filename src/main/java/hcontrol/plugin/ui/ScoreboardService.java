@@ -18,7 +18,7 @@ public class ScoreboardService {
     
     public ScoreboardService(PlayerManager playerManager) {
         this.playerManager = playerManager;
-        this.levelService = new LevelService();
+        this.levelService = hcontrol.plugin.core.CoreContext.getInstance().getLevelService();
     }
     
     /**
@@ -68,30 +68,30 @@ public class ScoreboardService {
         
         int line = 15;
         
-        // realm
+        // realm + tier (KHONG hien thi level so)
         obj.getScore("§7§m━━━━━━━━━━━━━").setScore(line--);
-        obj.getScore("§f⚡ " + profile.getRealm().toString()).setScore(line--);
-        obj.getScore("§7Canh gioi: " + profile.getRealm().getDisplayName()).setScore(line--);
+        String tierName = getTierName(profile.getLevel());
+        obj.getScore("§f⚡ " + profile.getRealm().getDisplayName() + " " + tierName).setScore(line--);
         
-        // level & exp
+        // tu vi progress (KHONG hien thi level so)
         obj.getScore(" ").setScore(line--);
         int maxLevel = getMaxLevel(profile);
-        obj.getScore("§fCap do: §e" + profile.getLevel() + "§7/§e" + maxLevel).setScore(line--);
-        
-        double expPercent = profile.getLevel() < maxLevel 
+        double cultPercent = profile.getLevel() < maxLevel 
             ? (double) profile.getCultivation() / levelService.getRequiredCultivation(profile.getLevel() + 1, profile.getRealm()) * 100 
             : 100.0;
-        obj.getScore("§fKinh nghiem: §a" + String.format("%.1f%%", expPercent)).setScore(line--);
+        obj.getScore("§fTu vi: §a" + String.format("%.1f%%", cultPercent)).setScore(line--);
         
-        // HP & Linh Khi
+        // Sinh Mang & Linh Khi
         obj.getScore("  ").setScore(line--);
-        obj.getScore("§c❤ §fHP: §c" + profile.getCurrentHP() + "§7/§c" + profile.getStats().getMaxHP()).setScore(line--);
-        obj.getScore("§9✦ §fLinh Khi: §9" + profile.getCurrentLingQi() + "§7/§9" + profile.getStats().getMaxLingQi()).setScore(line--);
+        obj.getScore("§c❤ §fSinh Mang: §c" + String.format("%.0f", profile.getCurrentHP()) + "§7/§c" + profile.getStats().getMaxHP()).setScore(line--);
+        obj.getScore("§9✦ §fLinh Khi: §9" + String.format("%.0f", profile.getCurrentLingQi()) + "§7/§9" + profile.getStats().getMaxLingQi()).setScore(line--);
         
-        // LOAI BO combat stats RPG cu - chi hien thi defense
+        // Stats tu tien (5 stat chinh)
         obj.getScore("   ").setScore(line--);
-        obj.getScore("§7§m━━━━━━━━━━━━━").setScore(line--);
-        obj.getScore("§fPhong Thu: §b" + String.format("%.0f", profile.getStats().getDefense())).setScore(line--);
+        obj.getScore("§7─────────────").setScore(line--);
+        obj.getScore("§fCC:§a" + profile.getStats().getRoot() + " §7| §fLL:§b" + profile.getStats().getSpirit()).setScore(line--);
+        obj.getScore("§fTP:§c" + profile.getStats().getPhysique() + " §7| §fNT:§e" + profile.getStats().getComprehension()).setScore(line--);
+        obj.getScore("§fKV:§6" + profile.getStats().getFortune()).setScore(line--);
         
         // stat points
         if (profile.getStatPoints() > 0) {
@@ -104,9 +104,27 @@ public class ScoreboardService {
      * Lay max level dua vao realm
      */
     private int getMaxLevel(PlayerProfile profile) {
-        var nextRealm = profile.getRealm().getNext();
-        if (nextRealm == null) return 9999; // max realm
-        return nextRealm.getRequiredLevel() - 1;
+        return getMaxLevelForRealm(profile.getRealm());
+    }
+    
+    private int getMaxLevelForRealm(hcontrol.plugin.model.CultivationRealm realm) {
+        switch(realm) {
+            case MORTAL: return 10;
+            case QI_REFINING: return 9;
+            case FOUNDATION: return 9;
+            case GOLDEN_CORE: return 9;
+            default: return 10;
+        }
+    }
+    
+    /**
+     * Lay tier name tu level
+     */
+    private String getTierName(int level) {
+        if (level <= 3) return "§7Hạ";
+        if (level <= 6) return "§eTrung";
+        if (level <= 9) return "§6Thượng";
+        return "§cĐỉnh";
     }
     
     /**

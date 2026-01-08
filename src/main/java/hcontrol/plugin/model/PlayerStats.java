@@ -18,11 +18,11 @@ public class PlayerStats {
     
     private void initDefaultStats() {
         // stat mac dinh tu tien (Pham Nhan)
-        statContainer.setBase(StatType.ROOT, 2);
-        statContainer.setBase(StatType.SPIRIT, 2);
-        statContainer.setBase(StatType.PHYSIQUE, 2);
-        statContainer.setBase(StatType.COMPREHENSION, 2);
-        statContainer.setBase(StatType.FORTUNE, 2);
+        statContainer.setBase(StatType.CAN_COT, 2);
+        statContainer.setBase(StatType.LINH_LUC, 2);
+        statContainer.setBase(StatType.THE_PHACH, 2);
+        statContainer.setBase(StatType.NGO_TINH, 2);
+        statContainer.setBase(StatType.KHI_VAN, 2);
     }
     
     // === LEVEL ===
@@ -38,23 +38,23 @@ public class PlayerStats {
     // === PRIMARY STAT (TU TIEN STATS) ===
     
     public int getRoot() {
-        return statContainer.getTotal(StatType.ROOT);
+        return statContainer.getTotal(StatType.CAN_COT);
     }
     
     public int getSpirit() {
-        return statContainer.getTotal(StatType.SPIRIT);
+        return statContainer.getTotal(StatType.LINH_LUC);
     }
     
     public int getPhysique() {
-        return statContainer.getTotal(StatType.PHYSIQUE);
+        return statContainer.getTotal(StatType.THE_PHACH);
     }
     
     public int getComprehension() {
-        return statContainer.getTotal(StatType.COMPREHENSION);
+        return statContainer.getTotal(StatType.NGO_TINH);
     }
     
     public int getFortune() {
-        return statContainer.getTotal(StatType.FORTUNE);
+        return statContainer.getTotal(StatType.KHI_VAN);
     }
     
     // backward compatible (old names)
@@ -76,12 +76,12 @@ public class PlayerStats {
     
     public int getMaxHP() {
         int phy = getPhysique();  // The Phach
-        return phy * 15 + level * 10;  // tang them HP cho tu tien
+        return phy * 15 + level * 10;  // tu tien: the phach -> sinh mang
     }
     
-    public int getMaxLingQi() {  // Linh Khi thay Mana
+    public int getMaxLingQi() {  // Linh Khi (thay Mana)
         int spr = getSpirit();  // Linh Luc
-        return spr * 12 + level * 5;
+        return spr * 12 + level * 5;  // tu tien: linh luc -> linh khi
     }
     
     public int getMaxMana() {  // backward compatible
@@ -112,7 +112,7 @@ public class PlayerStats {
     @Override
     public String toString() {
         return String.format(
-            "§7[§eLv%d§7] §fCan Cot:§a%d §fLinh Luc:§a%d §fThe Phach:§a%d §fNgo Tinh:§a%d §fKhi Van:§a%d",
+            "§7[§eLv%d§7] CC:§a%d LL:§a%d TP:§a%d NT:§a%d KV:§a%d",
             level, getRoot(), getSpirit(), getPhysique(), getComprehension(), getFortune()
         );
     }
@@ -123,12 +123,12 @@ public class PlayerStats {
             §7§m--------------------
             §e§lTHUỘC TÍNH TU TIÊN §7(Lv%d)
             §7Cơ bản:
-              §fCăn Cốt: §a%d §7| §fLinh Lực: §a%d
-              §fThể Phách: §a%d §7| §fNgộ Tính: §a%d
-              §fKhí Vận: §a%d
+              §fCC (Căn Cốt): §a%d §7| §fLL (Linh Lực): §a%d
+              §fTP (Thể Phách): §a%d §7| §fNT (Ngộ Tính): §a%d
+              §fKV (Khí Vận): §a%d
             §7Chiến đấu:
-              §fSinh Mạng: §c%d §7| §fLinh Khí: §9%d
-              §fPhòng Ngự: §e%.1f
+              §fSM (Sinh Mạng): §c%d §7| §fLK (Linh Khí): §9%d
+              §fPN (Phòng Ngự): §e%.1f
             §7§m--------------------
             """,
             level,

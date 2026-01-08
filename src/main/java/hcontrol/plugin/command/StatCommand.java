@@ -44,12 +44,12 @@ public class StatCommand implements CommandExecutor {
             StatType type = statService.parseStatType(args[1]);
             if (type == null) {
                 player.sendMessage("§cStat khong hop le: " + args[1]);
-                player.sendMessage("§7Co the dung: STR, AGI, INT, VIT, LCK");
+                player.sendMessage("§7Co the dung: CC (Can Cot), LL (Linh Luc), TP (The Phach), NT (Ngo Tinh), KV (Khi Van)");
                 return true;
             }
             
             if (!type.isPrimary()) {
-                player.sendMessage("§cChi them duoc primary stat (STR/AGI/INT/VIT/LCK)");
+                player.sendMessage("§cChi them duoc primary stat (CC/LL/TP/NT/KV)");
                 return true;
             }
             
@@ -74,11 +74,18 @@ public class StatCommand implements CommandExecutor {
             player.sendMessage("§a+§e" + amount + " §f" + type.getShortName());
             player.sendMessage("§7Stat point con lai: §f" + profile.getStatPoints());
             
+            // Sync vanilla health neu them The Phach (maxHP tang)
+            if (type == hcontrol.plugin.stats.StatType.THE_PHACH) {
+                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+                healthService.syncHealth(player, profile);
+            }
+            
             return true;
         }
 
         // sai cu phap
-        player.sendMessage("§cCu phap: /stat [add <STR|AGI|INT|VIT|LCK> <so luong>]");
+        player.sendMessage("§cCu phap: /stat [add <CC|LL|TP|NT|KV> <so luong>]");
+        player.sendMessage("§7CC=Can Cot, LL=Linh Luc, TP=The Phach, NT=Ngo Tinh, KV=Khi Van");
         return true;
     }
 }

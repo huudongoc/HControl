@@ -28,9 +28,16 @@ public class ActionBarService {
                         NamedTextColor.WHITE
                 ))
                 .append(Component.text("   ✦   ", NamedTextColor.DARK_GRAY))
-                .append(Component.text("Lv. " + status.getLevel(), NamedTextColor.GOLD))
+                .append(Component.text(getTierName(status.getLevel()), NamedTextColor.GOLD))
                 .build();
 
         player.sendActionBar(bar);
+    }
+    
+    private String getTierName(int level) {
+        if (level <= 3) return "Hạ";
+        if (level <= 6) return "Trung";
+        if (level <= 9) return "Thượng";
+        return "Đỉnh";
     }
 }

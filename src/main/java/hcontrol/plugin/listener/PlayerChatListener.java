@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.plugin.Plugin;
 
 /**
  * CHAT LISTENER
@@ -14,9 +15,11 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 public class PlayerChatListener implements Listener {
     
     private final ChatBubbleService chatBubbleService;
+    private final Plugin plugin;
     
-    public PlayerChatListener(ChatBubbleService chatBubbleService) {
+    public PlayerChatListener(ChatBubbleService chatBubbleService, Plugin plugin) {
         this.chatBubbleService = chatBubbleService;
+        this.plugin = plugin;
     }
     
     @EventHandler(priority = EventPriority.MONITOR)
@@ -33,7 +36,7 @@ public class PlayerChatListener implements Listener {
         
         // Run sync vi armor stand phai spawn tren main thread
         org.bukkit.Bukkit.getScheduler().runTask(
-            org.bukkit.Bukkit.getPluginManager().getPlugin("HControl"),
+            plugin,
             () -> chatBubbleService.showChatBubble(player, "§f" + bubbleText)
         );
     }

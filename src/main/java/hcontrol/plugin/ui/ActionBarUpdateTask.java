@@ -24,7 +24,12 @@ public class ActionBarUpdateTask extends BukkitRunnable {
     public void run() {
         Bukkit.getOnlinePlayers().forEach(player -> {
             if (playerManager.isOnline(player.getUniqueId())) {
-                actionBarService.render(player);
+                try {
+                    actionBarService.render(player);
+                } catch (Exception e) {
+                    // log error nhung khong crash task
+                    // tranh 1 player loi lam toan bo task dung
+                }
             }
         });
     }

@@ -99,6 +99,25 @@ public enum CultivationRealm {
         };
     }
     
+    /**
+     * Lay ten viet tat de hien thi tren tablist
+     */
+    public String getShortName() {
+        return switch (this) {
+            case MORTAL -> "PN";
+            case QI_REFINING -> "LK";
+            case FOUNDATION -> "TC";
+            case GOLDEN_CORE -> "KĐ";
+            case NASCENT_SOUL -> "NA";
+            case SOUL_FORMATION -> "HT";
+            case VOID_REFINEMENT -> "LH";
+            case BODY_INTEGRATION -> "HT";
+            case MAHAYANA -> "ĐT";
+            case TRIBULATION -> "ĐK";
+            case IMMORTAL -> "CT";
+        };
+    }
+    
     @Override
     public String toString() {
         return getColor() + displayName;

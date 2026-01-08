@@ -316,7 +316,84 @@ DELETED (dead code):
 
 ---
 
-## 🎯 NEXT STEPS
+## 🐛 BUG FIXES POST-REFACTOR
+
+**Ngày:** 2026-01-08  
+**Bugs reported:**
+1. ❌ "đánh vào player vẫn hiện thêm Luyện khí 4 100%" (nameplate flash)
+2. ❌ "ui tab không cập nhật máu rồi" (tablist HP not updating)
+3. ❌ "có người bị tên trắng không hiện gì" (white names)
+
+### Fix #1: White Names ✅
+**Nguyên nhân:** JoinServerListener gọi `updateNameplate(player)` không có `force=true` → throttle 500ms chặn update
+
+**Fix:**
+```java
+// JoinServerListener.java line 68, 75
+nameplateService.updateNameplate(player, true); // force bypass throttle
+```
+
+### Fix #2: TabList HP Not Updating ✅
+**Nguyên nhân:** PlayerHealthService KHÔNG set tablist display name
+
+**Fix:**
+- Thêm `updateTabListName()` method vào PlayerHealthService
+- Call `updateTabListName()` sau mỗi lần updateCurrentHealth()
+- Format: `§f§7[LK] §fPlayerName §a❤ 85%`
+- Add `getShortName()` vào CultivationRealm enum
+
+**Files changed:**
+- [PlayerHealthService.java](d:\Code\Plugin\HControl\src\main\java\hcontrol\plugin\player\PlayerHealthService.java) - +35 lines
+- [CultivationRealm.java](d:\Code\Plugin\HControl\src\main\java\hcontrol\plugin\model\CultivationRealm.java) - +getShortName()
+
+### Fix #3: Nameplate Flash ✅
+**Nguyên nhân:** 
+- EntityNameplateService **KHÔNG CÓ THROTTLE** → update mỗi hit trong combat
+- Floating damage text (ArmorStand spawn Y+2.2) gây hiểu lầm
+- User nhầm Entity nameplate với Player nameplate
+
+**Investigation:**
+- ✅ Checked ALL `updateNameplate()` calls (15 matches)
+- ✅ **NO CODE** updates player nameplate in combat
+- ✅ CombatService: Only updates entity nameplate, NOT player
+- ✅ PlayerCombatListener: No nameplate update
+- ✅ DamageEffectService: Floating damage chỉ hiển thị số damage, KHÔNG có realm/level
+
+**Root Cause:**
+- Line 145-155 CombatService: Gọi `entityNameplateService.updateNameplate()` mỗi hit
+- EntityNameplateService.updateNameplate() public method KHÔNG CÓ throttle
+- → Entity (mob/boss) nameplate update liên tục → flash spam
+
+**Fix:**
+1. **Tăng Player nameplate throttle:** 500ms → 1000ms (1 giây)
+2. **Add Entity nameplate throttle:** Thêm throttle map (1 giây cooldown)
+3. **Add force parameter:** `updateNameplate(entity, profile, boolean force)`
+4. **Update enableNameplate():** Dùng force=true để bypass throttle khi init/task
+5. **Combat update:** Không force → throttle sẽ skip nếu quá nhanh
+
+**Files changed:**
+- [NameplateService.java](d:\Code\Plugin\HControl\src\main\java\hcontrol\plugin\ui\NameplateService.java) - throttle 500ms → 1000ms
+- [EntityNameplateService.java](d:\Code\Plugin\HControl\src\main\java\hcontrol\plugin\ui\EntityNameplateService.java) - +throttle system
+- [CombatService.java](d:\Code\Plugin\HControl\src\main\java\hcontrol\plugin\service\CombatService.java) - +debug comments
+
+**Kết quả:**
+```java
+// BEFORE: No throttle - update mỗi hit
+updateNameplate(entity, profile); // spam update → flash
+
+// AFTER: Throttle 1 giây
+private final Map<UUID, Long> lastUpdateTime = new HashMap<>();
+private static final long UPDATE_COOLDOWN_MS = 1000;
+
+updateNameplate(entity, profile, false); // combat update - có throttle
+updateNameplate(entity, profile, true);  // force - bypass throttle (init/task)
+```
+
+**Build:** ✅ SUCCESS
+
+---
+
+## 📊 TIẾN ĐỘ TỔNG (FINAL + BUGFIX)
 
 **Testing Plan:**
 1. In-game testing (PvP, PvE, Tribulation, nameplate)

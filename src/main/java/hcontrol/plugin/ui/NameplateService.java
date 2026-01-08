@@ -8,6 +8,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 /**
  * NAMEPLATE SERVICE
  * Hien thi ten, level, realm, danh hieu tren dau player/boss
@@ -15,17 +19,37 @@ import org.bukkit.scoreboard.Team;
 public class NameplateService {
     
     private final PlayerManager playerManager;
+    private final Map<UUID, Long> lastUpdateTime = new HashMap<>();
+    private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay - tranh flash // 0.5s cooldown
     
     public NameplateService(PlayerManager playerManager) {
         this.playerManager = playerManager;
     }
     
     /**
-     * Update nameplate cho player
+     * Update nameplate cho player (voi cooldown de tranh spam)
      */
     public void updateNameplate(Player player) {
+        updateNameplate(player, false);
+    }
+    
+    /**
+     * Update nameplate cho player
+     * @param force true = bo qua cooldown, false = check cooldown
+     */
+    public void updateNameplate(Player player, boolean force) {
         PlayerProfile profile = playerManager.get(player.getUniqueId());
         if (profile == null) return;
+        
+        // Check cooldown (neu khong force)
+        if (!force) {
+            long now = System.currentTimeMillis();
+            Long lastUpdate = lastUpdateTime.get(player.getUniqueId());
+            if (lastUpdate != null && (now - lastUpdate) < UPDATE_COOLDOWN_MS) {
+                return; // skip update (qua nhanh)
+            }
+            lastUpdateTime.put(player.getUniqueId(), now);
+        }
         
         CultivationRealm realm = profile.getRealm();
         int level = profile.getLevel();

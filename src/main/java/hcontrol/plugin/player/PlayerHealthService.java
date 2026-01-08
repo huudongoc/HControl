@@ -72,5 +72,42 @@ public class PlayerHealthService {
         if (currentHP != profile.getCurrentHP()) {
             profile.setCurrentHP(currentHP);
         }
+        
+        // Sync tablist display name (HP hien thi tren tab)
+        updateTabListName(player, profile);
+    }
+    
+    /**
+     * Update tablist display name voi HP hien tai
+     * Format: [Realm] PlayerName HP%
+     */
+    private void updateTabListName(Player player, PlayerProfile profile) {
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getStats().getMaxHP();
+        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
+        
+        // Mau sac HP theo %
+        String hpColor;
+        if (hpPercent >= 75) {
+            hpColor = "§a";  // xanh la
+        } else if (hpPercent >= 50) {
+            hpColor = "§e";  // vang
+        } else if (hpPercent >= 25) {
+            hpColor = "§6";  // cam
+        } else {
+            hpColor = "§c";  // do
+        }
+        
+        // Format: [LK] PlayerName ❤ 85%
+        String realmShort = profile.getRealm().getShortName();
+        String displayName = String.format("%s§7[%s] §f%s %s❤ %.0f%%",
+            profile.getRealm().getColor(),
+            realmShort,
+            player.getName(),
+            hpColor,
+            hpPercent
+        );
+        
+        player.setPlayerListName(displayName);
     }
 }

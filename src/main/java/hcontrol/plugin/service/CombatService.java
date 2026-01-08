@@ -94,9 +94,16 @@ public class CombatService {
         
         LivingEntity defenderEntity = defender.getEntity();
         if (defenderEntity != null) {
-            double healthPercent = newHP / defender.getMaxHP();
-            double vanillaHealth = defenderEntity.getMaxHealth() * healthPercent;
-            defenderEntity.setHealth(Math.max(0.1, vanillaHealth));
+            // Neu la Player - dung PlayerHealthService de sync tablist
+            if (defenderEntity instanceof Player defenderPlayer && defender instanceof PlayerProfile playerProfile) {
+                var healthService = CoreContext.getInstance().getPlayerHealthService();
+                healthService.updateCurrentHealth(defenderPlayer, playerProfile);
+            } else {
+                // Neu la Entity - sync vanilla health percent
+                double healthPercent = newHP / defender.getMaxHP();
+                double vanillaHealth = defenderEntity.getMaxHealth() * healthPercent;
+                defenderEntity.setHealth(Math.max(0.1, vanillaHealth));
+            }
             
             // Check chet
             if (newHP <= 0) {
@@ -121,25 +128,24 @@ public class CombatService {
         
         // ActionBar feedback cho attacker (neu la player)
         if (attackerEntity instanceof Player attackerPlayer) {
-            attackerPlayer.sendActionBar(String.format("§e⚔ %.1f §7| %s §7| §c%.0f§7/§e%.0f HP", 
+            attackerPlayer.sendActionBar(String.format("§e⚔ %.1f §7→ %s §7| §c%.0f§7/§e%.0f HP", 
                 damage, defender.getDisplayName(), newHP, defender.getMaxHP()));
         }
         
         // ActionBar feedback cho defender (neu la player)
         if (defenderEntity instanceof Player defenderPlayer) {
-            defenderPlayer.sendActionBar(String.format("§c-%.1f HP §7| %s §7[%s] | §c%.0f§7/§e%.0f", 
-                damage, attacker.getDisplayName(), attacker.getRealm().getDisplayName(),
+            // NOTE: CHI HIEN THI DAMAGE, KHONG HIEN THI REALM/LEVEL
+            // Neu user thay "flash" realm/level - KHONG PHAI TU DAY
+            defenderPlayer.sendActionBar(String.format("§c-%.1f HP §7← %s §7| §c%.0f§7/§e%.0f", 
+                damage, attacker.getDisplayName(),
                 newHP, defender.getMaxHP()));
         }
         
-        // Update nameplate (neu co)
-        if (defenderEntity instanceof Player defenderPlayer) {
-            // Player nameplate
-            if (nameplateService != null) {
-                nameplateService.updateNameplate(defenderPlayer);
-            }
-        } else if (defenderEntity != null && !(defenderEntity instanceof Player)) {
-            // Entity nameplate
+        // Update nameplate cho Entity (mob/boss) - KHONG update cho Player de tranh flash
+        // NOTE: Entity nameplate update MỖI HIT de hien thi HP realtime
+        // Neu user thay "flash" nameplate - co the do Entity nameplate, KHONG phai Player
+        if (defenderEntity != null && !(defenderEntity instanceof Player)) {
+            // Entity nameplate - chi update neu HP thay doi >5% (tranh spam)
             var entityNameplateService = CoreContext.getInstance().getEntityNameplateService();
             if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
                 Bukkit.getScheduler().runTask(plugin, () -> {

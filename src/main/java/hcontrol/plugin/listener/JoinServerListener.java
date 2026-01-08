@@ -64,8 +64,18 @@ public class JoinServerListener implements Listener {
         // create scoreboard ben phai
         scoreboardService.createScoreboard(player);
         
-        // update nameplate tren dau
-        nameplateService.updateNameplate(player);
+        // update nameplate tren dau (force bypass throttle)
+        nameplateService.updateNameplate(player, true);
+        
+        // Force update UI sau 1 tick de dam bao HP da sync xong
+        org.bukkit.Bukkit.getScheduler().runTaskLater(
+            hcontrol.plugin.core.CoreContext.getInstance().getPlugin(),
+            () -> {
+                scoreboardService.updateScoreboard(player);
+                nameplateService.updateNameplate(player, true); // force bypass throttle
+            },
+            1L
+        );
         
         // UI
         event.setJoinMessage(null);

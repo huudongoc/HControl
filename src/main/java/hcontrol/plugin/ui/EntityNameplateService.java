@@ -23,6 +23,8 @@ public class EntityNameplateService {
     private final EntityManager entityManager;
     private final Plugin plugin;
     private final Map<UUID, BukkitTask> updateTasks = new HashMap<>();
+    private final Map<UUID, Long> lastUpdateTime = new HashMap<>(); // throttle map
+    private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay throttle (giong Player)
     
     public EntityNameplateService(EntityManager entityManager, Plugin plugin) {
         this.entityManager = entityManager;
@@ -60,8 +62,8 @@ public class EntityNameplateService {
             oldTask.cancel();
         }
         
-        // Update nameplate ngay voi profile DA UPDATE
-        updateNameplate(entity, profile);
+        // Update nameplate ngay voi profile DA UPDATE (force bypass throttle)
+        updateNameplate(entity, profile, true);
         
         // Task tu dong update moi 100 ticks (5 giay) - tranh spam lag
         BukkitTask task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
@@ -76,7 +78,8 @@ public class EntityNameplateService {
                 return;
             }
             
-            updateNameplate(entity, currentProfile);
+            // Auto update task - force bypass throttle
+            updateNameplate(entity, currentProfile, true);
         }, 100L, 100L);
         
         // ADD TASK VAO MAP de co the cancel sau nay
@@ -87,10 +90,15 @@ public class EntityNameplateService {
      * Disable nameplate va stop update task
      */
     public void disableNameplate(LivingEntity entity) {
-        BukkitTask task = updateTasks.remove(entity.getUniqueId());
+        UUID uuid = entity.getUniqueId();
+        
+        BukkitTask task = updateTasks.remove(uuid);
         if (task != null) {
             task.cancel();
         }
+        
+        // Cleanup throttle map
+        lastUpdateTime.remove(uuid);
         
         // Reset entity name
         entity.setCustomName(null);
@@ -99,8 +107,28 @@ public class EntityNameplateService {
     
     /**
      * Update nameplate display (public de CombatService goi khi bi danh)
+     * Co throttle de tranh flash spam (1 giay cooldown)
      */
     public void updateNameplate(LivingEntity entity, EntityProfile profile) {
+        updateNameplate(entity, profile, false);
+    }
+    
+    /**
+     * Update nameplate voi force option
+     * @param force true = bo qua throttle, false = check cooldown
+     */
+    public void updateNameplate(LivingEntity entity, EntityProfile profile, boolean force) {
+        UUID uuid = entity.getUniqueId();
+        
+        // Check cooldown (neu khong force)
+        if (!force) {
+            long now = System.currentTimeMillis();
+            Long lastUpdate = lastUpdateTime.get(uuid);
+            if (lastUpdate != null && (now - lastUpdate) < UPDATE_COOLDOWN_MS) {
+                return; // skip update - qua nhanh (tranh flash)
+            }
+            lastUpdateTime.put(uuid, now);
+        }
         // Tinh % HP
         double currentHP = profile.getCurrentHP();
         double maxHP = profile.getMaxHP();
@@ -154,5 +182,6 @@ public class EntityNameplateService {
             }
         }
         updateTasks.clear();
+        lastUpdateTime.clear(); // cleanup throttle map
     }
 }

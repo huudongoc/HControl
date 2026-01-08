@@ -20,7 +20,10 @@ public class NameplateService {
     
     private final PlayerManager playerManager;
     private final Map<UUID, Long> lastUpdateTime = new HashMap<>();
-    private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay - tranh flash // 0.5s cooldown
+    private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay - tranh flash
+    
+    // Cache prefix de tranh update neu khong thay doi
+    private final Map<UUID, String> lastPrefix = new HashMap<>(); // 0.5s cooldown
     
     public NameplateService(PlayerManager playerManager) {
         this.playerManager = playerManager;
@@ -41,14 +44,16 @@ public class NameplateService {
         PlayerProfile profile = playerManager.get(player.getUniqueId());
         if (profile == null) return;
         
+        UUID uuid = player.getUniqueId();
+        
         // Check cooldown (neu khong force)
         if (!force) {
             long now = System.currentTimeMillis();
-            Long lastUpdate = lastUpdateTime.get(player.getUniqueId());
+            Long lastUpdate = lastUpdateTime.get(uuid);
             if (lastUpdate != null && (now - lastUpdate) < UPDATE_COOLDOWN_MS) {
                 return; // skip update (qua nhanh)
             }
-            lastUpdateTime.put(player.getUniqueId(), now);
+            lastUpdateTime.put(uuid, now);
         }
         
         CultivationRealm realm = profile.getRealm();
@@ -85,6 +90,13 @@ public class NameplateService {
                        realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
                        hpColor + "❤ " + String.format("%.0f", hpPercent) + "% §f";
         
+        // CHECK NEU PREFIX KHONG THAY DOI - SKIP UPDATE (tranh flash)
+        String cachedPrefix = lastPrefix.get(uuid);
+        if (cachedPrefix != null && cachedPrefix.equals(prefix)) {
+            return; // khong thay doi - skip
+        }
+        lastPrefix.put(uuid, prefix);
+        
         // Set vao scoreboard team (khong lam mat custom name)
         Scoreboard scoreboard = player.getScoreboard();
         Team team = scoreboard.getTeam(player.getName());
@@ -97,6 +109,9 @@ public class NameplateService {
         team.setPrefix(prefix);
         
         // Cho player khac nhin thay
+        // NOTE: Loop nay cap nhat scoreboard cua TAT CA PLAYER ONLINE
+        // → Throttle chi check UUID cua player duoc update, KHONG check player nao dang nhin thay
+        // → Co the gay "flash" neu nhieu player update lien tiep (vi moi player cap nhat scoreboard cua tat ca)
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             
@@ -125,6 +140,12 @@ public class NameplateService {
      * Remove nameplate khi quit
      */
     public void removeNameplate(Player player) {
+        UUID uuid = player.getUniqueId();
+        
+        // Cleanup cache
+        lastUpdateTime.remove(uuid);
+        lastPrefix.remove(uuid);
+        
         Scoreboard scoreboard = player.getScoreboard();
         Team team = scoreboard.getTeam(player.getName());
         if (team != null) {

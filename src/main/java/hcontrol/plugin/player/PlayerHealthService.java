@@ -46,6 +46,9 @@ public class PlayerHealthService {
         if (currentHP != profile.getCurrentHP()) {
             profile.setCurrentHP(currentHP);
         }
+        
+        // Sync tablist display name (HP hien thi tren tab)
+        updateTabListName(player, profile);
     }
     
     /**

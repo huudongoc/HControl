@@ -97,32 +97,9 @@ public class PlayerCombatListener implements Listener {
         // Cancel vanilla damage
         disableDameService.cancelAllDamage(event);
         
-        // Apply damage vao tu tien HP
-        double currentHP = profile.getCurrentHP();
-        double newHP = Math.max(0, currentHP - (vanillaDamage * 0.5));    // -50% damage của vali (tu tien HP) -> 100% damage của tu tien HP;
-        profile.setCurrentHP(newHP);
-        
-        // Sync vanilla health (scale)
-        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
-        healthService.updateCurrentHealth(player, profile);
-        
-        // Check chet
-        if (newHP <= 0) {
-            player.setHealth(0);
-        }
-        
-        // Feedback message (optional)
-        String causeMsg = switch(event.getCause()) {
-            case FALL -> "§cRơi từ cao";
-            case FIRE, FIRE_TICK, LAVA -> "§6Lửa";
-            case DROWNING -> "§9Đuối nước";
-            case SUFFOCATION -> "§7Ngạt";
-            case VOID -> "§5Hư không";
-            default -> "§cSát thương";
-        };
-        
-        player.sendActionBar(String.format("§c-%.1f HP §7| %s §7| §c%.0f§7/§e%d", 
-            vanillaDamage, causeMsg, newHP, profile.getStats().getMaxHP()));
+        // Delegate damage calculation to CombatService
+        String damageMessage = combatService.handleEnvironmentalDamage(player, profile, vanillaDamage, event.getCause());
+        player.sendActionBar(damageMessage);
     }
     
     /**

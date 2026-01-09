@@ -48,9 +48,15 @@ public class StatService {
         profile.getStats().addPrimaryStat(type, amount);
         profile.removeStatPoints(amount);
         
-        // update scoreboard ngay
+        // Sync vanilla health neu them The Phach (maxHP tang)
         var player = profile.getPlayer();
         if (player != null && player.isOnline()) {
+            if (type == StatType.THE_PHACH) {
+                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
+                healthService.syncHealth(player, profile);
+            }
+            
+            // update scoreboard ngay
             var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
             if (scoreboardService != null) {
                 scoreboardService.updateScoreboard(player);

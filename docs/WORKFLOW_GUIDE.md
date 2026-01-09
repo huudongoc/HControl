@@ -199,7 +199,27 @@ handleCombat(LivingActor attacker, LivingActor defender, modifier):
 
 ---
 
-### **4. STAT ALLOCATION (/stat command)**
+### **4. ENVIRONMENTAL DAMAGE (Fall, Fire, Drown, Void...)**
+
+```
+EntityDamageEvent (không phải EntityDamageByEntityEvent)
+  └─> PlayerCombatListener.onEntityDamage()
+        ├─> Cancel vanilla damage: disableDameService.cancelAllDamage()
+        └─> CombatService.handleEnvironmentalDamage(player, profile, vanillaDamage, cause)
+              ├─> Tính damage: vanillaDamage * 0.5 (50% reduction)
+              ├─> Apply damage: profile.setCurrentHP(newHP)
+              ├─> Sync vanilla health: PlayerHealthService.updateCurrentHealth()
+              └─> Return damage message cho action bar
+```
+
+**Key Point:**
+- **Environmental damage cũng đi qua CombatService** (`handleEnvironmentalDamage()`)
+- Không tính damage trực tiếp trong Listener
+- Tất cả damage calculation đều tập trung ở CombatService
+
+---
+
+### **5. STAT ALLOCATION (/stat command)**
 
 ```
 /stat add Root 10
@@ -350,14 +370,107 @@ ui.modifyHP();        // UI không modify state
 ### **4. SubContext = Domain isolation**
 
 ```
-PlayerContext   → PlayerManager, LevelService, StatService...
-CombatContext   → CombatService, DamageEffectService...
-EntityContext   → EntityManager, EntityService...
-UIContext       → NameplateService, ScoreboardService...
-CultivationContext → BreakthroughService, TribulationService...
+PlayerContext:
+  → PlayerManager (RAM cache)
+  → PlayerStorage (YAML I/O)
+  → LevelService (level up logic)
+  → CultivationProgressService (tu vi progress)
+  → PlayerHealthService (HP sync với vanilla)
+  → StatService (stat allocation)
+
+CombatContext:
+  → CombatService (damage calculation - CỐT LÕI)
+  → DamageEffectService (particle, sound effects)
+  → DisableDameService (cancel vanilla damage)
+  → EventEffectService (event visual effects)
+  → LevelUpEffectService (level up effects)
+  → SoundService (sound management)
+
+EntityContext:
+  → EntityManager (RAM cache cho mobs)
+  → EntityRegistry (mob templates)
+  → EntityService (spawn elite/boss)
+  → BossManager (boss system)
+
+UIContext:
+  → PlayerUIService (ActionBar, title)
+  → ScoreboardService (scoreboard bên phải)
+  → NameplateService (nameplate trên đầu player)
+  → ChatBubbleService (chat bubbles)
+  → ChatFormatService (chat formatting)
+  → EntityNameplateService (nameplate cho mobs)
+  → EntityDialogService (dialog cho NPCs)
+  → UiStateService (UI state management)
+  → TribulationUI (độ kiếp UI)
+  → DisplayFormatService (format helper)
+
+CultivationContext:
+  → BreakthroughService (đột phá logic)
+  → TribulationService (thiên kiếp)
+  → TitleService (title/danh hiệu)
+  → RoleService (role system)
 ```
 
-**Tại sao?** CoreContext không phình to, dễ reload từng module.
+**Tại sao?** 
+- CoreContext không phình to, chỉ chứa 5 SubContext
+- Dễ reload từng module độc lập
+- Mỗi domain được tách biệt rõ ràng
+- Dependency injection rõ ràng qua constructor
+
+---
+
+### **5. Service chung vs Domain-specific**
+
+#### **Service chung (Shared/Common services):**
+
+Các service này **KHÔNG thuộc domain cụ thể** và được nhiều Context dùng:
+- `DisplayFormatService` → hiện ở UIContext nhưng dùng ở mọi nơi
+- `ConfigService` (PHASE 12) → config management chung
+- `EventBusService` (PHASE 4.5+) → event bus cho decoupling
+
+**Cách tổ chức:**
+- **Option 1:** Giữ trong UIContext nếu chủ yếu dùng cho UI
+- **Option 2:** Tạo `SharedContext` nếu nhiều service chung (PHASE 12+)
+- **Option 3:** Singleton static nếu không cần DI (như `DisplayFormatService`)
+
+#### **Thêm Context mới khi nào?**
+
+**NÊN tạo Context mới khi:**
+- Domain rõ ràng, độc lập (ví dụ: `ItemContext` cho PHASE 8)
+- Có 3+ services liên quan
+- Cần lifecycle riêng (enable/disable độc lập)
+
+**KHÔNG NÊN tạo Context mới khi:**
+- Chỉ có 1-2 services → thêm vào Context gần nhất
+- Logic đơn giản → thêm vào service hiện có
+- Chỉ là helper → singleton static hoặc trong SharedContext
+
+#### **Dự đoán Context mới (PHASE 5-15):**
+
+```
+Hiện tại (PHASE 0-4):
+  ✅ PlayerContext
+  ✅ CombatContext  
+  ✅ EntityContext
+  ✅ UIContext
+  ✅ CultivationContext
+
+Tương lai:
+  🔮 ItemContext (PHASE 8) - ItemService, EquipmentService, ArtifactService
+  🔮 WorldContext (PHASE 9) - DimensionService, WorldRuleService
+  🔮 EconomyContext (PHASE 10) - TradeService, AuctionService, SectService
+  🔮 SharedContext (PHASE 12) - ConfigService, EventBusService (optional)
+
+KHÔNG cần Context riêng:
+  - SkillService → CombatContext (PHASE 6)
+  - ClassService → PlayerContext hoặc CultivationContext (PHASE 5)
+  - AIService → EntityContext (PHASE 7)
+```
+
+**Lưu ý:** Architecture hiện tại **PHÙ HỢP** đến cuối project:
+- Dễ mở rộng: thêm Context mới không ảnh hưởng Context cũ
+- Dễ maintain: mỗi Context độc lập, clear responsibility
+- Scale tốt: không có "God Context" chứa mọi thứ
 
 ---
 
@@ -404,12 +517,32 @@ public void castSkill() {
     target.setCurrentHP(target.getCurrentHP() - 50);  // ← Skill deal damage
 }
 
-// ✅ ĐÚNG (PHASE 6 sẽ làm)
+@EventHandler
+public void onEntityDamage(EntityDamageEvent e) {
+    profile.setCurrentHP(profile.getCurrentHP() - damage);  // ← Listener tính damage
+}
+
+// ✅ ĐÚNG
+// Tất cả damage (combat, environmental, skill) đều đi qua CombatService
 public void castSkill() {
     CombatRequest request = new CombatRequest(attacker, target, 50);
     combatService.handleCombatRequest(request);  // ← Service deal damage
 }
+
+@EventHandler
+public void onEntityDamage(EntityDamageEvent e) {
+    e.setCancelled(true);
+    // Environmental damage (fall, fire, drown, void...) cũng đi qua CombatService
+    combatService.handleEnvironmentalDamage(player, profile, vanillaDamage, cause);
+}
 ```
+
+**Lưu ý:** 
+- **Tất cả** damage đều đi qua `CombatService`:
+  - Combat damage: `handleCombat()` (PvP, PvE)
+  - Environmental damage: `handleEnvironmentalDamage()` (fall, fire, drown, void...)
+  - Skill damage (PHASE 6): sẽ dùng `handleCombat()` hoặc method tương tự
+- Không bao giờ modify HP trực tiếp trong Listener, UI, hoặc Command
 
 ---
 
@@ -473,11 +606,13 @@ UIService:
 
 ### **Nếu muốn thêm feature mới:**
 
-1. Đọc `MASTER_TASK_LIST.md` xem có trong roadmap không
-2. Xem `REFACTOR_PROGRESS.md` xem milestone nào đã xong
-3. Xem `ARCHITECTURE_OVERVIEW.md` xem thuộc layer nào
-4. Tạo service trong đúng SubContext
-5. Không bypass architecture "cho nhanh"
+1. **Đọc `CONTEXT_EXPANSION_GUIDE.md`** ← **QUAN TRỌNG NHẤT!**
+2. Đọc `MASTER_TASK_LIST.md` xem có trong roadmap không
+3. Xem `REFACTOR_PROGRESS.md` xem milestone nào đã xong
+4. Xem `ARCHITECTURE_OVERVIEW.md` xem thuộc layer nào
+5. Xác định domain → chọn Context đúng (hoặc tạo Context mới)
+6. Follow quy trình trong `CONTEXT_EXPANSION_GUIDE.md`
+7. Không bypass architecture "cho nhanh"
 
 ### **Nếu muốn sửa bug:**
 
@@ -501,6 +636,7 @@ UIService:
 | `MASTER_TASK_LIST.md` | Xem roadmap, phase nào đã làm |
 | `ARCHITECTURE_OVERVIEW.md` | Hiểu kiến trúc tổng thể |
 | `REFACTOR_PROGRESS.md` | Xem milestone nào đã khóa |
+| `CONTEXT_EXPANSION_GUIDE.md` | **Thêm Context/Service mới** ← ĐỌC TRƯỚC KHI THÊM FEATURE |
 | `ENTITY_SYSTEM.md` | Làm việc với mob system |
 | `CoreContext.java` | Hiểu wiring, dependency injection |
 | `CombatService.java` | Hiểu combat logic |

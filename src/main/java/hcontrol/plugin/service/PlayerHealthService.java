@@ -82,6 +82,39 @@ public class PlayerHealthService {
     }
     
     /**
+     * Handle player respawn - reset HP và Linh Khi về max
+     * Gọi từ PlayerRespawnListener
+     */
+    public void handleRespawn(Player player, PlayerProfile profile) {
+        if (player == null || !player.isOnline() || profile == null) return;
+        
+        // Reset HP ve max (hoi sinh full mau)
+        double maxHP = profile.getStats().getMaxHP();
+        profile.setCurrentHP(maxHP);
+        
+        // Reset Linh Khi ve max
+        double maxLingQi = profile.getStats().getMaxLingQi();
+        profile.setCurrentLingQi(maxLingQi);
+        
+        // Sync vanilla health
+        syncHealth(player, profile);
+    }
+    
+    /**
+     * Handle player death - set HP = 0 trong profile
+     * Gọi từ PlayerDeathListener
+     */
+    public void handleDeath(Player player, PlayerProfile profile) {
+        if (player == null || profile == null) return;
+        
+        // Set HP = 0 trong profile
+        profile.setCurrentHP(0);
+        
+        // Sync vanilla health (sẽ set về 0)
+        updateCurrentHealth(player, profile);
+    }
+    
+    /**
      * Update tablist display name voi HP hien tai
      * Format: [Realm] PlayerName HP%
      */

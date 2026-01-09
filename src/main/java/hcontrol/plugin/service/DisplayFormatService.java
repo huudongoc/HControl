@@ -54,7 +54,8 @@ public class DisplayFormatService {
     
     /**
      * Format nameplate cho player
-     * Format: [Title Icon] [Realm Tier] ❤ HP% PlayerName
+     * Format: [Title Icon] [Realm Tier] ❤ HP%
+     * KHÔNG có text "Player❤" hoặc "Mods❤" để phân biệt rõ với entity nameplate
      */
     public String formatPlayerNameplate(PlayerProfile profile, String titleIcon) {
         CultivationRealm realm = profile.getRealm();
@@ -74,10 +75,11 @@ public class DisplayFormatService {
         // Danh hieu (neu co)
         String titleDisplay = (titleIcon != null && !titleIcon.isEmpty()) ? titleIcon + " " : "";
         
-        // Format: [Title Icon] [Realm Tier] ❤ currentHP/maxHP PlayerName
+        // Format: [Title Icon] [Realm Tier] ❤ HP%
+        // KHÔNG có text "Player❤" để tránh nhầm lẫn với entity nameplate (có "Mods❤")
         return titleDisplay + 
                realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
-               hpColor + "Player❤ "+  String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "% §f";
+               hpColor + "❤ " + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "% §f";
     }
     
     /**

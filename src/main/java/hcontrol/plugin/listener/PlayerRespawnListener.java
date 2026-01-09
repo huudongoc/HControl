@@ -44,16 +44,8 @@ public class PlayerRespawnListener implements Listener {
         
         if (profile == null) return;
         
-        // Reset HP ve max (hoi sinh full mau)
-        double maxHP = profile.getStats().getMaxHP();
-        profile.setCurrentHP(maxHP);
-        
-        // Reset Linh Khi ve max
-        double maxLingQi = profile.getStats().getMaxLingQi();
-        profile.setCurrentLingQi(maxLingQi);
-        
-        // Sync vanilla health
-        healthService.syncHealth(player, profile);
+        // Delegate respawn logic to PlayerHealthService
+        healthService.handleRespawn(player, profile);
         
         // Set hunger full (tu si khong can an)
         player.setFoodLevel(20);

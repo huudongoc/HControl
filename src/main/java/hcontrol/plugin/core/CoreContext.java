@@ -136,17 +136,35 @@ public class CoreContext {
     
     /**
      * PHASE 0: Register tất cả module callbacks
+     * 
+     * QUY TRÌNH THÊM MODULE MỚI:
+     * 1. Tạo Context mới (nếu cần) → xem CONTEXT_EXPANSION_GUIDE.md
+     * 2. Thêm field trong CoreContext constructor
+     * 3. Tạo method register[Module]System() như bên dưới
+     * 4. Gọi register[Module]System() trong registerAllModules()
+     * 
+     * Ví dụ thêm Context mới (PHASE 8+):
+     * - registerItemSystem()
+     * - registerWorldSystem()
+     * - registerEconomySystem()
      */
     public void registerAllModules() {
              
         // Commands
         registerCommands();
+        
         // PHASE 1: Player System
         registerPlayerSystem();
         
         // PHASE 3: Combat System
         registerCombatSystem();
-   
+        
+        // PHASE 5+: Thêm các module mới ở đây
+        // registerClassSystem();     // PHASE 5
+        // registerSkillSystem();     // PHASE 6 (thêm vào CombatContext)
+        // registerItemSystem();      // PHASE 8
+        // registerWorldSystem();     // PHASE 9
+        // registerEconomySystem();   // PHASE 10
     }
     /**
      * Register Commands - Sử dụng CommandRegistry để đơn giản hóa

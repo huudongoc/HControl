@@ -294,6 +294,22 @@ public class BreakthroughService {
     }
     
     /**
+     * Handle death result from breakthrough failure
+     * Apply death penalty to profile
+     */
+    public void handleDeath(PlayerProfile profile) {
+        // Set HP to 0
+        profile.setCurrentHP(0);
+        
+        // Sync vanilla health
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline()) {
+            var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
+            healthService.updateCurrentHealth(player, profile);
+        }
+    }
+    
+    /**
      * 9. XU LY TAN PHE (3 MUC DO: NHE / NANG / VINH VIEN)
      */
     private BreakthroughResult handleCrippled(PlayerProfile profile, double successRate) {

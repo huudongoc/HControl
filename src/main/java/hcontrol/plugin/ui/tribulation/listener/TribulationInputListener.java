@@ -82,7 +82,8 @@ public class TribulationInputListener implements Listener {
                 }
                 case DEATH -> {
                     p.sendMessage("§4§l☠ Độ kiếp thất bại - HỒN PHI PHÁCH TÁN!");
-                    p.setHealth(0);
+                    // Service xử lý death penalty
+                    breakthroughService.handleDeath(profile);
                 }
                 default -> {
                     p.sendMessage("§c✖ Độ kiếp thất bại!");

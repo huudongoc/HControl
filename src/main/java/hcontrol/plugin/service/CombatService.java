@@ -140,16 +140,32 @@ public class CombatService {
         
         // Update nameplate cho Entity (mob/boss) - KHONG update cho Player de tranh flash
         // NOTE: Entity nameplate update MỖI HIT de hien thi HP realtime
+        // SAFETY: Double check defender KHÔNG phải Player trước khi update entity nameplate
         if (defenderEntity != null && !(defenderEntity instanceof Player)) {
-            // Entity nameplate - update voi force để hiển thị HP realtime
-            var entityNameplateService = CoreContext.getInstance().getUIContext().getEntityNameplateService();
-            if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
-                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (defenderEntity.isValid() && !defenderEntity.isDead()) {
-                        entityNameplateService.updateNameplate(defenderEntity, entityProfile, true);
-                    }
-                });
+            // CHỈ update entity nameplate nếu defender là EntityProfile (mob/boss)
+            if (defender instanceof EntityProfile entityProfile) {
+                var entityNameplateService = CoreContext.getInstance().getUIContext().getEntityNameplateService();
+                if (entityNameplateService != null) {
+                    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                        // Safety check lại: KHÔNG update nameplate cho Player
+                        if (defenderEntity.isValid() && !defenderEntity.isDead() && !(defenderEntity instanceof Player)) {
+                            entityNameplateService.updateNameplate(defenderEntity, entityProfile, true);
+                        }
+                    });
+                }
             }
+        }
+        
+        // ĐẢM BẢO Player KHÔNG bị set custom name như entity
+        // Nếu defender là Player, đảm bảo không có custom name từ entity nameplate
+        if (defenderEntity instanceof Player playerDefender) {
+            org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                // Reset custom name nếu có (có thể do plugin khác hoặc lỗi)
+                if (playerDefender.getCustomName() != null && !playerDefender.getCustomName().equals(playerDefender.getName())) {
+                    playerDefender.setCustomName(null);
+                    playerDefender.setCustomNameVisible(false);
+                }
+            });
         }
         
         // Knockback (neu co attacker entity)
@@ -285,5 +301,52 @@ public class CombatService {
      */
     private PlayerProfile getPlayerProfile(Player player) {
         return playerManager.get(player.getUniqueId());
+    }
+    
+    /**
+     * Handle environmental damage (fall, fire, drown, void, etc.)
+     * Damage được tính từ vanilla damage và apply vào tu tiên HP
+     * 
+     * @param player Player bị damage
+     * @param profile PlayerProfile của player
+     * @param vanillaDamage Damage từ vanilla event (fall, fire, etc.)
+     * @param cause Nguyên nhân damage (để hiển thị message)
+     * @return Damage message để hiển thị action bar
+     */
+    public String handleEnvironmentalDamage(Player player, PlayerProfile profile, double vanillaDamage, org.bukkit.event.entity.EntityDamageEvent.DamageCause cause) {
+        // Apply damage vao tu tien HP
+        // -50% damage của vanilla (tu tien HP) -> 100% damage của tu tien HP
+        double damage = vanillaDamage * 0.5;
+        double currentHP = profile.getCurrentHP();
+        double newHP = Math.max(0, currentHP - damage);
+        profile.setCurrentHP(newHP);
+        
+        // Sync vanilla health
+        var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
+        healthService.updateCurrentHealth(player, profile);
+        
+        // Check chet
+        if (newHP <= 0) {
+            player.setHealth(0);
+        }
+        
+        // Format message
+        String causeMsg = getDamageCauseMessage(cause);
+        return String.format("§c-%.1f HP §7| %s §7| §c%.0f§7/§e%d", 
+            vanillaDamage, causeMsg, newHP, profile.getStats().getMaxHP());
+    }
+    
+    /**
+     * Get message theo damage cause
+     */
+    private String getDamageCauseMessage(org.bukkit.event.entity.EntityDamageEvent.DamageCause cause) {
+        return switch(cause) {
+            case FALL -> "§cRơi từ cao";
+            case FIRE, FIRE_TICK, LAVA -> "§6Lửa";
+            case DROWNING -> "§9Đuối nước";
+            case SUFFOCATION -> "§7Ngạt";
+            case VOID -> "§5Hư không";
+            default -> "§cSát thương";
+        };
     }
 }

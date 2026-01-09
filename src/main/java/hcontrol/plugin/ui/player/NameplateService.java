@@ -86,6 +86,14 @@ public class NameplateService {
         
         team.setPrefix(prefix);
         
+        // ĐẢM BẢO player KHÔNG bị set custom name như entity
+        // Player nameplate dùng scoreboard team prefix, KHÔNG dùng setCustomName()
+        if (player.getCustomName() != null && !player.getCustomName().equals(player.getName())) {
+            // Reset custom name nếu có (có thể do plugin khác hoặc lỗi)
+            player.setCustomName(null);
+            player.setCustomNameVisible(false);
+        }
+        
         // Cho player khac nhin thay
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;

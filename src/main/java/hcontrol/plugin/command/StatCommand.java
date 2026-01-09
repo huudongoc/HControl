@@ -75,12 +75,6 @@ public class StatCommand implements CommandExecutor {
             player.sendMessage("§a+§e" + amount + " §f" + type.getShortName());
             player.sendMessage("§7Stat point con lai: §f" + profile.getStatPoints());
             
-            // Sync vanilla health neu them The Phach (maxHP tang)
-            if (type == hcontrol.plugin.stats.StatType.THE_PHACH) {
-                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
-                healthService.syncHealth(player, profile);
-            }
-            
             return true;
         }
 

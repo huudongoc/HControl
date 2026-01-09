@@ -32,8 +32,9 @@ public class PlayerDeathListener implements Listener {
         
         if (profile == null) return;
         
-        // Set HP = 0 trong profile
-        profile.setCurrentHP(0);
+        // Delegate death logic to PlayerHealthService
+        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
+        healthService.handleDeath(player, profile);
         
         // Update scoreboard (se hien thi HP: 0/max)
         var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();

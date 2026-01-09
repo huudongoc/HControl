@@ -8,6 +8,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.DisplayFormatService;
 
 /**
  * Xu ly player death - reset HP ve 0 trong profile
@@ -39,11 +40,11 @@ public class PlayerDeathListener implements Listener {
         if (scoreboardService != null) {
             scoreboardService.updateScoreboard(player);
         }
+            
+        // Custom death message (optional) từ formatPlayerNameplate
+        String deathMsg = DisplayFormatService.getInstance().formatPlayerNameplate(profile, "") + " §cđã tử vong";
         
-        // Custom death message (optional)
-        String deathMsg = "§c☠ §7" + player.getName() + " §cđã tử vong";
-        
-        // Kiem tra nguyen nhan chet
+        // Kiem tra nguyen nhan chet và custom death message
         if (event.getDeathMessage() != null && !event.getDeathMessage().isEmpty()) {
             event.setDeathMessage(deathMsg);
         }

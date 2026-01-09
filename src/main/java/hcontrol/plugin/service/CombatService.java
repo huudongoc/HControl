@@ -1,14 +1,7 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.core.CoreContext;
-import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.model.PlayerStats;
-import hcontrol.plugin.model.LivingActor;
-import hcontrol.plugin.player.PlayerManager;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.NameplateService;
-import hcontrol.plugin.entity.EntityManager;
-import hcontrol.plugin.entity.EntityProfile;
+import java.util.Random;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
@@ -16,7 +9,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 
-import java.util.Random;
+import hcontrol.plugin.core.CoreContext;
+import hcontrol.plugin.entity.EntityManager;
+import hcontrol.plugin.entity.EntityProfile;
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.model.LivingActor;
+import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.ui.NameplateService;
 
 /**
  * PHASE 3 — Combat calculation service
@@ -31,6 +31,7 @@ public class CombatService {
     private final DamageEffectService effectService;
     private final EntityManager entityManager;
     private NameplateService nameplateService;  // inject sau tu CoreContext
+    
     
     public CombatService(PlayerManager playerManager, Plugin plugin, 
                         DamageEffectService effectService, EntityManager entityManager) {
@@ -119,42 +120,39 @@ public class CombatService {
         if (defenderEntity != null) {
             boolean defenderVIP = (defenderEntity instanceof Player) && effectService.isVIP((Player) defenderEntity);
             effectService.playHitEffect(defenderEntity instanceof Player ? (Player) defenderEntity : null, 
-                                       defender.getRealm(), damage, defenderVIP);
+                                       defender.getRealm(), damage, defenderVIP, defenderEntity.getLocation());
             
             // Floating damage
             String damageColor = getDamageColor(attacker.getRealm(), defender.getRealm());
             effectService.spawnFloatingDamage(defenderEntity.getLocation(), damage, damageColor, false);
         }
         
-        // ActionBar feedback cho attacker (neu la player)
-        if (attackerEntity instanceof Player attackerPlayer) {
-            attackerPlayer.sendActionBar(String.format("§e⚔ %.1f §7→ %s §7| §c%.0f§7/§e%.0f HP", 
-                damage, defender.getDisplayName(), newHP, defender.getMaxHP()));
-        }
+        // // ActionBar feedback cho attacker (neu la player)
+        // if (attackerEntity instanceof Player attackerPlayer) {
+        //     // CHI HIEN THI DAMAGE, KHONG HIEN THI HP HOAC TEN
+        //     attackerPlayer.sendActionBar(String.format("§e⚔ %.1f", damage));
+        // }
         
-        // ActionBar feedback cho defender (neu la player)
-        if (defenderEntity instanceof Player defenderPlayer) {
-            // NOTE: CHI HIEN THI DAMAGE, KHONG HIEN THI REALM/LEVEL
-            // Neu user thay "flash" realm/level - KHONG PHAI TU DAY
-            defenderPlayer.sendActionBar(String.format("§c-%.1f HP §7← %s §7| §c%.0f§7/§e%.0f", 
-                damage, attacker.getDisplayName(),
-                newHP, defender.getMaxHP()));
-        }
+        // // ActionBar feedback cho defender (neu la player)
+        // if (defenderEntity instanceof Player defenderPlayer) {
+        //     // NOTE: CHI HIEN THI DAMAGE, KHONG HIEN THI REALM/LEVEL/HP
+        //     defenderPlayer.sendActionBar(String.format("§c-%.1f", damage));
+        // }
         
         // Update nameplate cho Entity (mob/boss) - KHONG update cho Player de tranh flash
         // NOTE: Entity nameplate update MỖI HIT de hien thi HP realtime
         // Neu user thay "flash" nameplate - co the do Entity nameplate, KHONG phai Player
-        if (defenderEntity != null && !(defenderEntity instanceof Player)) {
-            // Entity nameplate - chi update neu HP thay doi >5% (tranh spam)
-            var entityNameplateService = CoreContext.getInstance().getEntityNameplateService();
-            if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (defenderEntity.isValid() && !defenderEntity.isDead()) {
-                        entityNameplateService.updateNameplate(defenderEntity, entityProfile);
-                    }
-                });
-            }
-        }
+        // if (defenderEntity != null && !(defenderEntity instanceof Player)) {
+        //     // Entity nameplate - chi update neu HP thay doi >5% (tranh spam)
+        //     var entityNameplateService = CoreContext.getInstance().getEntityNameplateService();
+        //     if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
+        //         Bukkit.getScheduler().runTask(plugin, () -> {
+        //             if (defenderEntity.isValid() && !defenderEntity.isDead()) {
+        //                 entityNameplateService.updateNameplate(defenderEntity, entityProfile);
+        //             }
+        //         });
+        //     }
+        // }
         
         // Knockback (neu co attacker entity)
         if (attackerEntity != null && defenderEntity != null) {
@@ -162,10 +160,7 @@ public class CombatService {
         }
     }
     
-    /**
-     * Xu ly player danh player/mob (TU TIEN DAMAGE ONLY)
-     * REFACTORED: Wrapper around handleCombat()
-     */
+
     /**
      * Xu ly player danh player/mob (TU TIEN DAMAGE ONLY)
      * REFACTORED: Wrapper around handleCombat()

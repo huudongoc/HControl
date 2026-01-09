@@ -1,24 +1,32 @@
 package hcontrol.plugin.ui;
 
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.player.PlayerManager;
-import hcontrol.plugin.player.LevelService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.scoreboard.*;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.ScoreboardManager;
+
+import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.CultivationProgressService;
+import hcontrol.plugin.service.DisplayFormatService;
 
 /**
  * SCOREBOARD SERVICE
  * Hien thi bang thong tin ben phai man hinh
+ * KHONG chua logic tinh toan - chi su dung DisplayFormatService va CultivationProgressService
  */
 public class ScoreboardService {
     
     private final PlayerManager playerManager;
-    private final LevelService levelService;
+    private final DisplayFormatService displayFormatService;
+    private final CultivationProgressService cultivationProgressService;
     
-    public ScoreboardService(PlayerManager playerManager) {
+    public ScoreboardService(PlayerManager playerManager, DisplayFormatService displayFormatService, CultivationProgressService cultivationProgressService) {
         this.playerManager = playerManager;
-        this.levelService = hcontrol.plugin.core.CoreContext.getInstance().getLevelService();
+        this.displayFormatService = displayFormatService;
+        this.cultivationProgressService = cultivationProgressService;
     }
     
     /**
@@ -33,7 +41,7 @@ public class ScoreboardService {
         if (manager == null) return;
         
         Scoreboard board = manager.getNewScoreboard();
-        Objective obj = board.registerNewObjective("tutienstats", "dummy", "§6§l修仙 TU TIEN");
+        Objective obj = board.registerNewObjective("tutienstats", "dummy", "§6§l TU TIEN");
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         
         updateScoreboard(player, profile, obj);
@@ -68,23 +76,23 @@ public class ScoreboardService {
         
         int line = 15;
         
-        // realm + tier (KHONG hien thi level so)
+        // realm + tier (KHONG hien thi level so) - su dung DisplayFormatService
         obj.getScore("§7§m━━━━━━━━━━━━━").setScore(line--);
-        String tierName = getTierName(profile.getLevel());
-        obj.getScore("§f⚡ " + profile.getRealm().getDisplayName() + " " + tierName).setScore(line--);
+        String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());
+        obj.getScore("§f⚡ " + realmTierText).setScore(line--);
         
-        // tu vi progress (KHONG hien thi level so)
+        // tu vi progress - su dung CultivationProgressService
         obj.getScore(" ").setScore(line--);
-        int maxLevel = getMaxLevel(profile);
-        double cultPercent = profile.getLevel() < maxLevel 
-            ? (double) profile.getCultivation() / levelService.getRequiredCultivation(profile.getLevel() + 1, profile.getRealm()) * 100 
-            : 100.0;
-        obj.getScore("§fTu vi: §a" + String.format("%.1f%%", cultPercent)).setScore(line--);
+        double cultPercent = cultivationProgressService.getCultivationPercent(profile);
+        String cultProgressText = displayFormatService.formatCultivationProgress(cultPercent);
+        obj.getScore(cultProgressText).setScore(line--);
         
-        // Sinh Mang & Linh Khi
+        // Sinh Mang & Linh Khi - su dung DisplayFormatService
         obj.getScore("  ").setScore(line--);
-        obj.getScore("§c❤ §fSinh Mang: §c" + String.format("%.0f", profile.getCurrentHP()) + "§7/§c" + profile.getStats().getMaxHP()).setScore(line--);
-        obj.getScore("§9✦ §fLinh Khi: §9" + String.format("%.0f", profile.getCurrentLingQi()) + "§7/§9" + profile.getStats().getMaxLingQi()).setScore(line--);
+        String hpText = displayFormatService.formatHP(profile.getCurrentHP(), profile.getStats().getMaxHP());
+        obj.getScore(hpText.replace("§c❤ §f", "§c❤ §fSinh Mang: §c")).setScore(line--);
+        String lqText = displayFormatService.formatLingQi(profile.getCurrentLingQi(), profile.getStats().getMaxLingQi());
+        obj.getScore(lqText.replace("§9✦ §f", "§9✦ §fLinh Khi: §9")).setScore(line--);
         
         // Stats tu tien (5 stat chinh)
         obj.getScore("   ").setScore(line--);
@@ -98,33 +106,6 @@ public class ScoreboardService {
             obj.getScore("    ").setScore(line--);
             obj.getScore("§e✦ Diem thuoc tinh: §a" + profile.getStatPoints()).setScore(line--);
         }
-    }
-    
-    /**
-     * Lay max level dua vao realm
-     */
-    private int getMaxLevel(PlayerProfile profile) {
-        return getMaxLevelForRealm(profile.getRealm());
-    }
-    
-    private int getMaxLevelForRealm(hcontrol.plugin.model.CultivationRealm realm) {
-        switch(realm) {
-            case MORTAL: return 10;
-            case QI_REFINING: return 9;
-            case FOUNDATION: return 9;
-            case GOLDEN_CORE: return 9;
-            default: return 10;
-        }
-    }
-    
-    /**
-     * Lay tier name tu level
-     */
-    private String getTierName(int level) {
-        if (level <= 3) return "§7Hạ";
-        if (level <= 6) return "§eTrung";
-        if (level <= 9) return "§6Thượng";
-        return "§cĐỉnh";
     }
     
     /**

@@ -6,6 +6,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import hcontrol.plugin.Main;
 import hcontrol.plugin.service.SoundService;
+import hcontrol.plugin.service.TribulationLogicService;
 import hcontrol.plugin.model.CultivationRealm;
 
 import java.util.function.Consumer;
@@ -13,6 +14,7 @@ import java.util.function.Consumer;
 /**
  * TRIBULATION TASK
  * Dieu khien phase + hieu ung thien kiep (REFACTORED)
+ * KHONG chua logic tinh toan - chi su dung TribulationLogicService
  */
 public class TribulationTask extends BukkitRunnable {
 
@@ -21,6 +23,7 @@ public class TribulationTask extends BukkitRunnable {
     private final TribulationContext context;
     private final Consumer<Boolean> onComplete; // callback: true = success, false = fail
     private final SoundService soundService;
+    private final TribulationLogicService tribulationLogicService;
 
     private ParticleSpiralTask spiralTask;
     private int phaseTick; // tick counter trong moi phase (rieng biet)
@@ -31,6 +34,7 @@ public class TribulationTask extends BukkitRunnable {
         this.context = new TribulationContext(player.getUniqueId(), fromRealm, toRealm);
         this.onComplete = onComplete;
         this.soundService = hcontrol.plugin.core.CoreContext.getInstance().getSoundService();
+        this.tribulationLogicService = new TribulationLogicService();
         this.phaseTick = 0;
     }
 
@@ -53,11 +57,11 @@ public class TribulationTask extends BukkitRunnable {
         }
 
         // auto advance logic (neu khong phai QUESTION)
-        if (context.getCurrentPhase() == TribulationPhase.PREPARE && phaseTick >= 60) {
+        if (context.getCurrentPhase() == TribulationPhase.PREPARE && phaseTick >= tribulationLogicService.getPrepareDuration()) {
             // PREPARE → WAVE_1
             context.advanceToWave();
             phaseTick = 0;
-        } else if (context.getCurrentPhase().isWave() && phaseTick >= getWaveDuration()) {
+        } else if (context.getCurrentPhase().isWave() && phaseTick >= tribulationLogicService.getWaveDuration(context.getCurrentWave())) {
             // WAVE_X → WAVE_X+1 hoac QUESTION hoac SUCCESS
             if (context.advanceToWave()) {
                 phaseTick = 0; // con wave tiep theo
@@ -76,7 +80,7 @@ public class TribulationTask extends BukkitRunnable {
         }
 
         // check ket thuc
-        if (context.isFinished() && phaseTick >= 40) {
+        if (context.isFinished() && phaseTick >= tribulationLogicService.getFinishDuration()) {
             cleanup();
             
             // callback
@@ -119,11 +123,13 @@ public class TribulationTask extends BukkitRunnable {
             soundService.playThunderSound(player.getLocation());
         }
         
-        // set danh (tan so tang theo wave)
-        int strikeInterval = Math.max(20, 60 - wave * 5); // wave cao → set danh nhanh hon
+        // set danh (tan so tang theo wave) - su dung TribulationLogicService
+        int strikeInterval = tribulationLogicService.getStrikeInterval(wave);
         if (phaseTick % strikeInterval == 0) {
             Location loc = player.getLocation().add(
-                random(-3, 3), 0, random(-3, 3)
+                tribulationLogicService.random(-3, 3), 
+                0, 
+                tribulationLogicService.random(-3, 3)
             );
             player.getWorld().strikeLightningEffect(loc);
             soundService.playLightningStrikeSound(player.getLocation());
@@ -150,7 +156,7 @@ public class TribulationTask extends BukkitRunnable {
         }
         
         // auto pass sau 5s (tam thoi)
-        if (phaseTick >= 100 && !context.isQuestionAnswered()) {
+        if (phaseTick >= tribulationLogicService.getQuestionDuration() && !context.isQuestionAnswered()) {
             context.submitAnswer(true); // gia su dung
             context.complete(TribulationResult.SUCCESS);
             phaseTick = 0;
@@ -170,27 +176,15 @@ public class TribulationTask extends BukkitRunnable {
                 // hieu ung vong sang
                 spawnSuccessParticles();
             } else {
-                player.sendTitle("§4§lĐộ kiếp thất bại", "§c" + getFailureReasonText(), 10, 60, 10);
+                // Su dung TribulationLogicService de lay failure reason text
+                String failureReason = tribulationLogicService.getFailureReasonText(context.getResult());
+                player.sendTitle("§4§lĐộ kiếp thất bại", "§c" + failureReason, 10, 60, 10);
                 soundService.playBreakthroughFailureSound(player);
             }
         }
     }
 
     // ===== HELPER METHODS =====
-
-    private int getWaveDuration() {
-        // wave cao → thoi gian dai hon
-        return 100 + context.getCurrentWave() * 20; // 5s -> 9s
-    }
-
-    private String getFailureReasonText() {
-        return switch (context.getResult()) {
-            case FAIL_DEATH -> "Bị thiên lôi tiêu diệt";
-            case FAIL_ANSWER -> "Tâm tính không vững";
-            case FAIL_TIMEOUT -> "Hết thời gian";
-            default -> "Không rõ";
-        };
-    }
 
     private void spawnSuccessParticles() {
         Location loc = player.getLocation();
@@ -201,9 +195,5 @@ public class TribulationTask extends BukkitRunnable {
         if (spiralTask != null) {
             spiralTask.cancel();
         }
-    }
-
-    private double random(double min, double max) {
-        return min + Math.random() * (max - min);
     }
 }

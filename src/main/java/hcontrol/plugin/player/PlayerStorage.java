@@ -1,18 +1,18 @@
 package hcontrol.plugin.player;
 
-import org.bukkit.configuration.file.YamlConfiguration;
-
-import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.model.SpiritualRoot;
-import hcontrol.plugin.model.RootQuality;
-import hcontrol.plugin.model.Title;
-import hcontrol.plugin.stats.StatType;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.model.RootQuality;
+import hcontrol.plugin.model.SpiritualRoot;
+import hcontrol.plugin.model.Title;
+import hcontrol.plugin.stats.StatType;
 
 public class PlayerStorage {
 
@@ -38,6 +38,8 @@ public class PlayerStorage {
         profile.setLevel(yaml.getInt("level", 1));
         profile.setStatPoints(yaml.getInt("statPoints", 0));
         
+        
+
         // load cultivation realm (tu tien)
         String realmName = yaml.getString("realm", "MORTAL");
         try {

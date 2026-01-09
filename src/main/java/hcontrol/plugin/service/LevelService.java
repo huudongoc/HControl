@@ -1,7 +1,8 @@
-package hcontrol.plugin.player;
+package hcontrol.plugin.service;
 
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.event.PlayerLevelUpEvent;
+import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.service.LevelUpEffectService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -239,23 +240,14 @@ public class LevelService {
             // Hieu ung vuot checkpoint
             effectService.playTierUnlockEffect(player, targetLevel, newTier);
             
-            // Update UI
-            updateUI(player);
+            // Update UI - su dung UIContext helper method
+            var uiContext = hcontrol.plugin.core.CoreContext.getInstance().getUIContext();
+            if (uiContext != null) {
+                uiContext.updateAllUI(player);
+            }
         }
         
         return true;
-    }
-    
-    private void updateUI(Player player) {
-        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getScoreboardService();
-        if (scoreboardService != null) {
-            scoreboardService.updateScoreboard(player);
-        }
-        
-        var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getNameplateService();
-        if (nameplateService != null) {
-            nameplateService.updateNameplate(player);
-        }
     }
     
     private void levelUp(PlayerProfile profile) {
@@ -277,11 +269,11 @@ public class LevelService {
             String tierName = getSubRealmName(newLevel);
             String fullName = profile.getRealm().getDisplayName() + " " + tierName;
             
-            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             player.sendMessage("§e§lĐỘT PHÁ THÀNH CÔNG! ⚡");
             player.sendMessage("§7Tu vi: " + profile.getRealm().getColor() + fullName);
             player.sendMessage("§7+§a5 §7Điểm thuộc tính");
-            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
+            player.sendMessage("§6§l▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬");
             // sound da co trong LevelUpEffectService.playRealmBreakthrough()
         }
         
@@ -289,17 +281,11 @@ public class LevelService {
         PlayerLevelUpEvent event = new PlayerLevelUpEvent(profile, oldLevel, newLevel);
         Bukkit.getPluginManager().callEvent(event);
         
-        // update scoreboard ngay lap tuc
+        // Update UI - su dung UIContext helper method
         if (player != null && player.isOnline()) {
-            var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getScoreboardService();
-            if (scoreboardService != null) {
-                scoreboardService.updateScoreboard(player);
-            }
-            
-            // update nameplate (realm/level thay doi)
-            var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getNameplateService();
-            if (nameplateService != null) {
-                nameplateService.updateNameplate(player);
+            var uiContext = hcontrol.plugin.core.CoreContext.getInstance().getUIContext();
+            if (uiContext != null) {
+                uiContext.updateAllUI(player);
             }
         }
     }

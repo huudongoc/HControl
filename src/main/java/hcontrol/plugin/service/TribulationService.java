@@ -1,7 +1,7 @@
 package hcontrol.plugin.service;
 
 import hcontrol.plugin.Main;
-import hcontrol.plugin.player.BreakthroughService;
+import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.model.CultivationRealm;

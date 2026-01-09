@@ -87,7 +87,7 @@ public class JoinServerListener implements Listener {
      */
     private void updateAttackSpeed(org.bukkit.entity.Player player, PlayerProfile profile) {
         int agility = profile.getStats().getAgility();
-        double attackSpeed = 4.0 + (agility / 10.0) * 0.5;
+        double attackSpeed = 1.0 + (agility / 10.0) * 0.5;
         
         var attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
         if (attribute != null) {

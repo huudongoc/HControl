@@ -12,6 +12,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.service.CombatService;
+import hcontrol.plugin.service.DisableDameService;
 
 /**
  * PHASE 3 — COMBAT LISTENER
@@ -21,10 +22,12 @@ public class PlayerCombatListener implements Listener {
 
     private final PlayerManager playerManager;
     private final CombatService combatService;
+    private final DisableDameService disableDameService;
     
-    public PlayerCombatListener(PlayerManager playerManager, CombatService combatService) {
+    public PlayerCombatListener(PlayerManager playerManager, CombatService combatService, DisableDameService disableDameService) {
         this.playerManager = playerManager;
         this.combatService = combatService;
+        this.disableDameService = disableDameService;
     }
     
     /**
@@ -33,7 +36,7 @@ public class PlayerCombatListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         // cancel vanilla damage
-        event.setCancelled(true);
+        disableDameService.cancelDamageByEntity(event);
         
         // CASE 1: Player attack (player/mob)
         if (event.getDamager() instanceof Player attacker) {
@@ -92,11 +95,11 @@ public class PlayerCombatListener implements Listener {
         double vanillaDamage = event.getFinalDamage();
         
         // Cancel vanilla damage
-        event.setCancelled(true);
+        disableDameService.cancelAllDamage(event);
         
         // Apply damage vao tu tien HP
         double currentHP = profile.getCurrentHP();
-        double newHP = Math.max(0, currentHP - vanillaDamage);
+        double newHP = Math.max(0, currentHP - (vanillaDamage * 0.5));    // -50% damage của vali (tu tien HP) -> 100% damage của tu tien HP;
         profile.setCurrentHP(newHP);
         
         // Sync vanilla health (scale)
@@ -129,7 +132,7 @@ public class PlayerCombatListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public void onFoodLevelChange(org.bukkit.event.entity.FoodLevelChangeEvent event) {
         if (event.getEntity() instanceof Player) {
-            event.setCancelled(true);
+            disableDameService.cancelFoodChange(event);
             // TODO PHASE 4: Replace voi co che Linh Khi / Tu Luyen
             // - An dan duoc: tang Linh Khi
             // - Thien dinh: hoi phuc Linh Khi
@@ -147,7 +150,7 @@ public class PlayerCombatListener implements Listener {
         
         // Chi tat regen tu hunger/saturation, giu lai healing khac (dan duoc, skill...)
         if (event.getRegainReason() == org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason.SATIATED) {
-            event.setCancelled(true);
+            disableDameService.cancelHealthRegen(event);
             // TODO PHASE 4: Tu tien HP chi hoi tu dan duoc, thien dinh, linh thach...
         }
     }
@@ -156,10 +159,10 @@ public class PlayerCombatListener implements Listener {
      * Update attack speed based on AGI stat
      */
     private void updateAttackSpeed(Player player, PlayerProfile profile) {
-        // attack speed vanilla = 4.0 (0.25s cooldown)
+        // attack speed vanilla = 1.0 (1 tick cooldown)
         // tang them 0.1 moi 10 AGI
         int agility = profile.getStats().getAgility();
-        double attackSpeed = 4.0 + (agility / 10.0) * 0.5; // max ~6.5 voi 50 AGI
+        double attackSpeed = 1.0 + (agility / 10.0) * 0.5; // max ~1.5 voi 50 AGI
         
         var attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
         if (attribute != null) {

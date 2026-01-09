@@ -1,6 +1,6 @@
 package hcontrol.plugin.command;
 
-import hcontrol.plugin.player.LevelService;
+import hcontrol.plugin.service.LevelService;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import org.bukkit.command.Command;

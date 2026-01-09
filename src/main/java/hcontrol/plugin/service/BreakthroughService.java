@@ -1,8 +1,9 @@
-package hcontrol.plugin.player;
+package hcontrol.plugin.service;
 
 import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.player.PlayerProfile;
 import org.bukkit.entity.Player;
 
 import java.util.HashMap;

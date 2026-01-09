@@ -1,5 +1,6 @@
-package hcontrol.plugin.player;
+package hcontrol.plugin.service;
 
+import hcontrol.plugin.player.PlayerProfile;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 

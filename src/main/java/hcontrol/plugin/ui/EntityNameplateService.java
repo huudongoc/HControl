@@ -2,7 +2,7 @@ package hcontrol.plugin.ui;
 
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityProfile;
-import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.service.DisplayFormatService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,18 +17,21 @@ import java.util.UUID;
  * ENTITY NAMEPLATE SERVICE
  * Hien thi ten + HP tren dau mob (giong player nameplate)
  * Foundation cho quest NPC, boss, elite...
+ * KHONG chua logic tinh toan - chi su dung DisplayFormatService
  */
 public class EntityNameplateService {
     
     private final EntityManager entityManager;
     private final Plugin plugin;
+    private final DisplayFormatService displayFormatService;
     private final Map<UUID, BukkitTask> updateTasks = new HashMap<>();
     private final Map<UUID, Long> lastUpdateTime = new HashMap<>(); // throttle map
     private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay throttle (giong Player)
     
-    public EntityNameplateService(EntityManager entityManager, Plugin plugin) {
+    public EntityNameplateService(EntityManager entityManager, Plugin plugin, DisplayFormatService displayFormatService) {
         this.entityManager = entityManager;
         this.plugin = plugin;
+        this.displayFormatService = displayFormatService;
     }
     
     /**
@@ -118,6 +121,11 @@ public class EntityNameplateService {
      * @param force true = bo qua throttle, false = check cooldown
      */
     public void updateNameplate(LivingEntity entity, EntityProfile profile, boolean force) {
+        // Safety check: KHONG bao gio update nameplate cho Player (player co NameplateService rieng)
+        if (entity instanceof Player) {
+            return; // KHONG set custom name cho player
+        }
+        
         UUID uuid = entity.getUniqueId();
         
         // Check cooldown (neu khong force)
@@ -129,44 +137,10 @@ public class EntityNameplateService {
             }
             lastUpdateTime.put(uuid, now);
         }
-        // Tinh % HP
-        double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getMaxHP();
-        double hpPercent = (currentHP / maxHP) * 100.0;
         
-        // Mau sac HP theo %
-        String hpColor;
-        if (hpPercent >= 75) {
-            hpColor = "§a";  // xanh la
-        } else if (hpPercent >= 50) {
-            hpColor = "§e";  // vang
-        } else if (hpPercent >= 25) {
-            hpColor = "§6";  // cam
-        } else {
-            hpColor = "§c";  // do
-        }
-        
-        // Boss/Elite prefix
-        String prefix = "";
-        if (profile.isBoss()) {
-            prefix = "§4§l[BOSS] ";
-        } else if (profile.isElite()) {
-            prefix = "§6§l[Tinh Anh] ";
-        }
-        
-        // Realm color
-        CultivationRealm realm = profile.getRealm();
-        String realmColor = realm.getColor();
-        String realmName = realm.getDisplayName();
-        
-        // Ten hien thi
+        // Su dung DisplayFormatService de format nameplate (KHONG tinh toan logic o day)
         String displayName = profile.getDisplayName();
-        
-        // Format GON: [Realm] Name ❤ HP%
-        String nameplate = prefix + 
-                          realmColor + "[" + realmName + "] §f" + 
-                          displayName + " " +
-                          hpColor + "❤ " + String.format("%.0f", hpPercent) + "%";
+        String nameplate = displayFormatService.formatEntityNameplate(profile, displayName);
         
         entity.setCustomName(nameplate);
         entity.setCustomNameVisible(true);

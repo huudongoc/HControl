@@ -1,9 +1,8 @@
 package hcontrol.plugin.model;
 
-import hcontrol.plugin.model.CultivationRealm;
-import org.bukkit.entity.LivingEntity;
-
 import java.util.UUID;
+
+import org.bukkit.entity.LivingEntity;
 
 /**
  * LIVING ACTOR — Interface chung cho Player + Entity trong combat
@@ -33,7 +32,7 @@ public interface LivingActor {
     CultivationRealm getRealm();
     
     /**
-     * Level trong canh gioi (1-9)
+     * Level trong canh gioi (1-10)
      */
     int getLevel();
     

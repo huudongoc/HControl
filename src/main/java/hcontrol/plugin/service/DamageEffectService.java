@@ -1,11 +1,12 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.model.CultivationRealm;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
+
+import hcontrol.plugin.model.CultivationRealm;
 
 /**
  * DAMAGE EFFECT SERVICE
@@ -25,11 +26,24 @@ public class DamageEffectService {
     // ========== BI DAME ==========
     
     /**
-     * Hieu ung khi player bi danh trung
+     * Hieu ung khi entity bi danh trung (Player hoac Mob)
      * Particle + sound phu thuoc vao canh gioi cua nguoi bi danh
+     * @param victim Player bi danh (null neu la mob)
+     * @param victimRealm Canh gioi cua nguoi bi danh
+     * @param damage Damage
+     * @param isVIP Co phai VIP khong
+     * @param hitLocation Vi tri bi danh (bat buoc neu victim la null)
      */
-    public void playHitEffect(Player victim, CultivationRealm victimRealm, double damage, boolean isVIP) {
-        Location loc = victim.getLocation().add(0, 1, 0);
+    public void playHitEffect(Player victim, CultivationRealm victimRealm, double damage, boolean isVIP, Location hitLocation) {
+        // Lay location tu hitLocation hoac tu victim
+        Location loc;
+        if (hitLocation != null) {
+            loc = hitLocation.clone().add(0, 1, 0);
+        } else if (victim != null) {
+            loc = victim.getLocation().add(0, 1, 0);
+        } else {
+            return; // Khong the hien thi effect neu khong co location
+        }
         
         // Particle effect theo canh gioi
         Particle particle = getHitParticle(victimRealm);
@@ -38,8 +52,10 @@ public class DamageEffectService {
         // Particle bi danh (ring effect)
         spawnHitRing(loc, particle, color, isVIP);
         
-        // Sound bi danh
-        playHitSound(victim, victimRealm, damage);
+        // Sound bi danh (chi cho Player)
+        if (victim != null) {
+            playHitSound(victim, victimRealm, damage);
+        }
         
         // VIP effect: them particle long lay
         if (isVIP) {
@@ -218,7 +234,7 @@ public class DamageEffectService {
      * Mau chu phu thuoc vao realm suppression
      */
     public void spawnFloatingDamage(Location loc, double damage, String damageColor, boolean isCrit) {
-        String text = String.format("%s%.0f", damageColor, damage);
+        String text = String.format("%s%.1f", damageColor, damage);
         
         if (isCrit) {
             text = "§l" + text + "!";

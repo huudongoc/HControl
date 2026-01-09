@@ -1,8 +1,11 @@
 package hcontrol.plugin.core;
 
+import org.bukkit.entity.Player;
+
 import hcontrol.plugin.Main;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.service.DisplayFormatService;
 import hcontrol.plugin.ui.ChatBubbleService;
 import hcontrol.plugin.ui.EntityDialogService;
 import hcontrol.plugin.ui.EntityNameplateService;
@@ -20,6 +23,7 @@ import hcontrol.plugin.ui.UiStateService;
 public class UIContext {
     
     private final Main plugin;
+    private final DisplayFormatService displayFormatService;
     
     // Player UI
     private PlayerUIService playerUIService;
@@ -40,15 +44,17 @@ public class UIContext {
     
     public UIContext(Main plugin) {
         this.plugin = plugin;
+        this.displayFormatService = DisplayFormatService.getInstance();
     }
     
     /**
      * Init Player UI Services (goi tu registerPlayerSystem)
+     * Can truyen vao CultivationProgressService tu PlayerContext
      */
-    public void initPlayerUI(PlayerManager playerManager) {
-        this.playerUIService = new PlayerUIService(playerManager);
-        this.scoreboardService = new ScoreboardService(playerManager);
-        this.nameplateService = new NameplateService(playerManager);
+    public void initPlayerUI(PlayerManager playerManager, hcontrol.plugin.service.CultivationProgressService cultivationProgressService) {
+        this.playerUIService = new PlayerUIService(playerManager, displayFormatService, cultivationProgressService);
+        this.scoreboardService = new ScoreboardService(playerManager, displayFormatService, cultivationProgressService);
+        this.nameplateService = new NameplateService(playerManager, displayFormatService);
         this.chatBubbleService = new ChatBubbleService(plugin);
         
         // Tribulation UI
@@ -60,11 +66,13 @@ public class UIContext {
      * Init Entity UI Services (goi tu registerCombatSystem)
      */
     public void initEntityUI(EntityManager entityManager) {
-        this.entityNameplateService = new EntityNameplateService(entityManager, plugin);
+        this.entityNameplateService = new EntityNameplateService(entityManager, plugin, displayFormatService);
         this.entityDialogService = new EntityDialogService(plugin);
     }
     
     // ========== GETTERS ==========
+    
+    public DisplayFormatService getDisplayFormatService() { return displayFormatService; }
     
     public PlayerUIService getPlayerUIService() { return playerUIService; }
     public ScoreboardService getScoreboardService() { return scoreboardService; }
@@ -78,6 +86,21 @@ public class UIContext {
     public TribulationUI getTribulationUI() { return tribulationUI; }
     
     public ScoreboardUpdateTask getScoreboardUpdateTask() { return scoreboardUpdateTask; }
+    
+    // ========== HELPER METHODS ==========
+    
+    /**
+     * Update tat ca UI cho player (scoreboard + nameplate)
+     * Helper method de tranh duplicate code
+     */
+    public void updateAllUI(Player player) {
+        if (scoreboardService != null) {
+            scoreboardService.updateScoreboard(player);
+        }
+        if (nameplateService != null) {
+            nameplateService.updateNameplate(player);
+        }
+    }
     
     // ========== SETTERS (cho lifecycle) ==========
     

@@ -1,4 +1,4 @@
-package hcontrol.plugin.player;
+package hcontrol.plugin.service;
 
 import hcontrol.plugin.model.SpiritualRoot;
 import hcontrol.plugin.model.RootQuality;

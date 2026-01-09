@@ -1,7 +1,7 @@
 package hcontrol.plugin.core;
 
 import hcontrol.plugin.Main;
-import hcontrol.plugin.player.BreakthroughService;
+import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.service.TitleService;
 import hcontrol.plugin.service.TribulationService;
 

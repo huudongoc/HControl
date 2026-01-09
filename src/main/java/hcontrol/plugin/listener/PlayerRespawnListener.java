@@ -3,7 +3,7 @@ package hcontrol.plugin.listener;
 import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.player.PlayerHealthService;
+import hcontrol.plugin.service.PlayerHealthService;
 import hcontrol.plugin.ui.PlayerUIService;
 import hcontrol.plugin.ui.ScoreboardService;
 import org.bukkit.entity.Player;

@@ -2,10 +2,11 @@ package hcontrol.plugin.core;
 
 import hcontrol.plugin.Main;
 import hcontrol.plugin.player.AutoSaveTask;
-import hcontrol.plugin.player.LevelService;
-import hcontrol.plugin.player.PlayerHealthService;
+import hcontrol.plugin.service.LevelService;
+import hcontrol.plugin.service.PlayerHealthService;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerStorage;
+import hcontrol.plugin.service.CultivationProgressService;
 import hcontrol.plugin.service.StatService;
 
 /**
@@ -18,6 +19,7 @@ public class PlayerContext {
     private final PlayerManager playerManager;
     private final PlayerStorage playerStorage;
     private LevelService levelService;  // Khong final de co the inject sau
+    private CultivationProgressService cultivationProgressService;  // Khong final de co the inject sau
     private final PlayerHealthService playerHealthService;
     private final StatService statService;
     
@@ -31,6 +33,7 @@ public class PlayerContext {
         this.playerHealthService = new PlayerHealthService();
         this.statService = new StatService();
         this.levelService = null;  // Inject sau khi CombatContext da tao
+        this.cultivationProgressService = null;  // Inject sau khi co LevelService
     }
     
     /**
@@ -51,6 +54,7 @@ public class PlayerContext {
     public PlayerManager getPlayerManager() { return playerManager; }
     public PlayerStorage getPlayerStorage() { return playerStorage; }
     public LevelService getLevelService() { return levelService; }
+    public CultivationProgressService getCultivationProgressService() { return cultivationProgressService; }
     public PlayerHealthService getPlayerHealthService() { return playerHealthService; }
     public StatService getStatService() { return statService; }
     public AutoSaveTask getAutoSaveTask() { return autoSaveTask; }
@@ -59,6 +63,10 @@ public class PlayerContext {
     
     public void setLevelService(LevelService levelService) {
         this.levelService = levelService;
+        // Khi set LevelService, tao luon CultivationProgressService
+        if (this.cultivationProgressService == null) {
+            this.cultivationProgressService = new CultivationProgressService(levelService);
+        }
     }
     
     public void setAutoSaveTask(AutoSaveTask autoSaveTask) {

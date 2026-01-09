@@ -4,34 +4,34 @@ import org.bukkit.Bukkit;
 
 import hcontrol.plugin.Main;
 import hcontrol.plugin.command.BreakthroughCommand;
-import hcontrol.plugin.command.TuviCommand;
 import hcontrol.plugin.command.ReloadCommand;
-import hcontrol.plugin.command.StatCommand;
 import hcontrol.plugin.command.SpawnBossCommand;
+import hcontrol.plugin.command.StatCommand;
 import hcontrol.plugin.command.TitleCommand;
+import hcontrol.plugin.command.TuviCommand;
 import hcontrol.plugin.command.UnlockCommand;
-import hcontrol.plugin.listener.PlayerCombatListener;
-import hcontrol.plugin.listener.PlayerDeathListener;
-import hcontrol.plugin.listener.EntityLifecycleListener;
-import hcontrol.plugin.listener.PlayerChatListener;
-import hcontrol.plugin.player.AutoSaveTask;
-import hcontrol.plugin.player.BreakthroughService;
-import hcontrol.plugin.player.LevelService;
-import hcontrol.plugin.player.PlayerHealthService;
-import hcontrol.plugin.player.PlayerManager;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.player.PlayerStorage;
-import hcontrol.plugin.listener.JoinServerListener;
-import hcontrol.plugin.listener.OutServerListener;
-import hcontrol.plugin.listener.PlayerRespawnListener;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityRegistry;
 import hcontrol.plugin.entity.EntityService;
+import hcontrol.plugin.listener.EntityLifecycleListener;
+import hcontrol.plugin.listener.JoinServerListener;
+import hcontrol.plugin.listener.OutServerListener;
+import hcontrol.plugin.listener.PlayerChatListener;
+import hcontrol.plugin.listener.PlayerCombatListener;
+import hcontrol.plugin.listener.PlayerDeathListener;
+import hcontrol.plugin.listener.PlayerRespawnListener;
 import hcontrol.plugin.module.boss.BossManager;
+import hcontrol.plugin.player.AutoSaveTask;
+import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.player.PlayerStorage;
+import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.service.CombatService;
 import hcontrol.plugin.service.DamageEffectService;
 import hcontrol.plugin.service.EventEffectService;
+import hcontrol.plugin.service.LevelService;
 import hcontrol.plugin.service.LevelUpEffectService;
+import hcontrol.plugin.service.PlayerHealthService;
 import hcontrol.plugin.service.SoundService;
 import hcontrol.plugin.service.StatService;
 import hcontrol.plugin.service.TitleService;
@@ -164,7 +164,9 @@ public class CoreContext {
             ));
             plugin.getCommand("dokiep").setExecutor(new BreakthroughCommand(
                 playerContext.getPlayerManager(), 
-                cultivationContext.getBreakthroughService()
+                cultivationContext.getBreakthroughService(),
+                uiContext,
+                uiContext.getTribulationUI()
             ));
             plugin.getCommand("spawnboss").setExecutor(new SpawnBossCommand(
                 entityContext.getBossManager()
@@ -189,8 +191,11 @@ public class CoreContext {
         lifecycleManager.registerOnEnable(() -> {
             plugin.getLogger().info("[PHASE 1] Đang khởi tạo Player System...");
             
-            // Init Player UI trong UIContext
-            uiContext.initPlayerUI(playerContext.getPlayerManager());
+            // Init Player UI trong UIContext (inject CultivationProgressService)
+            uiContext.initPlayerUI(
+                playerContext.getPlayerManager(), 
+                playerContext.getCultivationProgressService()
+            );
             
             // Register Listeners
             joinListener = new JoinServerListener(
@@ -323,7 +328,8 @@ public class CoreContext {
             // Register CombatListener
             combatListener = new PlayerCombatListener(
                 playerContext.getPlayerManager(), 
-                combatContext.getCombatService()
+                combatContext.getCombatService(),
+                combatContext.getDisableDameService()
             );
             Bukkit.getPluginManager().registerEvents(combatListener, plugin);
             

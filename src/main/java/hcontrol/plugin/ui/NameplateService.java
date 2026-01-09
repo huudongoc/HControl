@@ -1,8 +1,8 @@
 package hcontrol.plugin.ui;
 
-import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.DisplayFormatService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
@@ -14,19 +14,22 @@ import java.util.UUID;
 
 /**
  * NAMEPLATE SERVICE
- * Hien thi ten, level, realm, danh hieu tren dau player/boss
+ * Hien thi ten, level, realm, danh hieu tren dau player
+ * KHONG chua logic tinh toan - chi su dung DisplayFormatService
  */
 public class NameplateService {
     
     private final PlayerManager playerManager;
+    private final DisplayFormatService displayFormatService;
     private final Map<UUID, Long> lastUpdateTime = new HashMap<>();
     private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay - tranh flash
     
     // Cache prefix de tranh update neu khong thay doi
-    private final Map<UUID, String> lastPrefix = new HashMap<>(); // 0.5s cooldown
+    private final Map<UUID, String> lastPrefix = new HashMap<>();
     
-    public NameplateService(PlayerManager playerManager) {
+    public NameplateService(PlayerManager playerManager, DisplayFormatService displayFormatService) {
         this.playerManager = playerManager;
+        this.displayFormatService = displayFormatService;
     }
     
     /**
@@ -56,39 +59,14 @@ public class NameplateService {
             lastUpdateTime.put(uuid, now);
         }
         
-        CultivationRealm realm = profile.getRealm();
-        int level = profile.getLevel();
-        
-        // Tinh % HP
-        double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getStats().getMaxHP();
-        double hpPercent = (currentHP / maxHP) * 100.0;
-        
-        // Mau sac HP theo %
-        String hpColor;
-        if (hpPercent >= 75) {
-            hpColor = "§a";  // xanh la - khoe manh
-        } else if (hpPercent >= 50) {
-            hpColor = "§e";  // vang - binh thuong
-        } else if (hpPercent >= 25) {
-            hpColor = "§6";  // cam - nguy hiem
-        } else {
-            hpColor = "§c";  // do - sap chet
-        }
-        
-        // Danh hieu (neu co)
-        String titleDisplay = "";
+        // Lay title icon (neu co)
+        String titleIcon = "";
         if (profile.getActiveTitle() != null && profile.getActiveTitle().getIcon() != null) {
-            titleDisplay = profile.getActiveTitle().getIcon();
+            titleIcon = profile.getActiveTitle().getIcon();
         }
         
-        // Tier name (Ha/Trung/Thuong/Dinh)
-        String tierName = getTierName(level);
-        
-        // Format: [Title Icon] [Realm Tier] ❤ HP% PlayerName (KHONG hien thi level so)
-        String prefix = titleDisplay + 
-                       realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
-                       hpColor + "❤ " + String.format("%.0f", hpPercent) + "% §f";
+        // Su dung DisplayFormatService de format nameplate (KHONG tinh toan logic o day)
+        String prefix = displayFormatService.formatPlayerNameplate(profile, titleIcon);
         
         // CHECK NEU PREFIX KHONG THAY DOI - SKIP UPDATE (tranh flash)
         String cachedPrefix = lastPrefix.get(uuid);
@@ -109,9 +87,6 @@ public class NameplateService {
         team.setPrefix(prefix);
         
         // Cho player khac nhin thay
-        // NOTE: Loop nay cap nhat scoreboard cua TAT CA PLAYER ONLINE
-        // → Throttle chi check UUID cua player duoc update, KHONG check player nao dang nhin thay
-        // → Co the gay "flash" neu nhieu player update lien tiep (vi moi player cap nhat scoreboard cua tat ca)
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             
@@ -162,15 +137,5 @@ public class NameplateService {
                 otherTeam.unregister();
             }
         }
-    }
-    
-    /**
-     * Lay tier name tu level
-     */
-    private String getTierName(int level) {
-        if (level <= 3) return "§7Hạ";
-        if (level <= 6) return "§eTrung";
-        if (level <= 9) return "§6Thượng";
-        return "§cĐỉnh";
     }
 }

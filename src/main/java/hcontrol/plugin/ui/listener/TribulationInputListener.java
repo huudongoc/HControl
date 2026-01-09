@@ -6,7 +6,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
 
 import hcontrol.plugin.ui.*;
-import hcontrol.plugin.player.BreakthroughService;
+import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.model.BreakthroughResult;

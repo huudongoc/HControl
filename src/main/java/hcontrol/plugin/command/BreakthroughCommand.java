@@ -1,7 +1,8 @@
 package hcontrol.plugin.command;
 
+import hcontrol.plugin.core.UIContext;
 import hcontrol.plugin.model.BreakthroughResult;
-import hcontrol.plugin.player.BreakthroughService;
+import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -22,10 +23,15 @@ public class BreakthroughCommand implements CommandExecutor {
     
     private final PlayerManager playerManager;
     private final BreakthroughService breakthroughService;
+    private final UIContext uiContext;
+    private final TribulationUI tribulationUI;
     
-    public BreakthroughCommand(PlayerManager playerManager, BreakthroughService breakthroughService) {
+    public BreakthroughCommand(PlayerManager playerManager, BreakthroughService breakthroughService,
+                               UIContext uiContext, TribulationUI tribulationUI) {
         this.playerManager = playerManager;
         this.breakthroughService = breakthroughService;
+        this.uiContext = uiContext;
+        this.tribulationUI = tribulationUI;
     }
     
     @Override
@@ -54,44 +60,12 @@ public class BreakthroughCommand implements CommandExecutor {
         BreakthroughResult checkResult = breakthroughService.checkConditions(profile);
         
         if (checkResult == BreakthroughResult.ON_COOLDOWN) {
-            long remaining = breakthroughService.getCooldownRemaining(player.getUniqueId());
-            String timeStr = breakthroughService.formatCooldown(remaining);
-            player.sendMessage("§c⏰ Dang trong thoi gian hoi phuc!");
-            player.sendMessage("§7Con lai: §e" + timeStr);
+            handleCooldown(player);
             return true;
         }
         
         if (checkResult == BreakthroughResult.INSUFFICIENT_CULTIVATION) {
-            long required = nextRealm.getRequiredCultivation();
-            int maxLevel = currentRealm.getMaxLevelInRealm();
-            
-            player.sendMessage("§c❌ Chua du dieu kien de dot pha!");
-            player.sendMessage("");
-            
-            // Check level
-            if (profile.getLevel() < maxLevel) {
-                player.sendMessage("§7✘ Level: §c" + profile.getLevel() + "§7/§e" + maxLevel + " §c(Chua max!)");
-            } else {
-                player.sendMessage("§7✔ Level: §a" + profile.getLevel() + "§7/§a" + maxLevel);
-            }
-            
-            // Check cultivation
-            if (profile.getCultivation() < required) {
-                player.sendMessage("§7✘ Tu vi: §c" + profile.getCultivation() + "§7/§e" + required + " §c(Chua du!)");
-            } else {
-                player.sendMessage("§7✔ Tu vi: §a" + profile.getCultivation() + "§7/§a" + required);
-            }
-            
-            // Check breakthrough unlock
-            if (!profile.isBreakthroughUnlocked()) {
-                player.sendMessage("§7✘ Mo khoa dot pha: §c✘ Chua mo khoa!");
-                player.sendMessage("§7   §eCan: Nhiem vu dot pha / Giet boss tinh anh / Vuot thien kiep");
-            } else {
-                player.sendMessage("§7✔ Mo khoa dot pha: §a✔ Da mo khoa");
-            }
-            
-            player.sendMessage("");
-            player.sendMessage("§7Can: §eLevel " + maxLevel + " §7+ §e" + required + " tu vi §7+ §eMo khoa dot pha");
+            handleInsufficientCultivation(player, profile, currentRealm, nextRealm);
             return true;
         }
         
@@ -117,7 +91,6 @@ public class BreakthroughCommand implements CommandExecutor {
         player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         player.sendMessage("");
         
-        TribulationUI tribulationUI = hcontrol.plugin.core.CoreContext.getInstance().getTribulationUI();
         if (tribulationUI != null) {
             tribulationUI.showConfirm(player);
         } else {
@@ -148,6 +121,53 @@ public class BreakthroughCommand implements CommandExecutor {
     }
     
     /**
+     * Extract method: Xu ly cooldown (duplicate trong onCommand va handleBreakthroughResult)
+     */
+    private void handleCooldown(Player player) {
+        long remaining = breakthroughService.getCooldownRemaining(player.getUniqueId());
+        String timeStr = breakthroughService.formatCooldown(remaining);
+        player.sendMessage("§c⏰ Dang trong thoi gian hoi phuc!");
+        player.sendMessage("§7Con lai: §e" + timeStr);
+    }
+    
+    /**
+     * Extract method: Xu ly insufficient cultivation (duplicate trong onCommand va handleBreakthroughResult)
+     */
+    private void handleInsufficientCultivation(Player player, PlayerProfile profile,
+                                               CultivationRealm currentRealm, CultivationRealm nextRealm) {
+        long required = nextRealm.getRequiredCultivation();
+        int maxLevel = currentRealm.getMaxLevelInRealm();
+        
+        player.sendMessage("§c❌ Chua du dieu kien de dot pha!");
+        player.sendMessage("");
+        
+        // Check level
+        if (profile.getLevel() < maxLevel) {
+            player.sendMessage("§7✘ Level: §c" + profile.getLevel() + "§7/§e" + maxLevel + " §c(Chua max!)");
+        } else {
+            player.sendMessage("§7✔ Level: §a" + profile.getLevel() + "§7/§a" + maxLevel);
+        }
+        
+        // Check cultivation
+        if (profile.getCultivation() < required) {
+            player.sendMessage("§7✘ Tu vi: §c" + profile.getCultivation() + "§7/§e" + required + " §c(Chua du!)");
+        } else {
+            player.sendMessage("§7✔ Tu vi: §a" + profile.getCultivation() + "§7/§a" + required);
+        }
+        
+        // Check breakthrough unlock
+        if (!profile.isBreakthroughUnlocked()) {
+            player.sendMessage("§7✘ Mo khoa dot pha: §c✘ Chua mo khoa!");
+            player.sendMessage("§7   §eCan: Nhiem vu dot pha / Giet boss tinh anh / Vuot thien kiep");
+        } else {
+            player.sendMessage("§7✔ Mo khoa dot pha: §a✔ Da mo khoa");
+        }
+        
+        player.sendMessage("");
+        player.sendMessage("§7Can: §eLevel " + maxLevel + " §7+ §e" + required + " tu vi §7+ §eMo khoa dot pha");
+    }
+    
+    /**
      * Xu ly ket qua dot pha
      */
     private void handleBreakthroughResult(Player player, BreakthroughResult result, 
@@ -155,46 +175,14 @@ public class BreakthroughCommand implements CommandExecutor {
                                          PlayerProfile profile) {
         
         if (result == BreakthroughResult.ON_COOLDOWN) {
-            long remaining = breakthroughService.getCooldownRemaining(player.getUniqueId());
-            String timeStr = breakthroughService.formatCooldown(remaining);
-            player.sendMessage("§c⏰ Dang trong thoi gian hoi phuc!");
-            player.sendMessage("§7Con lai: §e" + timeStr);
+            handleCooldown(player);
             return;
         }
         
         if (result == BreakthroughResult.INSUFFICIENT_CULTIVATION) {
             CultivationRealm currentRealm = profile.getRealm();
             CultivationRealm nextRealm = currentRealm.getNext();
-            long required = nextRealm.getRequiredCultivation();
-            int maxLevel = currentRealm.getMaxLevelInRealm();
-            
-            player.sendMessage("§c❌ Chua du dieu kien de dot pha!");
-            player.sendMessage("");
-            
-            // Check level
-            if (profile.getLevel() < maxLevel) {
-                player.sendMessage("§7✘ Level: §c" + profile.getLevel() + "§7/§e" + maxLevel + " §c(Chua max!)");
-            } else {
-                player.sendMessage("§7✔ Level: §a" + profile.getLevel() + "§7/§a" + maxLevel);
-            }
-            
-            // Check cultivation
-            if (profile.getCultivation() < required) {
-                player.sendMessage("§7✘ Tu vi: §c" + profile.getCultivation() + "§7/§e" + required + " §c(Chua du!)");
-            } else {
-                player.sendMessage("§7✔ Tu vi: §a" + profile.getCultivation() + "§7/§a" + required);
-            }
-            
-            // Check breakthrough unlock (NEW!)
-            if (!profile.isBreakthroughUnlocked()) {
-                player.sendMessage("§7✘ Mo khoa dot pha: §c✘ Chua mo khoa!");
-                player.sendMessage("§7   §eCan: Nhiem vu dot pha / Giet boss tinh anh / Vuot thien kiep");
-            } else {
-                player.sendMessage("§7✔ Mo khoa dot pha: §a✔ Da mo khoa");
-            }
-            
-            player.sendMessage("");
-            player.sendMessage("§7Can: §eLevel " + maxLevel + " §7+ §e" + required + " tu vi §7+ §eMo khoa dot pha");
+            handleInsufficientCultivation(player, profile, currentRealm, nextRealm);
             return;
         }
         
@@ -212,8 +200,8 @@ public class BreakthroughCommand implements CommandExecutor {
             player.sendMessage("§7    Noi thuong: §a0%");
             player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             
-            // Update UI
-            updateUI(player);
+            // Update UI - su dung UIContext thay vi CoreContext.getInstance()
+            uiContext.updateAllUI(player);
             return;
         }
         
@@ -316,21 +304,6 @@ public class BreakthroughCommand implements CommandExecutor {
                 loc.clone().add(Math.random() - 0.5, Math.random(), Math.random() - 0.5),
                 1, 0, 0, 0, 0
             );
-        }
-    }
-    
-    /**
-     * Update UI sau dot pha
-     */
-    private void updateUI(Player player) {
-        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getScoreboardService();
-        if (scoreboardService != null) {
-            scoreboardService.updateScoreboard(player);
-        }
-        
-        var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getNameplateService();
-        if (nameplateService != null) {
-            nameplateService.updateNameplate(player);
         }
     }
     

@@ -3,16 +3,27 @@ package hcontrol.plugin.ui;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.CultivationProgressService;
+import hcontrol.plugin.service.DisplayFormatService;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+/**
+ * PLAYER UI SERVICE
+ * Hien thi thong tin player khi join/quit
+ * KHONG chua logic tinh toan - chi su dung DisplayFormatService va CultivationProgressService
+ */
 public class PlayerUIService {
     
     private final PlayerManager playerManager;
+    private final DisplayFormatService displayFormatService;
+    private final CultivationProgressService cultivationProgressService;
     
-    public PlayerUIService(PlayerManager playerManager) {
+    public PlayerUIService(PlayerManager playerManager, DisplayFormatService displayFormatService, CultivationProgressService cultivationProgressService) {
         this.playerManager = playerManager;
+        this.displayFormatService = displayFormatService;
+        this.cultivationProgressService = cultivationProgressService;
     }
     
     public void handlePlayerJoin(Player player) {
@@ -51,14 +62,14 @@ public class PlayerUIService {
         player.sendMessage("§6§l━━━━━━━━━━━━━ §e⚡ TU SI THONG TIN §6§l━━━━━━━━━━━━━");
         player.sendMessage("");
         
-        // Canh gioi + tier (KHONG hien thi level so)
-        String tierName = getTierName(profile.getLevel());
-        player.sendMessage("§7  ► Canh gioi: " + profile.getRealm().getColor() + profile.getRealm().getDisplayName() + " " + tierName);
+        // Canh gioi + tier (KHONG hien thi level so) - su dung DisplayFormatService
+        String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());
+        player.sendMessage("§7  ► Canh gioi: " + realmTierText);
         
-        // Tu vi progress
+        // Tu vi progress - su dung CultivationProgressService
         long currentCult = profile.getCultivation();
-        long requiredCult = getRequiredCultivation(profile);
-        double cultPercent = requiredCult > 0 ? (double)currentCult / requiredCult * 100 : 100.0;
+        long requiredCult = cultivationProgressService.getRequiredCultivation(profile);
+        double cultPercent = cultivationProgressService.getCultivationPercent(profile);
         player.sendMessage("§7  ► Tu vi: §e" + String.format("%.1f%%", cultPercent) + " §8(" + currentCult + "/" + requiredCult + ")");
         
         player.sendMessage("");
@@ -99,41 +110,6 @@ public class PlayerUIService {
         player.sendMessage(ChatColor.GOLD + "✦ ═══════════════════ ✦");
         player.sendMessage(ChatColor.AQUA + "    Chao mung den server!");
         player.sendMessage(ChatColor.GOLD + "✦ ═══════════════════ ✦");
-    }
-    
-    /**
-     * Tinh cultivation can thiet len level ke tiep
-     */
-    private long getRequiredCultivation(PlayerProfile profile) {
-        int level = profile.getLevel();
-        int maxLevel = getMaxLevelForRealm(profile.getRealm());
-        if (level >= maxLevel) return 0;
-        
-        return (long) (100 * Math.pow(level + 1, 2));
-    }
-    
-    private int getMaxLevelForRealm(hcontrol.plugin.model.CultivationRealm realm) {
-        switch(realm) {
-            case MORTAL: return 10;
-            case QI_REFINING: return 9;
-            case FOUNDATION: return 9;
-            case GOLDEN_CORE: return 9;
-            default: return 10;
-        }
-    }
-    
-    /**
-     * Lay tier name tu level
-     */
-    private String getTierName(int level) {
-        if (level <= 3) return "§7Hạ";
-        if (level <= 6) return "§eTrung";
-        if (level <= 9) return "§6Thượng";
-        return "§cĐỉnh";
-    }
-    private long getRequiredExp(PlayerProfile profile) {
-        int level = profile.getLevel();
-        return (long) (Math.pow(level, 2) * 100);
     }
     
     public void handlePlayerQuit(Player player) {

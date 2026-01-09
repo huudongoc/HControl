@@ -1,17 +1,18 @@
 package hcontrol.plugin.player;
 
-import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.model.LivingActor;
-import hcontrol.plugin.model.SpiritualRoot;
-import hcontrol.plugin.model.RootQuality;
-import hcontrol.plugin.model.PlayerStats;
-import hcontrol.plugin.model.Title;
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.model.LivingActor;
+import hcontrol.plugin.model.PlayerStats;
+import hcontrol.plugin.model.RootQuality;
+import hcontrol.plugin.model.SpiritualRoot;
+import hcontrol.plugin.model.Title;
 
 public class PlayerProfile implements LivingActor {
 
@@ -80,7 +81,7 @@ public class PlayerProfile implements LivingActor {
         // khoi tao spiritual root (random)
         this.spiritualRoot = SpiritualRoot.randomSpiritualRoot();
         this.rootQuality = RootQuality.randomQuality();
-        
+            
         // khoi tao dao heart & state
         this.daoHeart = 100.0;  // dao tam hoan hao
         this.innerInjury = 0.0;  // khong noi thuong

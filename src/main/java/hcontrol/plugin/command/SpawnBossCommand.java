@@ -30,6 +30,12 @@ public class SpawnBossCommand implements CommandExecutor {
             return true;
         }
         
+        // Check permission: chi admin/op moi duoc spawn boss
+        if (!player.hasPermission("hcontrol.admin")) {
+            player.sendMessage("§cBạn không có quyền sử dụng lệnh này!");
+            return true;
+        }
+        
         if (args.length < 1) {
             player.sendMessage("§eUsage: /spawnboss <ten> [type]");
             player.sendMessage("§7Type: FIELD, DUNGEON, WORLD, RAID");

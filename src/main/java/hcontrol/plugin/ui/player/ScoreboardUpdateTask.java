@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.player;
 
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;

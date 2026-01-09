@@ -1,11 +1,11 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.event.PlayerLevelUpEvent;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.service.LevelUpEffectService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+
+import hcontrol.plugin.event.PlayerLevelUpEvent;
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.player.PlayerProfile;
 
 public class LevelService {
 
@@ -167,7 +167,7 @@ public class LevelService {
                 effectService.playLevelUpEffect(player, nextLevel, tierName);
                 
                 // Sync vanilla health (maxHP tang theo level)
-                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
                 healthService.syncHealth(player, profile);
             }
         }

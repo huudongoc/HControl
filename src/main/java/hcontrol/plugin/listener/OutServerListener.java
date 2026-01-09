@@ -8,7 +8,7 @@ import hcontrol.plugin.core.LifecycleManager;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.player.PlayerStorage;
-import hcontrol.plugin.ui.PlayerUIService;
+import hcontrol.plugin.ui.player.PlayerUIService;
 
 public class OutServerListener implements Listener {
     private final PlayerUIService playerUIService;

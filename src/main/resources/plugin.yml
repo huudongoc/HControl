@@ -14,11 +14,6 @@ commands:
     description: Xem va them tu vi (cultivation)
     usage: /tuvi [add <amount>]
     permission: hcontrol.admin
-
-  tuvi:
-    description: Xem (cultivation)
-    usage: /tuvi
-    permission: hcontrol.use
   dokiep:
     description: Do kiep - breakthrough len dai canh gioi moi (tribulation)
     usage: /dokiep
@@ -49,6 +44,15 @@ commands:
     description: Mo khoa dieu kien level up (quest/kill/achievement/pill)
     usage: /unlock [quest|kill|achievement|pill|force]
     aliases: [mokhoa]
+    permission: hcontrol.admin
+    
+  role:
+    description: Xem va set role (title) cua chinh minh
+    usage: /role | /role <role> | /role remove
+    permission: hcontrol.use
+  setrole:
+    description: Set role cho player khac (admin only)
+    usage: /setrole <player> <role> | /setrole <player> remove | /setrole clearall | /setrole list
     permission: hcontrol.admin
 
 permissions:

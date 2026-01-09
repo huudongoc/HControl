@@ -103,7 +103,7 @@ public class PlayerCombatListener implements Listener {
         profile.setCurrentHP(newHP);
         
         // Sync vanilla health (scale)
-        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
         healthService.updateCurrentHealth(player, profile);
         
         // Check chet

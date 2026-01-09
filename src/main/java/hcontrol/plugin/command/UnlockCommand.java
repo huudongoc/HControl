@@ -30,6 +30,12 @@ public class UnlockCommand implements CommandExecutor {
             return true;
         }
 
+        // Check permission: chi admin/op moi duoc unlock
+        if (!player.hasPermission("hcontrol.admin")) {
+            player.sendMessage("§cBạn không có quyền sử dụng lệnh này!");
+            return true;
+        }
+
         PlayerProfile profile = playerManager.get(player.getUniqueId());
         if (profile == null) {
             player.sendMessage("§cLỗi: Không tìm thấy profile!");

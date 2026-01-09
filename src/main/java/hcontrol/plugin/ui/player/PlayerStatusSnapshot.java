@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.player;
 
 public class PlayerStatusSnapshot {
 

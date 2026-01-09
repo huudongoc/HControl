@@ -2,8 +2,9 @@ package hcontrol.plugin.listener;
 
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityService;
+import hcontrol.plugin.ui.entity.EntityNameplateService;
 import hcontrol.plugin.entity.EntityProfile;
-import hcontrol.plugin.ui.EntityNameplateService;
+
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

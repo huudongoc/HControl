@@ -1,14 +1,15 @@
 package hcontrol.plugin.service;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import org.bukkit.entity.Player;
+
 import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerProfile;
-import org.bukkit.entity.Player;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 
 /**
  * BREAKTHROUGH SERVICE
@@ -149,7 +150,7 @@ public class BreakthroughService {
         // Sync vanilla health (realm va level thay doi -> maxHP thay doi)
         Player player = profile.getPlayer();
         if (player != null && player.isOnline()) {
-            var healthService = CoreContext.getInstance().getPlayerHealthService();
+            var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
             healthService.syncHealth(player, profile);
         }
         
@@ -282,7 +283,7 @@ public class BreakthroughService {
         // Sync vanilla health (realm/level thay doi -> maxHP thay doi)
         Player player = profile.getPlayer();
         if (player != null && player.isOnline()) {
-            var healthService = CoreContext.getInstance().getPlayerHealthService();
+            var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
             healthService.syncHealth(player, profile);
         }
         
@@ -324,7 +325,7 @@ public class BreakthroughService {
         // Sync vanilla health (tan phe -> maxHP co the thay doi)
         Player player = profile.getPlayer();
         if (player != null && player.isOnline()) {
-            var healthService = CoreContext.getInstance().getPlayerHealthService();
+            var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
             healthService.syncHealth(player, profile);
         }
         
@@ -341,8 +342,7 @@ public class BreakthroughService {
      * Set cooldown vao PlayerProfile (persistent)
      */
     private void setCooldown(UUID uuid, long durationMs) {
-        // Khong luu vao HashMap nua
-        // BreakthroughCommand se goi profile.setBreakthroughCooldownEnd(...)
+        breakthroughCooldowns.put(uuid, System.currentTimeMillis() + durationMs);
     }
     
     private boolean isOnCooldown(UUID uuid) {

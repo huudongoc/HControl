@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.player;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;

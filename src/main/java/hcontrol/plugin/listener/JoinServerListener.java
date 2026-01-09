@@ -10,9 +10,9 @@ import hcontrol.plugin.core.LifecycleManager;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.player.PlayerStorage;
-import hcontrol.plugin.ui.PlayerUIService;
-import hcontrol.plugin.ui.ScoreboardService;
-import hcontrol.plugin.ui.NameplateService;
+import hcontrol.plugin.ui.player.NameplateService;
+import hcontrol.plugin.ui.player.PlayerUIService;
+import hcontrol.plugin.ui.player.ScoreboardService;
 
 public class JoinServerListener implements Listener {
     private final PlayerUIService playerUIService;
@@ -51,7 +51,7 @@ public class JoinServerListener implements Listener {
         lifecycleManager.onPlayerLoad(profile);
         
         // sync vanilla health with tu tien stats
-        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
         healthService.syncHealth(player, profile);
         
         // set attack speed based on AGI (danh nhanh hon vanilla)

@@ -41,8 +41,13 @@ public class TuviCommand implements CommandExecutor {
             return true;
         }
 
-        // Add cultivation (thay cho exp)
+        // Add cultivation (thay cho exp) - CHI ADMIN MOI DUNG DUOC
         if (args.length == 2 && args[0].equalsIgnoreCase("add")) {
+            // Check permission: chi admin/op moi duoc add tu vi
+            if (!player.hasPermission("hcontrol.admin")) {
+                player.sendMessage("§cBạn không có quyền sử dụng lệnh này!");
+                return true;
+            }
             long cultivation;
             try {
                 cultivation = Long.parseLong(args[1]);

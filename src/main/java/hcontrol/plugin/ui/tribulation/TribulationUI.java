@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.tribulation;
 
 import org.bukkit.*;
 import org.bukkit.boss.*;

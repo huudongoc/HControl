@@ -74,15 +74,15 @@ public class DisplayFormatService {
         // Danh hieu (neu co)
         String titleDisplay = (titleIcon != null && !titleIcon.isEmpty()) ? titleIcon + " " : "";
         
-        // Format: [Title Icon] [Realm Tier] ❤ HP% PlayerName
+        // Format: [Title Icon] [Realm Tier] ❤ currentHP/maxHP PlayerName
         return titleDisplay + 
                realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
-               hpColor + "❤ " + String.format("%.0f", hpPercent) + "% §f";
+               hpColor + "Player❤ "+  String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "% §f";
     }
     
     /**
      * Format nameplate cho entity (boss/elite/mob)
-     * Format: [BOSS/Elite] [Realm] Name ❤ HP%
+     * Format: [BOSS/Elite] [Realm] Name ❤ currentHP/maxHP
      */
     public String formatEntityNameplate(EntityProfile profile, String displayName) {
         // Boss/Elite prefix
@@ -106,11 +106,11 @@ public class DisplayFormatService {
         String realmColor = realm.getColor();
         String realmName = realm.getDisplayName();
         
-        // Format: [Prefix] [Realm] Name ❤ HP%
+        // Format: [Prefix] [Realm] Name ❤ currentHP/maxHP
         return prefix + 
                realmColor + "[" + realmName + "] §f" + 
                displayName + " " +
-               hpColor + "❤ " + String.format("%.0f", hpPercent) + "%";
+               hpColor + "Mods❤" + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "%";
     }
     
     /**

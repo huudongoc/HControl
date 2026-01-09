@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.entity;
 
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityProfile;

@@ -36,7 +36,7 @@ public class PlayerDeathListener implements Listener {
         profile.setCurrentHP(0);
         
         // Update scoreboard (se hien thi HP: 0/max)
-        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getScoreboardService();
+        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
         if (scoreboardService != null) {
             scoreboardService.updateScoreboard(player);
         }

@@ -1,20 +1,19 @@
 package hcontrol.plugin.core;
 
-import org.bukkit.entity.Player;
-
 import hcontrol.plugin.Main;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.service.DisplayFormatService;
-import hcontrol.plugin.ui.ChatBubbleService;
-import hcontrol.plugin.ui.EntityDialogService;
-import hcontrol.plugin.ui.EntityNameplateService;
-import hcontrol.plugin.ui.NameplateService;
-import hcontrol.plugin.ui.PlayerUIService;
-import hcontrol.plugin.ui.ScoreboardService;
-import hcontrol.plugin.ui.ScoreboardUpdateTask;
-import hcontrol.plugin.ui.TribulationUI;
-import hcontrol.plugin.ui.UiStateService;
+import hcontrol.plugin.ui.chat.ChatBubbleService;
+import hcontrol.plugin.ui.chat.ChatFormatService;
+import hcontrol.plugin.ui.entity.EntityDialogService;
+import hcontrol.plugin.ui.entity.EntityNameplateService;
+import hcontrol.plugin.ui.player.NameplateService;
+import hcontrol.plugin.ui.player.PlayerUIService;
+import hcontrol.plugin.ui.player.ScoreboardService;
+import hcontrol.plugin.ui.player.ScoreboardUpdateTask;
+import hcontrol.plugin.ui.tribulation.TribulationUI;
+import hcontrol.plugin.ui.tribulation.UiStateService;
 
 /**
  * UI CONTEXT — Player UI + Entity UI + Tribulation UI
@@ -30,6 +29,7 @@ public class UIContext {
     private ScoreboardService scoreboardService;
     private NameplateService nameplateService;
     private ChatBubbleService chatBubbleService;
+    private ChatFormatService chatFormatService;
     
     // Entity UI
     private EntityNameplateService entityNameplateService;
@@ -56,6 +56,7 @@ public class UIContext {
         this.scoreboardService = new ScoreboardService(playerManager, displayFormatService, cultivationProgressService);
         this.nameplateService = new NameplateService(playerManager, displayFormatService);
         this.chatBubbleService = new ChatBubbleService(plugin);
+        this.chatFormatService = new ChatFormatService();
         
         // Tribulation UI
         this.uiStateService = new UiStateService();
@@ -78,6 +79,7 @@ public class UIContext {
     public ScoreboardService getScoreboardService() { return scoreboardService; }
     public NameplateService getNameplateService() { return nameplateService; }
     public ChatBubbleService getChatBubbleService() { return chatBubbleService; }
+    public ChatFormatService getChatFormatService() { return chatFormatService; }
     
     public EntityNameplateService getEntityNameplateService() { return entityNameplateService; }
     public EntityDialogService getEntityDialogService() { return entityDialogService; }
@@ -92,13 +94,15 @@ public class UIContext {
     /**
      * Update tat ca UI cho player (scoreboard + nameplate)
      * Helper method de tranh duplicate code
+     * Note: Dùng Object thay vì Player để tránh import Bukkit trong core
+     * Caller sẽ cast về Player trước khi gọi (trong command/listener layer)
      */
-    public void updateAllUI(Player player) {
-        if (scoreboardService != null) {
-            scoreboardService.updateScoreboard(player);
+    public void updateAllUI(Object player) {
+        if (scoreboardService != null && player instanceof org.bukkit.entity.Player) {
+            scoreboardService.updateScoreboard((org.bukkit.entity.Player) player);
         }
-        if (nameplateService != null) {
-            nameplateService.updateNameplate(player);
+        if (nameplateService != null && player instanceof org.bukkit.entity.Player) {
+            nameplateService.updateNameplate((org.bukkit.entity.Player) player);
         }
     }
     

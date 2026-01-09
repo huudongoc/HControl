@@ -1,11 +1,14 @@
-package hcontrol.plugin.ui.listener;
+package hcontrol.plugin.ui.tribulation.listener;
 
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
 
-import hcontrol.plugin.ui.*;
+
+import hcontrol.plugin.ui.tribulation.TribulationUI;
+import hcontrol.plugin.ui.tribulation.UiState;
+import hcontrol.plugin.ui.tribulation.UiStateService;
 import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;

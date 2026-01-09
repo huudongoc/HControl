@@ -1,13 +1,14 @@
 package hcontrol.plugin.command;
 
-import hcontrol.plugin.player.PlayerManager;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.service.StatService;
-import hcontrol.plugin.stats.StatType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.StatService;
+import hcontrol.plugin.stats.StatType;
 
 public class StatCommand implements CommandExecutor {
 
@@ -76,7 +77,7 @@ public class StatCommand implements CommandExecutor {
             
             // Sync vanilla health neu them The Phach (maxHP tang)
             if (type == hcontrol.plugin.stats.StatType.THE_PHACH) {
-                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerHealthService();
+                var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
                 healthService.syncHealth(player, profile);
             }
             

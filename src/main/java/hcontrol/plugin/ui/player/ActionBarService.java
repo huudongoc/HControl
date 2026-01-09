@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.player;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -35,9 +35,9 @@ public class ActionBarService {
     }
     
     private String getTierName(int level) {
-        if (level <= 3) return "Hạ";
-        if (level <= 6) return "Trung";
-        if (level <= 9) return "Thượng";
-        return "Đỉnh";
+        if (level <= 3) return "§7Hạ Phẩm";
+        if (level <= 6) return "§eTrung Phẩm";
+        if (level <= 9) return "§6Thượng Phẩm";
+        return "§cĐỉnh Phẩm";
     }
 }

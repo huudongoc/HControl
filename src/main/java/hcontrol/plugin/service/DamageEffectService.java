@@ -234,6 +234,7 @@ public class DamageEffectService {
      * Mau chu phu thuoc vao realm suppression
      */
     public void spawnFloatingDamage(Location loc, double damage, String damageColor, boolean isCrit) {
+        // CHI HIEN THI SO DAMAGE, KHONG CO PREFIX
         String text = String.format("%s%.1f", damageColor, damage);
         
         if (isCrit) {
@@ -242,17 +243,21 @@ public class DamageEffectService {
         
         final String finalText = text; // final cho lambda
         
+        // Clone location de khong modify location goc
+        Location spawnLoc = loc.clone().add(0, 2.5, 0); // Tang len cao hon de khong conflict voi nameplate
+        
         // Spawn armor stand lam floating text (vi tri cao hon entity name)
-        loc.getWorld().spawn(loc.add(0, 2.2, 0), org.bukkit.entity.ArmorStand.class, stand -> {
+        spawnLoc.getWorld().spawn(spawnLoc, org.bukkit.entity.ArmorStand.class, stand -> {
             stand.setVisible(false);
             stand.setGravity(false);
-            stand.setMarker(true);
+            stand.setMarker(true); // Marker = true de khong block hitbox va nameplate
             stand.setCustomName(finalText);
             stand.setCustomNameVisible(true);
             stand.setSmall(true);
             stand.setInvulnerable(true);
+            stand.setCollidable(false); // Khong collidable
             
-            // Remove sau 1.5s
+            // Remove sau 1.5s (30 ticks)
             org.bukkit.Bukkit.getScheduler().runTaskLater(
                 org.bukkit.Bukkit.getPluginManager().getPlugin("HControl"),
                 stand::remove,

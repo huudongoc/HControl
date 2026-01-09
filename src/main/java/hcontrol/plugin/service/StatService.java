@@ -51,7 +51,7 @@ public class StatService {
         // update scoreboard ngay
         var player = profile.getPlayer();
         if (player != null && player.isOnline()) {
-            var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getScoreboardService();
+            var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
             if (scoreboardService != null) {
                 scoreboardService.updateScoreboard(player);
             }

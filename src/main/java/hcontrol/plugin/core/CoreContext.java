@@ -1,15 +1,8 @@
 package hcontrol.plugin.core;
 
-import org.bukkit.Bukkit;
-
 import hcontrol.plugin.Main;
-import hcontrol.plugin.command.BreakthroughCommand;
-import hcontrol.plugin.command.ReloadCommand;
-import hcontrol.plugin.command.SpawnBossCommand;
-import hcontrol.plugin.command.StatCommand;
-import hcontrol.plugin.command.TitleCommand;
-import hcontrol.plugin.command.TuviCommand;
-import hcontrol.plugin.command.UnlockCommand;
+import hcontrol.plugin.command.CommandRegistry;
+import hcontrol.plugin.listener.EventRegistry;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityRegistry;
 import hcontrol.plugin.entity.EntityService;
@@ -36,16 +29,16 @@ import hcontrol.plugin.service.SoundService;
 import hcontrol.plugin.service.StatService;
 import hcontrol.plugin.service.TitleService;
 import hcontrol.plugin.service.TribulationService;
-import hcontrol.plugin.ui.ChatBubbleService;
-import hcontrol.plugin.ui.EntityDialogService;
-import hcontrol.plugin.ui.EntityNameplateService;
-import hcontrol.plugin.ui.NameplateService;
-import hcontrol.plugin.ui.PlayerUIService;
-import hcontrol.plugin.ui.ScoreboardService;
-import hcontrol.plugin.ui.ScoreboardUpdateTask;
-import hcontrol.plugin.ui.TribulationUI;
-import hcontrol.plugin.ui.UiStateService;
-import hcontrol.plugin.ui.listener.TribulationInputListener;
+import hcontrol.plugin.ui.chat.ChatBubbleService;
+import hcontrol.plugin.ui.entity.EntityDialogService;
+import hcontrol.plugin.ui.entity.EntityNameplateService;
+import hcontrol.plugin.ui.player.NameplateService;
+import hcontrol.plugin.ui.player.PlayerUIService;
+import hcontrol.plugin.ui.player.ScoreboardService;
+import hcontrol.plugin.ui.player.ScoreboardUpdateTask;
+import hcontrol.plugin.ui.tribulation.TribulationUI;
+import hcontrol.plugin.ui.tribulation.UiStateService;
+import hcontrol.plugin.ui.tribulation.listener.TribulationInputListener;
 
 /**
  * PHASE 0 — FOUNDATION (REFACTORED)
@@ -58,6 +51,7 @@ public class CoreContext {
     // System-level dependencies
     private final Main plugin;
     private final LifecycleManager lifecycleManager;
+    private EventRegistry eventRegistry;
     
     // Domain Contexts (5 SubContext)
     private final PlayerContext playerContext;
@@ -116,6 +110,14 @@ public class CoreContext {
     }
     
     /**
+     * Set EventRegistry (được gọi từ Main sau khi khởi tạo)
+     * Để tránh import Bukkit trong core package
+     */
+    public void setEventRegistry(EventRegistry eventRegistry) {
+        this.eventRegistry = eventRegistry;
+    }
+    
+    /**
      * Get singleton instance
      */
     public static CoreContext getInstance() {
@@ -147,43 +149,15 @@ public class CoreContext {
    
     }
     /**
-     * Register Commands
+     * Register Commands - Sử dụng CommandRegistry để đơn giản hóa
+     * Note: CommandRegistry nằm trong package command (không phải core) vì import Bukkit
      */
     private void registerCommands() {
         lifecycleManager.registerOnEnable(() -> {
-            plugin.getLogger().info("[PHASE 0] Đang đăng ký commands...");
-            
-            plugin.getCommand("hc").setExecutor(new ReloadCommand(lifecycleManager));
-            plugin.getCommand("tuvi").setExecutor(new TuviCommand(
-                playerContext.getPlayerManager(), 
-                playerContext.getLevelService()
-            ));
-            plugin.getCommand("stat").setExecutor(new StatCommand(
-                playerContext.getPlayerManager(), 
-                playerContext.getStatService()
-            ));
-            plugin.getCommand("dokiep").setExecutor(new BreakthroughCommand(
-                playerContext.getPlayerManager(), 
-                cultivationContext.getBreakthroughService(),
-                uiContext,
-                uiContext.getTribulationUI()
-            ));
-            plugin.getCommand("spawnboss").setExecutor(new SpawnBossCommand(
-                entityContext.getBossManager()
-            ));
-            plugin.getCommand("title").setExecutor(new TitleCommand(
-                playerContext.getPlayerManager(), 
-                cultivationContext.getTitleService()
-            ));
-            plugin.getCommand("unlock").setExecutor(new UnlockCommand(
-                playerContext.getPlayerManager(), 
-                playerContext.getLevelService()
-            ));
-            
-            plugin.getLogger().info("[PHASE 0] ✓ Commands đã được đăng ký!");
+            CommandRegistry registry = new CommandRegistry(plugin, this);
+            registry.registerAll();
         });
     }
-    
     /**
      * PHASE 1 — PLAYER SYSTEM
      */
@@ -196,6 +170,9 @@ public class CoreContext {
                 playerContext.getPlayerManager(), 
                 playerContext.getCultivationProgressService()
             );
+            
+            // Inject NameplateService vào RoleService (de update nameplate khi set role)
+            cultivationContext.getRoleService().setNameplateService(uiContext.getNameplateService());
             
             // Register Listeners
             joinListener = new JoinServerListener(
@@ -216,19 +193,22 @@ public class CoreContext {
                 playerContext.getPlayerManager(),
                 playerContext.getPlayerHealthService(),
                 uiContext.getPlayerUIService(),
-                uiContext.getScoreboardService()
+                uiContext.getScoreboardService(),
+                uiContext.getNameplateService()
             );
             
-            Bukkit.getPluginManager().registerEvents(joinListener, plugin);
-            Bukkit.getPluginManager().registerEvents(outListener, plugin);
-            Bukkit.getPluginManager().registerEvents(respawnListener, plugin);
+            eventRegistry.registerEvents(joinListener);
+            eventRegistry.registerEvents(outListener);
+            eventRegistry.registerEvents(respawnListener);
             
             // Chat bubble listener
             chatListener = new PlayerChatListener(
-                uiContext.getChatBubbleService(), 
+                uiContext.getChatBubbleService(),
+                uiContext.getChatFormatService(),
+                playerContext.getPlayerManager(),
                 plugin
             );
-            Bukkit.getPluginManager().registerEvents(chatListener, plugin);
+            eventRegistry.registerEvents(chatListener);
             
             // Breakthrough input listener (F/Q keys)
             tribulationInputListener = new TribulationInputListener(
@@ -237,7 +217,7 @@ public class CoreContext {
                 cultivationContext.getBreakthroughService(),
                 playerContext.getPlayerManager()
             );
-            Bukkit.getPluginManager().registerEvents(tribulationInputListener, plugin);
+            eventRegistry.registerEvents(tribulationInputListener);
             
             // Start auto-save task (5 phut)
             AutoSaveTask autoSaveTask = new AutoSaveTask(
@@ -331,11 +311,11 @@ public class CoreContext {
                 combatContext.getCombatService(),
                 combatContext.getDisableDameService()
             );
-            Bukkit.getPluginManager().registerEvents(combatListener, plugin);
+            eventRegistry.registerEvents(combatListener);
             
             // Register DeathListener
             deathListener = new PlayerDeathListener(playerContext.getPlayerManager());
-            Bukkit.getPluginManager().registerEvents(deathListener, plugin);
+            eventRegistry.registerEvents(deathListener);
             
             // Init Entity UI Services
             uiContext.initEntityUI(entityContext.getEntityManager());
@@ -346,7 +326,7 @@ public class CoreContext {
                 entityContext.getEntityService(),
                 uiContext.getEntityNameplateService()
             );
-            Bukkit.getPluginManager().registerEvents(entityLifecycleListener, plugin);
+            eventRegistry.registerEvents(entityLifecycleListener);
             
             lifecycleManager.enableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã sẵn sàng!");

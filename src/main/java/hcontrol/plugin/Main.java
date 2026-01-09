@@ -4,6 +4,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.core.LifecycleManager;
+import hcontrol.plugin.listener.BukkitEventRegistry;
 
 /**
  * PHASE 0 — FOUNDATION
@@ -20,15 +21,18 @@ public class Main extends JavaPlugin {
         // Init core context (singleton)
         CoreContext.initialize(this, lifecycleManager);
         
+        // Inject EventRegistry để CoreContext không phải import Bukkit
+        CoreContext.getInstance().setEventRegistry(new BukkitEventRegistry(this));
+        
         // Register tất cả module callbacks
         CoreContext.getInstance().registerAllModules();
         
         // Execute enable callbacks
         lifecycleManager.enableAll();
         
-        getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        getLogger().info("HControl RPG đã được kích hoạt!");
-        getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        //getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        getLogger().info("HControl on!");
+       // getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
     
     @Override
@@ -37,8 +41,8 @@ public class Main extends JavaPlugin {
             lifecycleManager.disableAll();
         }
         
-        getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        getLogger().info("HControl RPG đã được tắt!");
-        getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+   //     getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        getLogger().info("HControl off!");
+    //    getLogger().info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     }
 }

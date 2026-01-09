@@ -2,7 +2,8 @@ package hcontrol.plugin.service;
 
 import hcontrol.plugin.model.Title;
 import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.NameplateService;
+import hcontrol.plugin.ui.player.NameplateService;
+
 import org.bukkit.entity.Player;
 
 import java.util.List;

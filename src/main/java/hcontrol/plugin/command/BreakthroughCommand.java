@@ -1,12 +1,5 @@
 package hcontrol.plugin.command;
 
-import hcontrol.plugin.core.UIContext;
-import hcontrol.plugin.model.BreakthroughResult;
-import hcontrol.plugin.service.BreakthroughService;
-import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.player.PlayerManager;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.TribulationUI;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -14,6 +7,14 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+
+import hcontrol.plugin.core.UIContext;
+import hcontrol.plugin.model.BreakthroughResult;
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.BreakthroughService;
+import hcontrol.plugin.ui.tribulation.TribulationUI;
 
 /**
  * TU TIEN - Breakthrough Command
@@ -72,7 +73,7 @@ public class BreakthroughCommand implements CommandExecutor {
         // PASS - hien thi ti le thanh cong va UI xac nhan
         double successRate = breakthroughService.calculateSuccessRate(profile, false);
         
-        player.sendMessage("");
+        player.sendMessage((""));
         player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         player.sendMessage("§e§l    ⚡ ĐỘ KIẾP - THÔNG TIN");
         player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");

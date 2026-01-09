@@ -1,4 +1,4 @@
-package hcontrol.plugin.ui;
+package hcontrol.plugin.ui.tribulation;
 
 import java.util.HashMap;
 import java.util.Map;

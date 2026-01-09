@@ -2,7 +2,6 @@ package hcontrol.plugin.service;
 
 import java.util.Random;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -16,7 +15,7 @@ import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.model.LivingActor;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.NameplateService;
+import hcontrol.plugin.ui.player.NameplateService;
 
 /**
  * PHASE 3 — Combat calculation service
@@ -97,7 +96,7 @@ public class CombatService {
         if (defenderEntity != null) {
             // Neu la Player - dung PlayerHealthService de sync tablist
             if (defenderEntity instanceof Player defenderPlayer && defender instanceof PlayerProfile playerProfile) {
-                var healthService = CoreContext.getInstance().getPlayerHealthService();
+                var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
                 healthService.updateCurrentHealth(defenderPlayer, playerProfile);
             } else {
                 // Neu la Entity - sync vanilla health percent
@@ -141,18 +140,17 @@ public class CombatService {
         
         // Update nameplate cho Entity (mob/boss) - KHONG update cho Player de tranh flash
         // NOTE: Entity nameplate update MỖI HIT de hien thi HP realtime
-        // Neu user thay "flash" nameplate - co the do Entity nameplate, KHONG phai Player
-        // if (defenderEntity != null && !(defenderEntity instanceof Player)) {
-        //     // Entity nameplate - chi update neu HP thay doi >5% (tranh spam)
-        //     var entityNameplateService = CoreContext.getInstance().getEntityNameplateService();
-        //     if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
-        //         Bukkit.getScheduler().runTask(plugin, () -> {
-        //             if (defenderEntity.isValid() && !defenderEntity.isDead()) {
-        //                 entityNameplateService.updateNameplate(defenderEntity, entityProfile);
-        //             }
-        //         });
-        //     }
-        // }
+        if (defenderEntity != null && !(defenderEntity instanceof Player)) {
+            // Entity nameplate - update voi force để hiển thị HP realtime
+            var entityNameplateService = CoreContext.getInstance().getUIContext().getEntityNameplateService();
+            if (entityNameplateService != null && defender instanceof EntityProfile entityProfile) {
+                org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (defenderEntity.isValid() && !defenderEntity.isDead()) {
+                        entityNameplateService.updateNameplate(defenderEntity, entityProfile, true);
+                    }
+                });
+            }
+        }
         
         // Knockback (neu co attacker entity)
         if (attackerEntity != null && defenderEntity != null) {

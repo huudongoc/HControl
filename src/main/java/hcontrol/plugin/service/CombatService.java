@@ -57,6 +57,17 @@ public class CombatService {
      * @param techniqueModifier modifier cong phap (1.0 = pham phap)
      */
     public void handleCombat(LivingActor attacker, LivingActor defender, double techniqueModifier) {
+        // CHECK: Defender da chet - khong cho tan cong
+        if (defender.getCurrentHP() <= 0) {
+            return; // Defender da chet, khong xu ly damage
+        }
+        
+        // CHECK: Defender entity da chet (double check)
+        LivingEntity defenderEntity = defender.getEntity();
+        if (defenderEntity != null && defenderEntity.isDead()) {
+            return; // Entity da chet trong game, khong xu ly damage
+        }
+        
         // ===== TINH DAMAGE =====
         
         // Base damage theo realm
@@ -92,7 +103,7 @@ public class CombatService {
         
         // ===== SYNC VANILLA HEALTH (NEU CO BUKKIT ENTITY) =====
         
-        LivingEntity defenderEntity = defender.getEntity();
+        // defenderEntity da duoc khai bao o tren
         if (defenderEntity != null) {
             // Neu la Player - dung PlayerHealthService de sync tablist
             if (defenderEntity instanceof Player defenderPlayer && defender instanceof PlayerProfile playerProfile) {
@@ -156,10 +167,19 @@ public class CombatService {
             }
         }
         
-        // ĐẢM BẢO Player KHÔNG bị set custom name như entity
-        // Nếu defender là Player, đảm bảo không có custom name từ entity nameplate
-        if (defenderEntity instanceof Player playerDefender) {
+        // Update nameplate cho Player (hien thi HP sau combat)
+        // NOTE: Player nameplate update de hien thi HP realtime (giong Entity)
+        if (defenderEntity instanceof Player playerDefender && defender instanceof PlayerProfile) {
             org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+                // Safety check: player van con song va online
+                if (playerDefender.isValid() && !playerDefender.isDead() && playerDefender.isOnline()) {
+                    var nameplateService = CoreContext.getInstance().getUIContext().getNameplateService();
+                    if (nameplateService != null) {
+                        // Update nameplate de hien thi HP moi (force = false de tranh spam, co cooldown 1s)
+                        nameplateService.updateNameplate(playerDefender);
+                    }
+                }
+                
                 // Reset custom name nếu có (có thể do plugin khác hoặc lỗi)
                 if (playerDefender.getCustomName() != null && !playerDefender.getCustomName().equals(playerDefender.getName())) {
                     playerDefender.setCustomName(null);
@@ -180,6 +200,11 @@ public class CombatService {
      * REFACTORED: Wrapper around handleCombat()
      */
     public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile) {
+        // CHECK: Target da chet - khong cho tan cong
+        if (target.isDead()) {
+            return; // Target da chet, khong xu ly damage
+        }
+        
         // TODO: Technique modifier (kiem, phap bao...)
         double techniqueModifier = 1.0;
         
@@ -188,6 +213,11 @@ public class CombatService {
             PlayerProfile targetProfile = playerManager.get(targetPlayer.getUniqueId());
             if (targetProfile == null) return;
             
+            // CHECK: Target player HP = 0 - da chet
+            if (targetProfile.getCurrentHP() <= 0) {
+                return; // Target player da chet, khong xu ly damage
+            }
+            
             // Dung unified combat
             handleCombat(attackerProfile, targetProfile, techniqueModifier);
             return;
@@ -195,6 +225,11 @@ public class CombatService {
         
         // CASE 2: Player danh Mob (PvE - DUNG ENTITY PROFILE)
         EntityProfile mobProfile = entityManager.getOrCreate(target);
+        
+        // CHECK: Mob HP = 0 - da chet
+        if (mobProfile.getCurrentHP() <= 0) {
+            return; // Mob da chet, khong xu ly damage
+        }
         
         // Dung unified combat
         handleCombat(attackerProfile, mobProfile, techniqueModifier);
@@ -286,8 +321,23 @@ public class CombatService {
      * REFACTORED: Wrapper around handleCombat()
      */
     public void handleMobAttackPlayer(LivingEntity mob, Player player, PlayerProfile playerProfile) {
+        // CHECK: Player da chet - khong cho mob tan cong
+        if (player.isDead() || playerProfile.getCurrentHP() <= 0) {
+            return; // Player da chet, khong xu ly damage
+        }
+        
+        // CHECK: Mob da chet - khong cho tan cong
+        if (mob.isDead()) {
+            return; // Mob da chet, khong xu ly damage
+        }
+        
         // Lay hoac tao mob profile
         EntityProfile mobProfile = entityManager.getOrCreate(mob);
+        
+        // CHECK: Mob profile HP = 0 - da chet
+        if (mobProfile.getCurrentHP() <= 0) {
+            return; // Mob da chet trong profile, khong xu ly damage
+        }
         
         // TODO: Technique modifier
         double techniqueModifier = 1.0;

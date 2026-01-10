@@ -44,6 +44,12 @@ public class PlayerCombatListener implements Listener {
                 return;
             }
             
+            // CHECK: Target da chet - khong cho tan cong
+            if (target.isDead()) {
+                event.setCancelled(true);
+                return; // Target da chet, cancel event
+            }
+            
             PlayerProfile attackerProfile = playerManager.get(attacker.getUniqueId());
             if (attackerProfile == null) {
                 return; // chua load profile
@@ -66,9 +72,21 @@ public class PlayerCombatListener implements Listener {
                 return;
             }
             
+            // CHECK: Player da chet - khong cho mob tan cong
+            if (player.isDead()) {
+                event.setCancelled(true);
+                return; // Player da chet, cancel event
+            }
+            
             PlayerProfile playerProfile = playerManager.get(player.getUniqueId());
             if (playerProfile == null) {
                 return;
+            }
+            
+            // CHECK: Player HP = 0 - da chet
+            if (playerProfile.getCurrentHP() <= 0) {
+                event.setCancelled(true);
+                return; // Player da chet trong profile, cancel event
             }
             
             // mob danh player

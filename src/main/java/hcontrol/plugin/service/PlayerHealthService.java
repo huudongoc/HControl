@@ -39,7 +39,8 @@ public class PlayerHealthService {
         
         // Scale: (currentHP / maxHP) * 20
         double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
-        vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth)); // min 0.5 de khong chet
+        // Neu HP = 0 thi cho chet, neu > 0 thi min 0.5 de khong chet ngoai y muon
+        vanillaHealth = currentHP <= 0 ? 0 : Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
         
         player.setHealth(vanillaHealth);
         
@@ -69,7 +70,8 @@ public class PlayerHealthService {
         
         // Scale: (currentHP / maxHP) * 20
         double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
-        vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
+        // Neu HP = 0 thi cho chet, neu > 0 thi min 0.5 de khong chet ngoai y muon
+        vanillaHealth = currentHP <= 0 ? 0 : Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
         
         player.setHealth(vanillaHealth);
         
@@ -79,6 +81,16 @@ public class PlayerHealthService {
         
         // Sync tablist display name (HP hien thi tren tab)
         updateTabListName(player, profile);
+        
+        // Sync nameplate (HP hien thi tren dau player)
+        var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getNameplateService();
+        if (nameplateService != null) {
+            // Dung async task de tranh lag neu update nhieu
+            org.bukkit.Bukkit.getScheduler().runTask(
+                hcontrol.plugin.core.CoreContext.getInstance().getPlugin(),
+                () -> nameplateService.updateNameplate(player)
+            );
+        }
     }
     
     /**
@@ -110,8 +122,15 @@ public class PlayerHealthService {
         // Set HP = 0 trong profile
         profile.setCurrentHP(0);
         
-        // Sync vanilla health (sẽ set về 0)
-        updateCurrentHealth(player, profile);
+        // Set vanilla health = 0 de player chet that su (truc tiep, khong qua updateCurrentHealth)
+        player.setHealth(0);
+        
+        // Disable movement - player khong the di chuyen khi chet
+        // Minecraft se tu dong handle viec nay khi player.isDead() = true, nhung can ensure
+        if (player.isDead()) {
+            player.setWalkSpeed(0.0f);  // Disable walking
+            player.setFlySpeed(0.0f);   // Disable flying
+        }
     }
     
     /**

@@ -41,11 +41,11 @@ public class PlayerStorage {
         
 
         // load cultivation realm (tu tien)
-        String realmName = yaml.getString("realm", "MORTAL");
+        String realmName = yaml.getString("realm", "PHAMNHAN");
         try {
             profile.setRealm(CultivationRealm.valueOf(realmName));
         } catch (IllegalArgumentException e) {
-            profile.setRealm(CultivationRealm.MORTAL);
+            profile.setRealm(CultivationRealm.PHAMNHAN);
         }
         
         // load realm level & cultivation
@@ -60,11 +60,11 @@ public class PlayerStorage {
             profile.setSpiritualRoot(SpiritualRoot.WOOD);
         }
         
-        String qualityName = yaml.getString("rootQuality", "MORTAL");
+        String qualityName = yaml.getString("rootQuality", "PHAMNHAN");
         try {
             profile.setRootQuality(RootQuality.valueOf(qualityName));
         } catch (IllegalArgumentException e) {
-            profile.setRootQuality(RootQuality.MORTAL);
+            profile.setRootQuality(RootQuality.PHAMNHAN);
         }
         
         // load dao heart & state

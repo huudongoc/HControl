@@ -1,5 +1,9 @@
 package hcontrol.plugin.ui.entity;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.ArmorStand;
@@ -7,13 +11,9 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.Plugin;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 /**
  * ENTITY DIALOG SERVICE
- * Foundation cho NPC dialog, quest, boss noi chuyen...
+ * TRUCCO cho NPC dialog, quest, boss noi chuyen...
  * Hien thi chat bubble tren dau entity (giong player chat bubble)
  */
 public class EntityDialogService {
@@ -108,14 +108,14 @@ public class EntityDialogService {
      */
     public void showMultilineDialog(LivingEntity entity, String[] lines, int durationPerLine) {
         // TODO: Spawn nhieu armor stands theo vertical
-        // Foundation cho quest dialog system
+        // TRUCCO cho quest dialog system
     }
     
     /**
      * FUTURE: Dialog voi nut lua chon (click de lua chon)
      */
     public void showChoiceDialog(LivingEntity entity, String question, String[] choices) {
-        // TODO: Foundation cho quest choice system
+        // TODO: TRUCCO cho quest choice system
         // Hien thi choices, player click vao entity de chon
     }
     
@@ -123,6 +123,6 @@ public class EntityDialogService {
      * FUTURE: Emit custom event khi dialog ket thuc
      */
     public void showDialogWithCallback(LivingEntity entity, String message, Runnable onComplete) {
-        // TODO: Foundation cho quest completion callback
+        // TODO: TRUCCO cho quest completion callback
     }
 }

@@ -3,21 +3,22 @@ package hcontrol.plugin.ui.tribulation.listener;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
-
+import hcontrol.plugin.model.BreakthroughResult;
+import hcontrol.plugin.player.PlayerManager;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.ui.tribulation.TribulationUI;
 import hcontrol.plugin.ui.tribulation.UiState;
 import hcontrol.plugin.ui.tribulation.UiStateService;
-import hcontrol.plugin.service.BreakthroughService;
-import hcontrol.plugin.player.PlayerManager;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.model.BreakthroughResult;
 
 /**
  * TRIBULATION INPUT LISTENER (DO KIEP)
  * Bat phim F/Q khi dang o trang thai tribulation confirm
- * Do kiep = len dai canh gioi (MORTAL -> QI_REFINING, etc.)
+ * Do kiep = len dai canh gioi (PHAMNHAN -> LUYENKHI, etc.)
  */
 public class TribulationInputListener implements Listener {
 

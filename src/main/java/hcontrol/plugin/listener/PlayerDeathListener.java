@@ -41,9 +41,12 @@ public class PlayerDeathListener implements Listener {
         if (scoreboardService != null) {
             scoreboardService.updateScoreboard(player);
         }
-            
+        
         // Custom death message (optional) từ formatPlayerNameplate
-        String deathMsg = DisplayFormatService.getInstance().formatPlayerNameplate(profile, "") + " §cđã tử vong";
+        String deathMsg = player.getName() + " " + profile.getRealm().getColor() + "[" + profile.getRealm().getDisplayName() + " " + profile.getLevel() + "] " + "§cđã tử vong";
+
+        // // Custom death message (optional) từ formatPlayerNameplate
+        // String deathMsg = DisplayFormatService.getInstance().formatPlayerNameplate(profile, "") + " §cđã tử vong";
         
         // Kiem tra nguyen nhan chet và custom death message
         if (event.getDeathMessage() != null && !event.getDeathMessage().isEmpty()) {

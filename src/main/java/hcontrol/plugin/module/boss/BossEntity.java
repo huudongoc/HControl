@@ -5,7 +5,7 @@ import org.bukkit.entity.LivingEntity;
 
 /**
  * BOSS ENTITY MODEL
- * Foundation cho boss system - sau nay mo rong
+ * TRUCCO cho boss system - sau nay mo rong
  */
 public class BossEntity {
     

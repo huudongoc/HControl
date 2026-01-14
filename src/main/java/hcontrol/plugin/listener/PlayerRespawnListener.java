@@ -70,8 +70,7 @@ public class PlayerRespawnListener implements Listener {
                 // Optional: Gui message thong bao
                 player.sendMessage("§a✦ Hồi sinh thành công!");
             },
-            2L  // 2 ticks delay de dam bao respawn hoan toan
+            0L // không delay vì respawn hoàn toàn, update ngay (0 ticks delay)
         );
-        
-    }
+    }   
 }

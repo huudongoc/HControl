@@ -1,22 +1,23 @@
 package hcontrol.plugin.ui.entity;
 
-import hcontrol.plugin.entity.EntityManager;
-import hcontrol.plugin.entity.EntityProfile;
-import hcontrol.plugin.service.DisplayFormatService;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import hcontrol.plugin.entity.EntityManager;
+import hcontrol.plugin.entity.EntityProfile;
+import hcontrol.plugin.service.DisplayFormatService;
 
 /**
  * ENTITY NAMEPLATE SERVICE
  * Hien thi ten + HP tren dau mob (giong player nameplate)
- * Foundation cho quest NPC, boss, elite...
+ * TRUCCO cho quest NPC, boss, elite...
  * KHONG chua logic tinh toan - chi su dung DisplayFormatService
  */
 public class EntityNameplateService {

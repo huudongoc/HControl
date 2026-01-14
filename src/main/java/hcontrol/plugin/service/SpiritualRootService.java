@@ -1,7 +1,7 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.model.SpiritualRoot;
 import hcontrol.plugin.model.RootQuality;
+import hcontrol.plugin.model.SpiritualRoot;
 
 /**
  * SPIRITUAL ROOT SERVICE
@@ -69,17 +69,17 @@ public class SpiritualRootService {
     
     /**
      * Random linh can pham chat (Quality)
-     * - Pham Can (Mortal): 60%
+     * - Pham Can (PHAMNHAN): 60%
      * - Linh Can (Spiritual): 30%
      * - Thien Can (Heavenly): 8%
-     * - Tien Can (Immortal): 2%
+     * - Tien Can (ImPHAMNHAN): 2%
      */
     public RootQuality randomRootQuality() {
         double rand = Math.random();
-        if (rand < 0.60) return RootQuality.MORTAL;
+        if (rand < 0.60) return RootQuality.PHAMNHAN;
         if (rand < 0.90) return RootQuality.SPIRITUAL;
         if (rand < 0.98) return RootQuality.HEAVENLY;
-        return RootQuality.IMMORTAL;
+        return RootQuality.CHANTIEN;
     }
     
     /**

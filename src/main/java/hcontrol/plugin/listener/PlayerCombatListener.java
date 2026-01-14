@@ -33,7 +33,7 @@ public class PlayerCombatListener implements Listener {
     /**
      * Handle player attack + mob attack player
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         // cancel vanilla damage
         disableDameService.cancelDamageByEntity(event);
@@ -49,10 +49,10 @@ public class PlayerCombatListener implements Listener {
                 return; // chua load profile
             }
             
-            // reset attack cooldown (danh nhanh hon vanilla)
+            // reset attack cooldown (danh cham hon vanilla)
             attacker.resetCooldown();
             
-            // set attack speed based on AGI (nhanh hon = AGI cao)
+            // set attack speed based on AGI (cham hon vanilla = AGI cao)
             updateAttackSpeed(attacker, attackerProfile);
             
             // player danh target

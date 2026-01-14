@@ -5,10 +5,10 @@ package hcontrol.plugin.model;
  * Chat luong linh can (quyet dinh toc do tu luyen)
  */
 public enum RootQuality {
-    MORTAL("Pham Can", "§7", 0.5),         // pham nhan can
+    PHAMNHAN("Pham Can", "§7", 0.5),         // pham nhan can
     SPIRITUAL("Linh Can", "§a", 1.0),      // linh can
     HEAVENLY("Thien Can", "§e", 1.5),      // thien linh can
-    IMMORTAL("Tien Can", "§6§l", 2.5);     // tien linh can
+    CHANTIEN("Tien Can", "§6§l", 2.5);     // tien linh can
     
     private final String displayName;
     private final String color;
@@ -31,10 +31,10 @@ public enum RootQuality {
     
     /**
      * Random root quality
-     * Mac dinh: MORTAL (Pham Can)
+     * Mac dinh: PHAMNHAN (Pham Can)
      * TODO: Implement quality-based random (PHASE 8)
      */
     public static RootQuality randomQuality() {
-        return MORTAL;  // mac dinh Pham Can
+        return PHAMNHAN;  // mac dinh Pham Can
     }
 }

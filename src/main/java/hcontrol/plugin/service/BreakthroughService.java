@@ -91,17 +91,17 @@ public class BreakthroughService {
      */
     private double getBaseChance(CultivationRealm realm) {
         return switch (realm) {
-            case MORTAL -> 100.0;
-            case QI_REFINING -> 95.0;
-            case FOUNDATION -> 80.0;
-            case GOLDEN_CORE -> 60.0;      // bat dau kho
-            case NASCENT_SOUL -> 40.0;
-            case SOUL_FORMATION -> 25.0;
-            case VOID_REFINEMENT -> 15.0;
-            case BODY_INTEGRATION -> 10.0;
-            case MAHAYANA -> 5.0;
-            case TRIBULATION -> 2.0;       // cuc kho
-            case IMMORTAL -> 1.0;          // gan nhu khong the
+            case PHAMNHAN -> 100.0;
+            case LUYENKHI -> 95.0;
+            case TRUCCO -> 80.0;
+            case KIMDAN -> 60.0;      // bat dau kho
+            case NGUYENANH -> 40.0;
+            case HOATHAN -> 25.0;
+            case LUYENHON -> 15.0;
+            case HOPTHE -> 10.0;
+            case DAITHUA -> 5.0;
+            case DOKIEP -> 2.0;       // cuc kho
+            case CHANTIEN -> 1.0;          // gan nhu khong the
         };
     }
     
@@ -198,30 +198,30 @@ public class BreakthroughService {
      */
     private double getInjuryRate(CultivationRealm realm) {
         return switch (realm) {
-            case MORTAL -> 70.0;
-            case QI_REFINING -> 60.0;
-            case FOUNDATION -> 50.0;
-            case GOLDEN_CORE -> 40.0;
+            case PHAMNHAN -> 70.0;
+            case LUYENKHI -> 60.0;
+            case TRUCCO -> 50.0;
+            case KIMDAN -> 40.0;
             default -> 35.0;
         };
     }
     
     private double getCrippledRate(CultivationRealm realm) {
         return switch (realm) {
-            case MORTAL -> 25.0;
-            case QI_REFINING -> 30.0;
-            case FOUNDATION -> 35.0;
-            case GOLDEN_CORE -> 40.0;
+            case PHAMNHAN -> 25.0;
+            case LUYENKHI -> 30.0;
+            case TRUCCO -> 35.0;
+            case KIMDAN -> 40.0;
             default -> 45.0;
         };
     }
     
     private double getDeathRate(CultivationRealm realm) {
         return switch (realm) {
-            case MORTAL -> 5.0;
-            case QI_REFINING -> 10.0;
-            case FOUNDATION -> 15.0;
-            case GOLDEN_CORE -> 20.0;
+            case PHAMNHAN -> 5.0;
+            case LUYENKHI -> 10.0;
+            case TRUCCO -> 15.0;
+            case KIMDAN -> 20.0;
             default -> 25.0;
         };
     }
@@ -329,7 +329,7 @@ public class BreakthroughService {
         } else {
             // Tan phe vinh vien - tro thanh pham nhan
             result = BreakthroughResult.CRIPPLED_PERMANENT;
-            // TODO: implement permanent cripple (reset realm ve MORTAL?)
+            // TODO: implement permanent cripple (reset realm ve PHAMNHAN?)
         }
         
         // Penalty chung cho tat ca tan phe

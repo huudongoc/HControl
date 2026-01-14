@@ -68,16 +68,16 @@ public class DamageEffectService {
      */
     private Particle getHitParticle(CultivationRealm realm) {
         return switch(realm) {
-            case MORTAL, QI_REFINING -> Particle.CRIT;
-            case FOUNDATION -> Particle.CRIT_MAGIC;
-            case GOLDEN_CORE -> Particle.SOUL_FIRE_FLAME;
-            case NASCENT_SOUL -> Particle.SOUL;
-            case SOUL_FORMATION -> Particle.GLOW;
-            case VOID_REFINEMENT -> Particle.END_ROD;
-            case BODY_INTEGRATION -> Particle.DRAGON_BREATH;
-            case MAHAYANA -> Particle.WAX_ON;
-            case TRIBULATION -> Particle.ELECTRIC_SPARK;
-            case IMMORTAL -> Particle.GLOW_SQUID_INK;
+            case PHAMNHAN, LUYENKHI -> Particle.CRIT;
+            case TRUCCO -> Particle.CRIT_MAGIC;
+            case KIMDAN -> Particle.SOUL_FIRE_FLAME;
+            case NGUYENANH -> Particle.SOUL;
+            case HOATHAN -> Particle.GLOW;
+            case LUYENHON -> Particle.END_ROD;
+            case HOPTHE -> Particle.DRAGON_BREATH;
+            case DAITHUA -> Particle.WAX_ON;
+            case DOKIEP -> Particle.ELECTRIC_SPARK;
+            case CHANTIEN -> Particle.GLOW_SQUID_INK;
         };
     }
     
@@ -86,17 +86,17 @@ public class DamageEffectService {
      */
     private Color getRealmColor(CultivationRealm realm) {
         return switch(realm) {
-            case MORTAL -> Color.GRAY;
-            case QI_REFINING -> Color.WHITE;
-            case FOUNDATION -> Color.LIME;
-            case GOLDEN_CORE -> Color.YELLOW;
-            case NASCENT_SOUL -> Color.AQUA;
-            case SOUL_FORMATION -> Color.BLUE;
-            case VOID_REFINEMENT -> Color.PURPLE;
-            case BODY_INTEGRATION -> Color.FUCHSIA;
-            case MAHAYANA -> Color.ORANGE;
-            case TRIBULATION -> Color.RED;
-            case IMMORTAL -> Color.fromRGB(255, 215, 0); // gold
+            case PHAMNHAN -> Color.GRAY;
+            case LUYENKHI -> Color.WHITE;
+            case TRUCCO -> Color.LIME;
+            case KIMDAN -> Color.YELLOW;
+            case NGUYENANH -> Color.AQUA;
+            case HOATHAN -> Color.BLUE;
+            case LUYENHON -> Color.PURPLE;
+            case HOPTHE -> Color.FUCHSIA;
+            case DAITHUA -> Color.ORANGE;
+            case DOKIEP -> Color.RED;
+            case CHANTIEN -> Color.fromRGB(255, 215, 0); // gold
         };
     }
     
@@ -174,10 +174,10 @@ public class DamageEffectService {
         
         // Particle theo canh gioi
         return switch(realm) {
-            case MORTAL, QI_REFINING -> Particle.CRIT;
-            case FOUNDATION -> Particle.CRIT_MAGIC;
-            case GOLDEN_CORE -> Particle.FLAME;
-            case NASCENT_SOUL -> Particle.SOUL_FIRE_FLAME;
+            case PHAMNHAN, LUYENKHI -> Particle.CRIT;
+            case TRUCCO -> Particle.CRIT_MAGIC;
+            case KIMDAN -> Particle.FLAME;
+            case NGUYENANH -> Particle.SOUL_FIRE_FLAME;
             default -> Particle.WAX_ON;
         };
     }

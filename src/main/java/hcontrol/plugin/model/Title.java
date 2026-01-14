@@ -16,7 +16,7 @@ public enum Title {
     // DANH HIEU THANH TICH (Achievement Titles)
     FIRST_BLOOD("Suyt Chet", "§c⚔ ", TitleRarity.RARE),
     MASS_KILLER("Sat Nhan", "§4☠ ", TitleRarity.EPIC),
-    IMMORTAL("Bat Tu", "§6✦ ", TitleRarity.LEGENDARY),
+    CHANTIEN("Bat Tu", "§6✦ ", TitleRarity.LEGENDARY),
     
     // DANH HIEU BANG HOI (Guild Titles)
     GUILD_LEADER("Bang Chu", "§6★ ", TitleRarity.SPECIAL),

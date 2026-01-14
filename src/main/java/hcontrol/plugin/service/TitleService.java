@@ -1,12 +1,12 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.model.Title;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.player.NameplateService;
+import java.util.List;
 
 import org.bukkit.entity.Player;
 
-import java.util.List;
+import hcontrol.plugin.model.Title;
+import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.ui.player.NameplateService;
 
 /**
  * TITLE SERVICE - Logic danh hieu
@@ -125,12 +125,12 @@ public class TitleService {
             }
         }
         
-        // IMMORTAL - giet 100 nguoi
+        // CHANTIEN - giet 100 nguoi
         if (totalKills >= 100) {
-            if (unlockTitle(killer, Title.IMMORTAL)) {
+            if (unlockTitle(killer, Title.CHANTIEN)) {
                 Player player = killer.getPlayer();
                 if (player != null) {
-                    player.sendMessage("§6✦ Da mo khoa danh hieu: " + Title.IMMORTAL.getFullDisplay());
+                    player.sendMessage("§6✦ Da mo khoa danh hieu: " + Title.CHANTIEN.getFullDisplay());
                 }
             }
         }

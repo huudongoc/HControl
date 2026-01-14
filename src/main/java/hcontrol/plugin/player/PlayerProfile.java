@@ -74,7 +74,7 @@ public class PlayerProfile implements LivingActor {
         this.playerName = player != null ? player.getName() : "Unknown";
         this.level = 1;
         this.statPoints = 0;
-        this.realm = CultivationRealm.MORTAL;  // bat dau tu Pham Nhan
+        this.realm = CultivationRealm.PHAMNHAN;  // bat dau tu Pham Nhan
         this.realmLevel = 1;  // level 1 trong canh gioi
         this.cultivation = 0L;  // chua co tu vi
         

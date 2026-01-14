@@ -20,7 +20,7 @@ MỤC TIÊU TỔNG
 - 90% thay đổi sau này = data / config
 
 ==================================================
-PHASE 0 — FOUNDATION (KHÔNG BAO GIỜ LÀM LẠI)
+PHASE 0 — TRUCCO (KHÔNG BAO GIỜ LÀM LẠI)
 ==================================================
 
 ## Core Architecture (DONE)

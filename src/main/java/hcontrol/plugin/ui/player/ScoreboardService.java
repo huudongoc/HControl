@@ -6,6 +6,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -42,6 +43,7 @@ public class ScoreboardService {
         
         Scoreboard board = manager.getNewScoreboard();
         Objective obj = board.registerNewObjective("tutienstats", "dummy", "§6§l TU TIEN");
+        obj.numberFormat(NumberFormat.blank());
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         
         updateScoreboard(player, profile, obj);
@@ -61,7 +63,7 @@ public class ScoreboardService {
             createScoreboard(player);
             return;
         }
-        
+        obj.numberFormat(NumberFormat.blank());
         updateScoreboard(player, profile, obj);
     }
     
@@ -75,10 +77,15 @@ public class ScoreboardService {
         }
         
         int line = 15;
-        
-        // realm + tier (KHONG hien thi level so) - su dung DisplayFormatService
+        obj.numberFormat(NumberFormat.blank());
+        // realm + tier ( hien thi level so) - su dung DisplayFormatService
         obj.getScore("§7§m━━━━━━━━━━━━━").setScore(line--);
+
+        String levelText = String.format("§7§l%d", profile.getLevel()); // §7§l: mau xam, §l: in dam
+        obj.getScore(levelText).setScore(line--);
+
         String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());
+
         obj.getScore("§f⚡ " + realmTierText).setScore(line--);
         
         // tu vi progress - su dung CultivationProgressService

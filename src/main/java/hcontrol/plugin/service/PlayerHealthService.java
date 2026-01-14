@@ -34,12 +34,22 @@ public class PlayerHealthService {
         double currentHP = profile.getCurrentHP();
         double maxHP = profile.getStats().getMaxHP();
         
-        // Clamp current HP trong range [0, maxHP]
-        currentHP = Math.max(0, Math.min(currentHP, maxHP));
+        // // Clamp current HP trong range [0, maxHP]
+        // currentHP = Math.max(0, Math.min(currentHP, maxHP));
         
+        // // Scale: (currentHP / maxHP) * 20
+        // double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
+        // vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth)); // min 0.5 de khong chet
+        
+// player.setHealth(vanillaHealth);
         // Scale: (currentHP / maxHP) * 20
         double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
-        vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth)); // min 0.5 de khong chet
+        // Neu HP <= 0 thi chet (vanillaHealth = 0), neu HP > 0 thi min 0.5 de khong chet
+        if (currentHP <= 0) {
+            vanillaHealth = 0;
+        } else {
+            vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
+        }
         
         player.setHealth(vanillaHealth);
         
@@ -60,16 +70,26 @@ public class PlayerHealthService {
      */
     public void updateCurrentHealth(Player player, PlayerProfile profile) {
         if (player == null || !player.isOnline()) return;
-        
+        if (player.isDead()) return;
         double currentHP = profile.getCurrentHP();
         double maxHP = profile.getStats().getMaxHP();
-        
         // Clamp
         currentHP = Math.max(0, Math.min(currentHP, maxHP));
         
+        // // Scale: (currentHP / maxHP) * 20
+        // double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
+        // vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
+        
+        // player.setHealth(vanillaHealth);
+        
         // Scale: (currentHP / maxHP) * 20
         double vanillaHealth = maxHP > 0 ? (currentHP / maxHP) * VANILLA_MAX_HEALTH : VANILLA_MAX_HEALTH;
-        vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
+        // Neu HP <= 0 thi chet (vanillaHealth = 0), neu HP > 0 thi min 0.5 de khong chet
+        if (currentHP <= 0) {
+            vanillaHealth = 0;
+        } else {
+            vanillaHealth = Math.max(0.5, Math.min(VANILLA_MAX_HEALTH, vanillaHealth));
+        }
         
         player.setHealth(vanillaHealth);
         
@@ -110,13 +130,13 @@ public class PlayerHealthService {
         // Set HP = 0 trong profile
         profile.setCurrentHP(0);
         
-        // Sync vanilla health (sẽ set về 0)
-        updateCurrentHealth(player, profile);
+        // Sync vanilla health (sẽ set về 0) đã = 0 rồi nên không cần UpdateCurrentHealth
+        //updateCurrentHealth(player, profile);
     }
-    
+
     /**
      * Update tablist display name voi HP hien tai
-     * Format: [Realm] PlayerName HP%
+     * Format: [Realm] PlayerName HP% ❤ 85%
      */
     private void updateTabListName(Player player, PlayerProfile profile) {
         double currentHP = profile.getCurrentHP();

@@ -2,11 +2,11 @@ package hcontrol.plugin.core;
 
 import hcontrol.plugin.Main;
 import hcontrol.plugin.command.CommandRegistry;
-import hcontrol.plugin.listener.EventRegistry;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityRegistry;
 import hcontrol.plugin.entity.EntityService;
 import hcontrol.plugin.listener.EntityLifecycleListener;
+import hcontrol.plugin.listener.EventRegistry;
 import hcontrol.plugin.listener.JoinServerListener;
 import hcontrol.plugin.listener.OutServerListener;
 import hcontrol.plugin.listener.PlayerChatListener;
@@ -41,7 +41,7 @@ import hcontrol.plugin.ui.tribulation.UiStateService;
 import hcontrol.plugin.ui.tribulation.listener.TribulationInputListener;
 
 /**
- * PHASE 0 — FOUNDATION (REFACTORED)
+ * PHASE 0 — TRUCCO (REFACTORED)
  * Singleton context CHI chua SubContext
  * Moi SubContext quan ly services theo domain rieng
  */

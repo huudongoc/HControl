@@ -33,7 +33,7 @@ public class JoinServerListener implements Listener {
         this.lifecycleManager = lifecycleManager;
     }
     
-    @EventHandler(priority = EventPriority.LOWEST)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerJoin(PlayerJoinEvent event) {
         var player = event.getPlayer();
         var uuid = player.getUniqueId();

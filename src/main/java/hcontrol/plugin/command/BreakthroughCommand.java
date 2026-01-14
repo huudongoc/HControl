@@ -25,14 +25,12 @@ public class BreakthroughCommand implements CommandExecutor {
     private final PlayerManager playerManager;
     private final BreakthroughService breakthroughService;
     private final UIContext uiContext;
-    private final TribulationUI tribulationUI;
     
     public BreakthroughCommand(PlayerManager playerManager, BreakthroughService breakthroughService,
-                               UIContext uiContext, TribulationUI tribulationUI) {
+                               UIContext uiContext) {
         this.playerManager = playerManager;
         this.breakthroughService = breakthroughService;
         this.uiContext = uiContext;
-        this.tribulationUI = tribulationUI;
     }
     
     @Override
@@ -92,6 +90,8 @@ public class BreakthroughCommand implements CommandExecutor {
         player.sendMessage("§6§l━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         player.sendMessage("");
         
+        // Lay TribulationUI tu UIContext (lazy - khi command duoc thuc thi)
+        TribulationUI tribulationUI = uiContext.getTribulationUI();
         if (tribulationUI != null) {
             tribulationUI.showConfirm(player);
         } else {

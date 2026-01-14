@@ -47,6 +47,10 @@ public class PlayerRespawnListener implements Listener {
         // Delegate respawn logic to PlayerHealthService
         healthService.handleRespawn(player, profile);
         
+        // Restore movement speed (enable lai sau khi hoi sinh)
+        player.setWalkSpeed(0.2f);  // Vanilla default walk speed
+        player.setFlySpeed(0.1f);   // Vanilla default fly speed
+        
         // Set hunger full (tu si khong can an)
         player.setFoodLevel(20);
         player.setSaturation(20.0f);

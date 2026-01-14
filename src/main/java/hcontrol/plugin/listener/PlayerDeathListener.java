@@ -5,6 +5,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -51,6 +52,29 @@ public class PlayerDeathListener implements Listener {
         // Kiem tra nguyen nhan chet và custom death message
         if (event.getDeathMessage() != null && !event.getDeathMessage().isEmpty()) {
             event.setDeathMessage(deathMsg);
+        }
+    }
+    
+    /**
+     * Ngăn player di chuyen khi da chet (HP = 0 hoac isDead = true)
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        
+        // Check player da chet trong game
+        if (player.isDead()) {
+            // Cancel movement - giu player o vi tri chet
+            event.setCancelled(true);
+            return;
+        }
+        
+        // Check HP = 0 trong profile (double check)
+        PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile != null && profile.getCurrentHP() <= 0) {
+            // Cancel movement - giu player o vi tri
+            event.setCancelled(true);
+            return;
         }
     }
 }

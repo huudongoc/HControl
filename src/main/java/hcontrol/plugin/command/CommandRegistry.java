@@ -83,8 +83,7 @@ public class CommandRegistry {
         register("dokiep", () -> new BreakthroughCommand(
             coreContext.getPlayerContext().getPlayerManager(),
             coreContext.getCultivationContext().getBreakthroughService(),
-            coreContext.getUIContext(),
-            coreContext.getUIContext().getTribulationUI()
+            coreContext.getUIContext()
         ));
         
         // Spawn boss command

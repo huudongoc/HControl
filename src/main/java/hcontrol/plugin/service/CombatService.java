@@ -200,7 +200,7 @@ public class CombatService {
      * REFACTORED: Wrapper around handleCombat()
      */
     public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile) {
-        // CHECK: Target da chet - khong cho tan cong
+        // CHECK: Target da chet - khong xu ly damage
         if (target.isDead()) {
             return; // Target da chet, khong xu ly damage
         }

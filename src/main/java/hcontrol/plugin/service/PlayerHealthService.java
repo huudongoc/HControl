@@ -123,7 +123,7 @@ public class PlayerHealthService {
     
     /**
      * Handle player respawn - reset HP và Linh Khi về max
-     * Gọi từ PlayerRespawnListener
+     * Gọi từ PlayerRespawnListener 
      */
     public void handleRespawn(Player player, PlayerProfile profile) {
         if (player == null || !player.isOnline() || profile == null) return;
@@ -143,22 +143,29 @@ public class PlayerHealthService {
     /**
      * Handle player death - set HP = 0 trong profile
      * Gọi từ PlayerDeathListener
+     * 
+     * LƯU Ý: KHÔNG gọi setHealth(0) ở đây vì:
+     * - PlayerDeathEvent chỉ được trigger khi player đã chết (health = 0)
+     * - Việc gọi setHealth(0) trong event handler sẽ trigger lại PlayerDeathEvent
+     * - Gây ra vòng lặp vô hạn (stack overflow)
      */
     public void handleDeath(Player player, PlayerProfile profile) {
         if (player == null || profile == null) return;
         
-        // Set HP = 0 trong profile
+        // Set HP = 0 trong profile để scoreboard/UI hiển thị đúng
         profile.setCurrentHP(0);
         
-
-        // Set vanilla health = 0 de player chet that su (truc tiep, khong qua updateCurrentHealth)
-        player.setHealth(0);
+        // KHÔNG set vanilla health ở đây vì:
+        // - Player đã chết rồi (PlayerDeathEvent đã được trigger)
+        // - setHealth(0) sẽ trigger lại PlayerDeathEvent -> vòng lặp vô hạn
         
         // Disable movement - player khong the di chuyen khi chet
         // Minecraft se tu dong handle viec nay khi player.isDead() = true, nhung can ensure
         if (player.isDead()) {
             player.setWalkSpeed(0.0f);  // Disable walking
             player.setFlySpeed(0.0f);   // Disable flying
+
+
         }
 
     }

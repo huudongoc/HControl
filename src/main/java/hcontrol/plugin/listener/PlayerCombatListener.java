@@ -33,13 +33,16 @@ public class PlayerCombatListener implements Listener {
     /**
      * Handle player attack + mob attack player
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    //@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    // thường không cần ignoreCancelled = false vì chạy trước
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         // cancel vanilla damage
         disableDameService.cancelDamageByEntity(event);
         
         // CASE 1: Player attack (player/mob)
         if (event.getDamager() instanceof Player attacker) {
+            // CHECK: Target khong phai LivingEntity - khong xu ly
             if (!(event.getEntity() instanceof LivingEntity target)) {
                 return;
             }
@@ -50,18 +53,17 @@ public class PlayerCombatListener implements Listener {
                 return; // Target da chet, cancel event
             }
             
+            // CHECK: Attacker profile chua load - khong xu ly
             PlayerProfile attackerProfile = playerManager.get(attacker.getUniqueId());
             if (attackerProfile == null) {
                 return; // chua load profile
             }
-            
-            // reset attack cooldown (danh cham hon vanilla)
+            // reset attack cooldown
             attacker.resetCooldown();
-            
             // set attack speed based on AGI (cham hon vanilla = AGI cao)
             updateAttackSpeed(attacker, attackerProfile);
             
-            // player danh target
+            // DUNG COMBAT SERVICE: Player danh target
             combatService.handlePlayerAttack(attacker, target, attackerProfile);
             return;
         }

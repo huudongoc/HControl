@@ -11,3 +11,6 @@
 
 # jars
 *.jar
+
+# gradle cache
+.gradle/

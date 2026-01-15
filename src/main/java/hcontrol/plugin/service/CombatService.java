@@ -134,7 +134,8 @@ public class CombatService {
             
             // Floating damage
             String damageColor = getDamageColor(attacker.getRealm(), defender.getRealm());
-            effectService.spawnFloatingDamage(defenderEntity.getLocation(), damage, damageColor, false);
+            showDamageIndicator(attackerEntity instanceof Player ? (Player) attackerEntity : null, defenderEntity, damage, false);
+            //effectService.spawnFloatingDamage(defenderEntity.getLocation(), damage, damageColor, false);
         }
         
         // // ActionBar feedback cho attacker (neu la player)
@@ -152,41 +153,43 @@ public class CombatService {
         // Update nameplate cho Entity (mob/boss) - KHONG update cho Player de tranh flash
         // NOTE: Entity nameplate update MỖI HIT de hien thi HP realtime
         // SAFETY: Double check defender KHÔNG phải Player trước khi update entity nameplate
-        if (defenderEntity != null && !(defenderEntity instanceof Player)) {
-            // CHỈ update entity nameplate nếu defender là EntityProfile (mob/boss)
-            if (defender instanceof EntityProfile entityProfile) {
-                var entityNameplateService = CoreContext.getInstance().getUIContext().getEntityNameplateService();
-                if (entityNameplateService != null) {
-                    org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
-                        // Safety check lại: KHÔNG update nameplate cho Player
-                        if (defenderEntity.isValid() && !defenderEntity.isDead() && !(defenderEntity instanceof Player)) {
-                            entityNameplateService.updateNameplate(defenderEntity, entityProfile, true);
-                        }
-                    });
-                }
-            }
-        }
+
         
-        // Update nameplate cho Player (hien thi HP sau combat)
-        // NOTE: Player nameplate update de hien thi HP realtime (giong Entity)
-        if (defenderEntity instanceof Player playerDefender && defender instanceof PlayerProfile) {
-            org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
-                // Safety check: player van con song va online
-                if (playerDefender.isValid() && !playerDefender.isDead() && playerDefender.isOnline()) {
-                    var nameplateService = CoreContext.getInstance().getUIContext().getNameplateService();
-                    if (nameplateService != null) {
-                        // Update nameplate de hien thi HP moi (force = false de tranh spam, co cooldown 1s)
-                        nameplateService.updateNameplate(playerDefender);
-                    }
-                }
+        // if (defenderEntity != null && !(defenderEntity instanceof Player)) {
+        //     // CHỈ update entity nameplate nếu defender là EntityProfile (mob/boss)
+        //     if (defender instanceof EntityProfile entityProfile) {
+        //         var entityNameplateService = CoreContext.getInstance().getUIContext().getEntityNameplateService();
+        //         if (entityNameplateService != null) {
+        //             org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+        //                 // Safety check lại: KHÔNG update nameplate cho Player
+        //                 if (defenderEntity.isValid() && !defenderEntity.isDead() && !(defenderEntity instanceof Player)) {
+        //                     entityNameplateService.updateNameplate(defenderEntity, entityProfile, true);
+        //                 }
+        //             });
+        //         }
+        //     }
+        // }
+        
+        // // Update nameplate cho Player (hien thi HP sau combat)
+        // // NOTE: Player nameplate update de hien thi HP realtime (giong Entity)
+        // if (defenderEntity instanceof Player playerDefender && defender instanceof PlayerProfile) {
+        //     org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
+        //         // Safety check: player van con song va online
+        //         if (playerDefender.isValid() && !playerDefender.isDead() && playerDefender.isOnline()) {
+        //             var nameplateService = CoreContext.getInstance().getUIContext().getNameplateService();
+        //             if (nameplateService != null) {
+        //                 // Update nameplate de hien thi HP moi (force = false de tranh spam, co cooldown 1s)
+        //                 nameplateService.updateNameplate(playerDefender);
+        //             }
+        //         }
                 
-                // Reset custom name nếu có (có thể do plugin khác hoặc lỗi)
-                if (playerDefender.getCustomName() != null && !playerDefender.getCustomName().equals(playerDefender.getName())) {
-                    playerDefender.setCustomName(null);
-                    playerDefender.setCustomNameVisible(false);
-                }
-            });
-        }
+        //         // Reset custom name nếu có (có thể do plugin khác hoặc lỗi)
+        //         if (playerDefender.getCustomName() != null && !playerDefender.getCustomName().equals(playerDefender.getName())) {
+        //             playerDefender.setCustomName(null);
+        //             playerDefender.setCustomNameVisible(false);
+        //         }
+        //     });
+        // }
         
         // Knockback (neu co attacker entity)
         if (attackerEntity != null && defenderEntity != null) {
@@ -312,8 +315,8 @@ public class CombatService {
         // dung service de spawn floating text
         effectService.spawnFloatingDamage(target.getLocation(), damage, color, isCrit);
         
-        // van giu ActionBar cho attacker biet damage
-        attacker.sendActionBar(damageText);
+        // ko giu ActionBar cho attacker biet damage
+        //attacker.sendActionBar(damageText);
     }
     
     /**

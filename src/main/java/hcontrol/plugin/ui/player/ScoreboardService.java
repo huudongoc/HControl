@@ -81,7 +81,7 @@ public class ScoreboardService {
         // realm + tier ( hien thi level so) - su dung DisplayFormatService
         obj.getScore("§7§m━━━━━━━━━━━━━").setScore(line--);
 
-        String levelText = String.format("§7§l%d", profile.getLevel()); // §7§l: mau xam, §l: in dam
+        String levelText = String.format("§7§lTang : %d", profile.getLevel()); // §7§l: mau xam, §l: in dam
         obj.getScore(levelText).setScore(line--);
 
         String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());

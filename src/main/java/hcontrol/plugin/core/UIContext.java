@@ -69,7 +69,10 @@ public class UIContext {
     public void initEntityUI(EntityManager entityManager) {
         this.entityNameplateService = new EntityNameplateService(entityManager, plugin, displayFormatService);
         this.entityDialogService = new EntityDialogService(plugin);
+
+        entityNameplateService.startGlobalUpdater();
     }
+
     
     // ========== GETTERS ==========
     

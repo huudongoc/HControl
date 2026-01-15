@@ -33,6 +33,6 @@ public class ScoreboardUpdateTask extends BukkitRunnable {
      * Start task (update moi 1 giay = 20 ticks)
      */
     public void start(Main plugin) {
-        this.runTaskTimer(plugin, 20L, 20L); // delay 1s, repeat 1s
+        this.runTaskTimer(plugin, 40L, 40L); // delay 0.2s, repeat 0.2s
     }
 }

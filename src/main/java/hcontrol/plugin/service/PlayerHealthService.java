@@ -1,8 +1,9 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.player.PlayerProfile;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
+
+import hcontrol.plugin.player.PlayerProfile;
 
 /**
  * PLAYER HEALTH SERVICE
@@ -135,6 +136,11 @@ public class PlayerHealthService {
         // Reset Linh Khi ve max
         double maxLingQi = profile.getStats().getMaxLingQi();
         profile.setCurrentLingQi(maxLingQi);
+
+        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
+        if (scoreboardService != null) {
+            scoreboardService.updateScoreboard(player);
+        }
         
         // Sync vanilla health
         syncHealth(player, profile);
@@ -165,7 +171,10 @@ public class PlayerHealthService {
             player.setWalkSpeed(0.0f);  // Disable walking
             player.setFlySpeed(0.0f);   // Disable flying
 
-
+                var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
+        if (scoreboardService != null) {
+            scoreboardService.updateScoreboard(player);
+        }
         }
 
     }

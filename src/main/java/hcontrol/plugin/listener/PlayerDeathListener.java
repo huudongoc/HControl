@@ -9,7 +9,6 @@ import org.bukkit.event.player.PlayerMoveEvent;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.service.DisplayFormatService;
 
 /**
  * Xu ly player death - reset HP ve 0 trong profile
@@ -37,11 +36,7 @@ public class PlayerDeathListener implements Listener {
         var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
         healthService.handleDeath(player, profile);
         
-        // Update scoreboard (se hien thi HP: 0/max)
-        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
-        if (scoreboardService != null) {
-            scoreboardService.updateScoreboard(player);
-        }
+
         
         // Custom death message (optional) từ formatPlayerNameplate
         String deathMsg = player.getName() + " " + profile.getRealm().getColor() + "[" + profile.getRealm().getDisplayName() + " " + profile.getLevel() + "] " + "§cđã tử vong";

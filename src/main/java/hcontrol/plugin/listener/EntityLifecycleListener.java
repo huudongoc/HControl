@@ -31,7 +31,9 @@ public class EntityLifecycleListener implements Listener {
     }
     
     /**
-     * Khi mob spawn -> tao profile + enable nameplate
+     * ✅ FIX: Khi mob spawn -> CHỈ mark, KHÔNG làm gì nặng
+     * EntitySpawnEvent có thể spawn 10-100 entity/tick
+     * KHÔNG BAO GIỜ làm logic nặng ở đây
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntitySpawn(CreatureSpawnEvent event) {
@@ -46,9 +48,9 @@ public class EntityLifecycleListener implements Listener {
         // khoi tao profile theo registry template
         EntityProfile profile = entityService.initializeEntity(entity);
         
-        // Enable nameplate cho TAT CA mob (hien thi HP + realm)
+        // ✅ FIX: CHỈ mark để global task xử lý (KHÔNG gọi enableNameplate())
         if (profile != null) {
-            nameplateService.enableNameplate(entity);
+            nameplateService.markForInit(entity); // ✅ CHỈ mark, O(1)
         }
         
         // TODO: Check custom spawn qua metadata/tags
@@ -60,7 +62,7 @@ public class EntityLifecycleListener implements Listener {
     /**
      * Khi mob chet -> cleanup profile + nameplate
      */
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
         

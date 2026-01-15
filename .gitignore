@@ -4,7 +4,9 @@
 
 # ide
 /.idea/
-/.vscode/
+.vscode/*
+!.vscode/launch.json
+
 
 # logs
 *.log

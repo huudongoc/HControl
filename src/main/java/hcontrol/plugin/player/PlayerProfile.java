@@ -61,6 +61,13 @@ public class PlayerProfile implements LivingActor {
     private Title activeTitle;  // danh hieu dang trang bi
     private final List<Title> unlockedTitles;  // danh hieu da mo khoa
     
+    // SKILL SYSTEM - PHASE 6
+    private final java.util.Set<String> learnedSkills;  // skills da hoc
+    private final java.util.Map<Integer, String> skillHotbar;  // slot 1-9 -> skillId
+    
+    // IDENTITY SYSTEM - PHASE 5
+    private hcontrol.plugin.identity.PlayerIdentity identity;  // identity layer
+    
     // LINK STATS
     private final PlayerStats stats;
     
@@ -113,6 +120,13 @@ public class PlayerProfile implements LivingActor {
         this.activeTitle = Title.NONE;  // khong danh hieu
         this.unlockedTitles = new ArrayList<>();
         this.unlockedTitles.add(Title.NONE);  // mac dinh mo khoa NONE
+        
+        // khoi tao skill system - PHASE 6
+        this.learnedSkills = new java.util.HashSet<>();
+        this.skillHotbar = new java.util.HashMap<>();
+        
+        // khoi tao identity system - PHASE 5
+        this.identity = new hcontrol.plugin.identity.PlayerIdentity();  // default identity
         
         // khoi tao stats
         this.stats = new PlayerStats();
@@ -685,6 +699,67 @@ public class PlayerProfile implements LivingActor {
     @Override
     public org.bukkit.entity.LivingEntity getEntity() {
         return Bukkit.getPlayer(uuid);
+    }
+    
+    // ========== SKILL SYSTEM - PHASE 6 ==========
+    
+    /**
+     * Learn skill
+     */
+    public void learnSkill(String skillId) {
+        learnedSkills.add(skillId);
+    }
+    
+    /**
+     * Check if player has learned skill
+     */
+    public boolean hasLearnedSkill(String skillId) {
+        return learnedSkills.contains(skillId);
+    }
+    
+    /**
+     * Get all learned skills
+     */
+    public java.util.Set<String> getLearnedSkills() {
+        return new java.util.HashSet<>(learnedSkills);
+    }
+    
+    /**
+     * Bind skill to hotbar slot (1-9)
+     */
+    public void bindSkill(int slot, String skillId) {
+        if (slot < 1 || slot > 9) return;
+        skillHotbar.put(slot, skillId);
+    }
+    
+    /**
+     * Get skill at hotbar slot
+     */
+    public String getSkillAtSlot(int slot) {
+        return skillHotbar.get(slot);
+    }
+    
+    /**
+     * Unbind skill from slot
+     */
+    public void unbindSkill(int slot) {
+        skillHotbar.remove(slot);
+    }
+    
+    /**
+     * Get all hotbar bindings
+     */
+    public java.util.Map<Integer, String> getSkillHotbar() {
+        return new java.util.HashMap<>(skillHotbar);
+    }
+    
+    // ========== IDENTITY SYSTEM - PHASE 5 ==========
+    
+    /**
+     * Get player identity (read-only)
+     */
+    public hcontrol.plugin.identity.PlayerIdentity getIdentity() {
+        return identity;
     }
 }
 

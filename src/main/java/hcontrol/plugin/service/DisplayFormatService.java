@@ -2,8 +2,8 @@ package hcontrol.plugin.service;
 
 import org.bukkit.entity.EntityType;
 
-import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.entity.EntityProfile;
+import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerProfile;    
 
 /**
@@ -77,11 +77,10 @@ public class DisplayFormatService {
         // Danh hieu (neu co)
         String titleDisplay = (titleIcon != null && !titleIcon.isEmpty()) ? titleIcon + " " : "";
         
-        // Format: [Title Icon] [Realm Tier] ❤ HP%
-      
+        // Format: [Title Icon] [Realm Tier] ❤ HP% (CHỈ HIỆN %)
         return titleDisplay + 
                realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
-               hpColor + "❤ " + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "% §f";
+               hpColor + "❤ " + String.format("%.0f%%", hpPercent) + " §f";
     }
     
     /**

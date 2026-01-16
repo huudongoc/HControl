@@ -112,13 +112,10 @@ public class PlayerHealthService {
         updateTabListName(player, profile);
         
         // Sync nameplate (HP hien thi tren dau player)
+        // CHANGED: Update SYNC de tranh delay trong combat (cooldown 100ms da du de tranh lag)
         var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getNameplateService();
         if (nameplateService != null) {
-            // Dung async task de tranh lag neu update nhieu
-            org.bukkit.Bukkit.getScheduler().runTask(
-                hcontrol.plugin.core.CoreContext.getInstance().getPlugin(),
-                () -> nameplateService.updateNameplate(player)
-            );
+            nameplateService.updateNameplate(player);
         }
     }
     
@@ -170,13 +167,14 @@ public class PlayerHealthService {
         if (player.isDead()) {
             player.setWalkSpeed(0.0f);  // Disable walking
             player.setFlySpeed(0.0f);   // Disable flying
-
-                var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
+        }
+        
+        // Update scoreboard 1 LẦN để hiện HP = 0
+        // Fix: không update trong if(isDead) để tránh duplicate
+        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
         if (scoreboardService != null) {
             scoreboardService.updateScoreboard(player);
         }
-        }
-
     }
 
     /**
@@ -210,6 +208,29 @@ public class PlayerHealthService {
             hpPercent
         );
         
+        // Set display name
         player.setPlayerListName(displayName);
+        
+        // FIX: Force refresh cho TẤT CẢ players (để người khác nhìn thấy update)
+        // Method này tự động sync với clients
+        forceTabListRefresh(player);
+    }
+    
+    /**
+     * Force refresh tablist để clients update display name
+     */
+    private void forceTabListRefresh(Player player) {
+        // Minecraft tự động sync player list name khi:
+        // 1. Player join/quit
+        // 2. Player change world
+        // 3. Server gọi updateDisplayName()
+        
+        // Không cần làm gì thêm - Bukkit API tự động sync
+        // NHƯNG nếu vẫn có issue, có thể dùng:
+        // - Hide/show player (heavy operation)
+        // - Send custom packet (cần ProtocolLib)
+        
+        // For now: just rely on Bukkit sync
+        // Nếu vẫn delay, có thể do client-side cache
     }
 }

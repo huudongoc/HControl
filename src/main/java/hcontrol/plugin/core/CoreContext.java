@@ -81,11 +81,12 @@ public class CoreContext {
         // 2. Player Context (khong phu thuoc ai, nhung LevelService se inject sau)
         this.playerContext = new PlayerContext(plugin);
         
-        // 3. Combat Context (phu thuoc PlayerManager, EntityManager)
+        // 3. Combat Context (phu thuoc PlayerManager, EntityManager, BossManager)
         this.combatContext = new CombatContext(
             plugin,
             playerContext.getPlayerManager(),
-            entityContext.getEntityManager()
+            entityContext.getEntityManager(),
+            entityContext.getBossManager()
         );
         
         // 4. Inject LevelService vao PlayerContext (sau khi CombatContext da co LevelUpEffectService)
@@ -331,8 +332,12 @@ public class CoreContext {
             );
             eventRegistry.registerEvents(combatListener);
             
-            // Register DeathListener
-            deathListener = new PlayerDeathListener(playerContext.getPlayerManager());
+            // Register DeathListener (inject DeathService va DeathMessageService)
+            deathListener = new PlayerDeathListener(
+                playerContext.getPlayerManager(),
+                combatContext.getDeathService(),
+                combatContext.getDeathMessageService()
+            );
             eventRegistry.registerEvents(deathListener);
             
             // Init Entity UI Services
@@ -346,12 +351,29 @@ public class CoreContext {
             );
             eventRegistry.registerEvents(entityLifecycleListener);
             
+            // PHASE 7: Init AI System
+            entityContext.initAI(plugin);
+            if (entityContext.getAIService() != null) {
+                entityContext.getAIService().start();
+                plugin.getLogger().info("[PHASE 7] ✓ AI System đã khởi động!");
+            }
+            
+            // PHASE 7.2: Init Skill System
+            entityContext.initSkills(combatContext.getCombatService());
+            plugin.getLogger().info("[PHASE 7.2] ✓ Skill System đã khởi động!");
+            
             lifecycleManager.enableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã sẵn sàng!");
         });
         
         lifecycleManager.registerOnDisable(() -> {
             plugin.getLogger().info("[PHASE 3] Đang tắt Combat System...");
+            
+            // PHASE 7: Stop AI System
+            if (entityContext.getAIService() != null) {
+                entityContext.getAIService().stop();
+                plugin.getLogger().info("[PHASE 7] ✓ AI System đã tắt!");
+            }
             
             // Clear listeners
             combatListener = null;
@@ -466,4 +488,28 @@ public class CoreContext {
     
     @Deprecated
     public TribulationUI getTribulationUI() { return uiContext.getTribulationUI(); }
+    
+    // ===== PHASE 7: AI System getters =====
+    
+    public hcontrol.plugin.ai.AIService getAIService() { 
+        return entityContext.getAIService(); 
+    }
+    
+    public hcontrol.plugin.ai.BrainRegistry getBrainRegistry() { 
+        return entityContext.getBrainRegistry(); 
+    }
+    
+    // ===== PHASE 7.2: Skill System getters =====
+    
+    public hcontrol.plugin.skill.SkillRegistry getSkillRegistry() {
+        return entityContext.getSkillRegistry();
+    }
+    
+    public hcontrol.plugin.skill.SkillExecutor getSkillExecutor() {
+        return entityContext.getSkillExecutor();
+    }
+    
+    public hcontrol.plugin.skill.SkillCooldownManager getCooldownManager() {
+        return entityContext.getCooldownManager();
+    }
 }

@@ -152,7 +152,7 @@ public class ChatFormatService {
         String realmName = realm.getDisplayName();
         
         // Format don gian voi canh gioi (khong co khung dep nhu roles)
-        return "§8[§r" + realmColor + realmName + "§8] §7" + playerName + " §7» §f" + message;
+        return "§8[§r" + realmColor + realmName + "§8] §7" + playerName + " §7»» §f" + message;
     }
     
     /**
@@ -169,10 +169,16 @@ public class ChatFormatService {
                 }
             }
             
+            // // Neu khong co title, hien thi realm (don gian)
+            // CultivationRealm realm = profile.getRealm();
+            // if (realm != null) {
+            //     return realm.getColor() + "[" + realm.getDisplayName() + "] §f" + message;
+            // }
+
             // Neu khong co title, hien thi realm (don gian)
             CultivationRealm realm = profile.getRealm();
             if (realm != null) {
-                return realm.getColor() + "[" + realm.getDisplayName() + "] §f" + message;
+                return realm.getColor()  + " §f" + message;
             }
         }
         return "§f" + message;

@@ -115,6 +115,9 @@ public class CommandRegistry {
             coreContext.getCultivationContext().getRoleService()
         ));
         
+        // AI Debug command (PHASE 7 testing)
+        register("aidebug", () -> new AIDebugCommand());
+        
         logger.info("[PHASE 0] ✓ Commands đã được đăng ký!");
     }
 }

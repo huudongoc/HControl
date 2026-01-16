@@ -54,6 +54,12 @@ commands:
     description: Set role cho player khac (admin only)
     usage: /setrole <player> <role> | /setrole <player> remove | /setrole clearall | /setrole list
     permission: hcontrol.admin
+    
+  aidebug:
+    description: AI debug commands (testing)
+    usage: /aidebug [info|clear]
+    aliases: [aid]
+    permission: hcontrol.admin
 
 permissions:
   hcontrol.use:

@@ -1,11 +1,17 @@
 package hcontrol.plugin.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import hcontrol.plugin.core.CoreContext;
@@ -31,6 +37,35 @@ public class CombatService {
     private final EntityManager entityManager;
     private NameplateService nameplateService;  // inject sau tu CoreContext
     
+    // Track last attacker cho moi player (de hien thi trong death message)
+    // Key: victim UUID, Value: attacker info (UUID + timestamp + weapon)
+    private final Map<UUID, AttackerInfo> lastAttackers = new HashMap<>();
+    
+    /**
+     * Thong tin ve attacker
+     */
+    public static class AttackerInfo {
+        private final UUID attackerUUID;
+        private final boolean isPlayer;
+        private final long timestamp;
+        private final ItemStack weapon; // null neu khong co weapon dac biet
+        
+        public AttackerInfo(UUID attackerUUID, boolean isPlayer, ItemStack weapon) {
+            this.attackerUUID = attackerUUID;
+            this.isPlayer = isPlayer;
+            this.timestamp = System.currentTimeMillis();
+            this.weapon = weapon;
+        }
+        
+        public UUID getAttackerUUID() { return attackerUUID; }
+        public boolean isPlayer() { return isPlayer; }
+        public long getTimestamp() { return timestamp; }
+        public ItemStack getWeapon() { return weapon; }
+        
+        public boolean isExpired(long timeoutMs) {
+            return System.currentTimeMillis() - timestamp > timeoutMs;
+        }
+    }
     
     public CombatService(PlayerManager playerManager, Plugin plugin, 
                         DamageEffectService effectService, EntityManager entityManager) {
@@ -38,6 +73,41 @@ public class CombatService {
         this.plugin = plugin;
         this.effectService = effectService;
         this.entityManager = entityManager;
+        
+        // Cleanup expired attackers moi 30 giay
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                cleanupExpiredAttackers();
+            }
+        }.runTaskTimer(plugin, 600L, 600L); // moi 30 giay
+    }
+    
+    /**
+     * Cleanup expired attackers (qua 5 phut)
+     */
+    private void cleanupExpiredAttackers() {
+        long timeout = 5 * 60 * 1000; // 5 phut
+        lastAttackers.entrySet().removeIf(entry -> entry.getValue().isExpired(timeout));
+    }
+    
+    /**
+     * Lay last attacker info cho player
+     */
+    public AttackerInfo getLastAttacker(UUID victimUUID) {
+        AttackerInfo info = lastAttackers.get(victimUUID);
+        if (info != null && info.isExpired(5 * 60 * 1000)) {
+            lastAttackers.remove(victimUUID);
+            return null;
+        }
+        return info;
+    }
+    
+    /**
+     * Xoa last attacker info (sau khi chet)
+     */
+    public void clearLastAttacker(UUID victimUUID) {
+        lastAttackers.remove(victimUUID);
     }
     
     /**
@@ -66,6 +136,40 @@ public class CombatService {
         LivingEntity defenderEntity = defender.getEntity();
         if (defenderEntity != null && defenderEntity.isDead()) {
             return; // Entity da chet trong game, khong xu ly damage
+        }
+        
+        // ===== TRACK LAST ATTACKER (neu defender la Player) =====
+        if (defenderEntity instanceof Player defenderPlayer) {
+            LivingEntity attackerEntity = attacker.getEntity();
+            if (attackerEntity != null) {
+                UUID attackerUUID = attackerEntity.getUniqueId();
+                boolean isPlayer = attackerEntity instanceof Player;
+                
+                // Lay weapon neu attacker la Player
+                ItemStack weapon = null;
+                if (isPlayer) {
+                    Player attackerPlayer = (Player) attackerEntity;
+                    ItemStack item = attackerPlayer.getInventory().getItemInMainHand();
+                    if (item != null && item.getType() != Material.AIR) {
+                        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+                        if (meta != null) {
+                            boolean hasLore = meta.hasLore();
+                            java.util.List<String> lore = hasLore ? meta.getLore() : null;
+                            if (meta.hasDisplayName() || (hasLore && lore != null && !lore.isEmpty())) {
+                                weapon = item.clone(); // Clone de tranh thay doi
+                            }
+                        }
+                    }
+                }
+                
+                // Luu last attacker
+                lastAttackers.put(defenderPlayer.getUniqueId(), new AttackerInfo(attackerUUID, isPlayer, weapon));
+                
+                // DEBUG LOG
+                String attackerName = isPlayer ? ((Player) attackerEntity).getName() : attackerEntity.getType().name();
+                String weaponInfo = weapon != null ? " với vũ khí đặc biệt" : "";
+                //System.out.println("[DEBUG] Lưu attacker: " + attackerName + " -> " + defenderPlayer.getName() + weaponInfo);
+            }
         }
         
         // ===== TINH DAMAGE =====

@@ -22,10 +22,9 @@ public class NameplateService {
     private final PlayerManager playerManager;
     private final DisplayFormatService displayFormatService;
     private final Map<UUID, Long> lastUpdateTime = new HashMap<>();
-    private static final long UPDATE_COOLDOWN_MS = 1000; // 1 giay - tranh flash
+    private static final long UPDATE_COOLDOWN_MS = 100; // 100ms - update NHANH cho combat
     
-    // Cache prefix de tranh update neu khong thay doi
-    private final Map<UUID, String> lastPrefix = new HashMap<>();
+    // REMOVED cache prefix - HP thay doi lien tuc nen cache vo nghia
     
     public NameplateService(PlayerManager playerManager, DisplayFormatService displayFormatService) {
         this.playerManager = playerManager;
@@ -68,12 +67,7 @@ public class NameplateService {
         // Su dung DisplayFormatService de format nameplate (KHONG tinh toan logic o day)
         String prefix = displayFormatService.formatPlayerNameplate(profile, titleIcon);
         
-        // CHECK NEU PREFIX KHONG THAY DOI - SKIP UPDATE (tranh flash)
-        String cachedPrefix = lastPrefix.get(uuid);
-        if (cachedPrefix != null && cachedPrefix.equals(prefix)) {
-            return; // khong thay doi - skip
-        }
-        lastPrefix.put(uuid, prefix);
+        // REMOVED cache check - HP % thay doi lien tuc trong combat
         
         // Set vao scoreboard team (khong lam mat custom name)
         Scoreboard scoreboard = player.getScoreboard();
@@ -127,7 +121,6 @@ public class NameplateService {
         
         // Cleanup cache
         lastUpdateTime.remove(uuid);
-        lastPrefix.remove(uuid);
         
         Scoreboard scoreboard = player.getScoreboard();
         Team team = scoreboard.getTeam(player.getName());

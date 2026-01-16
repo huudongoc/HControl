@@ -1,5 +1,6 @@
 package hcontrol.plugin.listener;
 
+import hcontrol.plugin.core.CoreContext;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,6 +18,7 @@ import hcontrol.plugin.service.DisableDameService;
 /**
  * PHASE 3 — COMBAT LISTENER
  * Cancel vanilla damage + apply custom combat
+ * PHASE 7 — Notify AI when entity takes damage
  */
 public class PlayerCombatListener implements Listener {
 
@@ -65,10 +67,23 @@ public class PlayerCombatListener implements Listener {
             
             // DUNG COMBAT SERVICE: Player danh target
             combatService.handlePlayerAttack(attacker, target, attackerProfile);
+            
+            // PHASE 7: Notify AI if target is a mob
+            if (target instanceof LivingEntity && !(target instanceof Player)) {
+                try {
+                    CoreContext ctx = CoreContext.getInstance();
+                    if (ctx.getAIService() != null) {
+                        ctx.getAIService().onEntityDamaged(target.getUniqueId(), attacker);
+                    }
+                } catch (Exception e) {
+                    // Ignore - AI system may not be initialized yet
+                }
+            }
+            
             return;
         }
         
-        // CASE 2: Mob attack player
+        // CASE 3: Mob attack player
         if (event.getEntity() instanceof Player player) {
             if (!(event.getDamager() instanceof LivingEntity mob)) {
                 return;

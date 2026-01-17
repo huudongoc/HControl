@@ -1,8 +1,10 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.model.CultivationRealm;
+import org.bukkit.entity.EntityType;
+
 import hcontrol.plugin.entity.EntityProfile;
-import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.player.PlayerProfile;    
 
 /**
  * DISPLAY FORMAT SERVICE
@@ -55,7 +57,7 @@ public class DisplayFormatService {
     /**
      * Format nameplate cho player
      * Format: [Title Icon] [Realm Tier] ❤ HP%
-     * KHÔNG có text "Player❤" hoặc "Mods❤" để phân biệt rõ với entity nameplate
+     * KHÔNG có text "Player❤" để phân biệt rõ với entity nameplate
      */
     public String formatPlayerNameplate(PlayerProfile profile, String titleIcon) {
         CultivationRealm realm = profile.getRealm();
@@ -75,11 +77,10 @@ public class DisplayFormatService {
         // Danh hieu (neu co)
         String titleDisplay = (titleIcon != null && !titleIcon.isEmpty()) ? titleIcon + " " : "";
         
-        // Format: [Title Icon] [Realm Tier] ❤ HP%
-        // KHÔNG có text "Player❤" để tránh nhầm lẫn với entity nameplate (có "Mods❤")
+        // Format: [Title Icon] [Realm Tier] ❤ HP% (CHỈ HIỆN %)
         return titleDisplay + 
                realm.getColor() + "[" + realm.getDisplayName() + " " + tierName + "] " +
-               hpColor + "❤ " + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "% §f";
+               hpColor + "❤ " + String.format("%.0f%%", hpPercent) + " §f";
     }
     
     /**
@@ -87,7 +88,14 @@ public class DisplayFormatService {
      * Format: [BOSS/Elite] [Realm] Name ❤ currentHP/maxHP
      */
     public String formatEntityNameplate(EntityProfile profile, String displayName) {
+        // Safety check: KHONG format nameplate cho Player
+        if (profile.getEntityType() == EntityType.PLAYER) {
+            return "";
+        }
+        
         // Boss/Elite prefix
+        //neu profile la player thi khong hien thi prefix
+  
         String prefix = "";
         if (profile.isBoss()) {
             prefix = "§4§l[BOSS] ";
@@ -112,7 +120,7 @@ public class DisplayFormatService {
         return prefix + 
                realmColor + "[" + realmName + "] §f" + 
                displayName + " " +
-               hpColor + "Mods❤" + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "%";
+               hpColor + "❤ MODS " + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "%";
     }
     
     /**

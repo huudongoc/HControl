@@ -1,14 +1,15 @@
 package hcontrol.plugin.entity;
 
-import hcontrol.plugin.model.CultivationRealm;
-import hcontrol.plugin.model.LivingActor;
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 
-import java.util.UUID;
+import hcontrol.plugin.model.CultivationRealm;
+import hcontrol.plugin.model.LivingActor;
 
 /**
  * PHASE 7 — MOB RPG PROFILE
@@ -43,7 +44,7 @@ public class EntityProfile implements LivingActor {
         this.customName = null;
         
         // mac dinh: mob yeu (Luyen Khi)
-        this.realm = CultivationRealm.QI_REFINING;
+        this.realm = CultivationRealm.LUYENKHI;
         this.level = 1;
         this.maxHP = 20.0;
         this.currentHP = 20.0;

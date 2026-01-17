@@ -6,21 +6,21 @@ package hcontrol.plugin.model;
  */
 public enum CultivationRealm {
     // Ha Gioi (Lower Realm) - server chinh
-    MORTAL("Pham Nhan", 1.0, 10, 5, 0),              // 1-10 level, damage 5, 0 cultivation
-    QI_REFINING("Luyen Khi", 1.2, 10, 10, 1000),      // 1-10 level, base damage 10
-    FOUNDATION("Truc Co", 1.5, 10, 25, 5000),        // 1-10 level, base damage 25
-    GOLDEN_CORE("Kim Dan", 2.0, 10, 70, 20000),      // 1-10 level, base damage 70
-    NASCENT_SOUL("Nguyen Anh", 3.0, 10, 200, 100000),  // 1-10 level, base damage 200
+    PHAMNHAN("Pham Nhan", 1.0, 10, 5, 0),              // 1-10 level, damage 5, 0 cultivation
+    LUYENKHI("Luyen Khi", 1.2, 10, 10, 1000),      // 1-10 level, base damage 10
+    TRUCCO("Truc Co", 1.5, 10, 25, 5000),        // 1-10 level, base damage 25
+    KIMDAN("Kim Dan", 2.0, 10, 70, 20000),      // 1-10 level, base damage 70
+    NGUYENANH("Nguyen Anh", 3.0, 10, 200, 100000),  // 1-10 level, base damage 200
     
     // Trung Gioi (Middle Realm) - unlock sau
-    SOUL_FORMATION("Hoa Than", 4.0, 10, 600, 500000),     // 1-10 level, base damage 600
-    VOID_REFINEMENT("Luyen Ho", 5.5, 10, 1500, 2000000),  // 1-10 level
-    BODY_INTEGRATION("Hop The", 7.0, 10, 3500, 10000000), // 1-10 level
-    MAHAYANA("Dai Thua", 10.0, 10, 8000, 50000000),       // 1-10 level
+    HOATHAN("Hoa Than", 4.0, 10, 600, 500000),     // 1-10 level, base damage 600
+    LUYENHON("Luyen Hon", 5.5, 10, 1500, 2000000),  // 1-10 level
+    HOPTHE("Hop The", 7.0, 10, 3500, 10000000), // 1-10 level
+    DAITHUA("Dai Thua", 10.0, 10, 8000, 50000000),       // 1-10 level
     
     // Thuong Gioi (Upper Realm) - end game
-    TRIBULATION("Do Kiep", 15.0, 10, 20000, 200000000),     // 1-10 level
-    IMMORTAL("Chan Tien", 25.0, 10, 50000, 1000000000);    // 1-10 level
+    DOKIEP("Do Kiep", 15.0, 10, 20000, 200000000),     // 1-10 level
+    CHANTIEN("Chan Tien", 25.0, 10, 50000, 1000000000);    // 1-10 level
     
     private final String displayName;
     private final double statMultiplier;  // nhan stat khi dat realm
@@ -85,17 +85,17 @@ public enum CultivationRealm {
     
     public String getColor() {
         return switch (this) {
-            case MORTAL -> "§7";
-            case QI_REFINING -> "§f";
-            case FOUNDATION -> "§a";
-            case GOLDEN_CORE -> "§e";
-            case NASCENT_SOUL -> "§6";
-            case SOUL_FORMATION -> "§d";
-            case VOID_REFINEMENT -> "§5";
-            case BODY_INTEGRATION -> "§b";
-            case MAHAYANA -> "§9";
-            case TRIBULATION -> "§c";
-            case IMMORTAL -> "§6§l";
+            case PHAMNHAN -> "§7";
+            case LUYENKHI -> "§f";
+            case TRUCCO -> "§a";
+            case KIMDAN -> "§e";
+            case NGUYENANH -> "§6";
+            case HOATHAN -> "§d";
+            case LUYENHON -> "§5";
+            case HOPTHE -> "§b";
+            case DAITHUA -> "§9";
+            case DOKIEP -> "§c";
+            case CHANTIEN -> "§6§l";
         };
     }
     
@@ -104,17 +104,17 @@ public enum CultivationRealm {
      */
     public String getShortName() {
         return switch (this) {
-            case MORTAL -> "PN";
-            case QI_REFINING -> "LK";
-            case FOUNDATION -> "TC";
-            case GOLDEN_CORE -> "KĐ";
-            case NASCENT_SOUL -> "NA";
-            case SOUL_FORMATION -> "HT";
-            case VOID_REFINEMENT -> "LH";
-            case BODY_INTEGRATION -> "HT";
-            case MAHAYANA -> "ĐT";
-            case TRIBULATION -> "ĐK";
-            case IMMORTAL -> "CT";
+            case PHAMNHAN -> "PN";
+            case LUYENKHI -> "LK";
+            case TRUCCO -> "TC";
+            case KIMDAN -> "KĐ";
+            case NGUYENANH -> "NA";
+            case HOATHAN -> "HT";
+            case LUYENHON -> "LH";
+            case HOPTHE -> "HT";
+            case DAITHUA -> "ĐT";
+            case DOKIEP -> "ĐK";
+            case CHANTIEN -> "CT";
         };
     }
     

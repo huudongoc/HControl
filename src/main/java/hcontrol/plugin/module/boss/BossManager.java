@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * BOSS MANAGER
- * Quan ly tat ca boss dang active (foundation cho sau)
+ * Quan ly tat ca boss dang active (TRUCCO cho sau)
  */
 public class BossManager {
     

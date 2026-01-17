@@ -8,7 +8,7 @@
 
 ### ✅ ĐÃ HOÀN THÀNH (PHASE 0-4)
 
-**PHASE 0 - FOUNDATION**
+**PHASE 0 - TRUCCO**
 - CoreContext (DI container, singleton)
 - LifecycleManager (enable/disable/reload)
 - SubContext architecture (5 contexts)

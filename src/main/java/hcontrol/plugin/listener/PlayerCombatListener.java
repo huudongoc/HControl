@@ -1,5 +1,6 @@
 package hcontrol.plugin.listener;
 
+import hcontrol.plugin.core.CoreContext;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -17,6 +18,7 @@ import hcontrol.plugin.service.DisableDameService;
 /**
  * PHASE 3 — COMBAT LISTENER
  * Cancel vanilla damage + apply custom combat
+ * PHASE 7 — Notify AI when entity takes damage
  */
 public class PlayerCombatListener implements Listener {
 
@@ -33,13 +35,16 @@ public class PlayerCombatListener implements Listener {
     /**
      * Handle player attack + mob attack player
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    //@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    // thường không cần ignoreCancelled = false vì chạy trước
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         // cancel vanilla damage
         disableDameService.cancelDamageByEntity(event);
         
         // CASE 1: Player attack (player/mob)
         if (event.getDamager() instanceof Player attacker) {
+            // CHECK: Target khong phai LivingEntity - khong xu ly
             if (!(event.getEntity() instanceof LivingEntity target)) {
                 return;
             }
@@ -50,23 +55,35 @@ public class PlayerCombatListener implements Listener {
                 return; // Target da chet, cancel event
             }
             
+            // CHECK: Attacker profile chua load - khong xu ly
             PlayerProfile attackerProfile = playerManager.get(attacker.getUniqueId());
             if (attackerProfile == null) {
                 return; // chua load profile
             }
-            
-            // reset attack cooldown (danh nhanh hon vanilla)
+            // reset attack cooldown
             attacker.resetCooldown();
-            
-            // set attack speed based on AGI (nhanh hon = AGI cao)
+            // set attack speed based on AGI (cham hon vanilla = AGI cao)
             updateAttackSpeed(attacker, attackerProfile);
             
-            // player danh target
+            // DUNG COMBAT SERVICE: Player danh target
             combatService.handlePlayerAttack(attacker, target, attackerProfile);
+            
+            // PHASE 7: Notify AI if target is a mob
+            if (target instanceof LivingEntity && !(target instanceof Player)) {
+                try {
+                    CoreContext ctx = CoreContext.getInstance();
+                    if (ctx.getAIService() != null) {
+                        ctx.getAIService().onEntityDamaged(target.getUniqueId(), attacker);
+                    }
+                } catch (Exception e) {
+                    // Ignore - AI system may not be initialized yet
+                }
+            }
+            
             return;
         }
         
-        // CASE 2: Mob attack player
+        // CASE 3: Mob attack player
         if (event.getEntity() instanceof Player player) {
             if (!(event.getDamager() instanceof LivingEntity mob)) {
                 return;

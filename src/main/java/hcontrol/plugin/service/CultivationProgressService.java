@@ -21,17 +21,17 @@ public class CultivationProgressService {
      */
     public int getMaxLevelForRealm(CultivationRealm realm) {
         return switch(realm) {
-            case MORTAL: yield 10;
-            case QI_REFINING: yield 10;
-            case FOUNDATION: yield 10;
-            case GOLDEN_CORE: yield 10;
-            case NASCENT_SOUL: yield 10;
-            case SOUL_FORMATION: yield 10;
-            case VOID_REFINEMENT: yield 10;
-            case BODY_INTEGRATION: yield 10;
-            case MAHAYANA: yield 10;
-            case TRIBULATION: yield 10;
-            case IMMORTAL: yield 10;
+            case PHAMNHAN: yield 10;
+            case LUYENKHI: yield 10;
+            case TRUCCO: yield 10;
+            case KIMDAN: yield 10;
+            case NGUYENANH: yield 10;
+            case HOATHAN: yield 10;
+            case LUYENHON: yield 10;
+            case HOPTHE: yield 10;
+            case DAITHUA: yield 10;
+            case DOKIEP: yield 10;
+            case CHANTIEN: yield 10;
             default: yield realm.getMaxLevelInRealm();
         };
     }

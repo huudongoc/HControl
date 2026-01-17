@@ -1,10 +1,11 @@
 package hcontrol.plugin.entity;
 
-import hcontrol.plugin.model.CultivationRealm;
-import org.bukkit.entity.EntityType;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import org.bukkit.entity.EntityType;
+
+import hcontrol.plugin.model.CultivationRealm;
 
 /**
  * PHASE 7 — ENTITY REGISTRY
@@ -24,27 +25,27 @@ public class EntityRegistry {
      * Dang ky vanilla mobs voi realm mac dinh
      */
     private void registerVanillaMobs() {
-        // QI_REFINING (yeu nhat)
-        register(EntityType.ZOMBIE, CultivationRealm.QI_REFINING, 1, 20, 3, 0);
-        register(EntityType.SKELETON, CultivationRealm.QI_REFINING, 1, 15, 4, 0);
-        register(EntityType.SPIDER, CultivationRealm.QI_REFINING, 1, 16, 2, 0);
-        register(EntityType.CREEPER, CultivationRealm.QI_REFINING, 2, 20, 25, 0); // explosion dame cao
+        // LUYENKHI (yeu nhat)
+        register(EntityType.ZOMBIE, CultivationRealm.LUYENKHI, 1, 20, 3, 0);
+        register(EntityType.SKELETON, CultivationRealm.LUYENKHI, 1, 15, 4, 0);
+        register(EntityType.SPIDER, CultivationRealm.LUYENKHI, 1, 16, 2, 0);
+        register(EntityType.CREEPER, CultivationRealm.LUYENKHI, 2, 20, 25, 0); // explosion dame cao
         
-        // FOUNDATION (trung binh)
-        register(EntityType.ENDERMAN, CultivationRealm.FOUNDATION, 3, 40, 7, 5);
-        register(EntityType.BLAZE, CultivationRealm.FOUNDATION, 4, 20, 6, 3);
-        register(EntityType.WITCH, CultivationRealm.FOUNDATION, 4, 26, 5, 4);
+        // TRUCCO (trung binh)
+        register(EntityType.ENDERMAN, CultivationRealm.TRUCCO, 3, 40, 7, 5);
+        register(EntityType.BLAZE, CultivationRealm.TRUCCO, 4, 20, 6, 3);
+        register(EntityType.WITCH, CultivationRealm.TRUCCO, 4, 26, 5, 4);
         
-        // GOLDEN_CORE (manh)
-        register(EntityType.WITHER_SKELETON, CultivationRealm.GOLDEN_CORE, 5, 50, 8, 6);
-        register(EntityType.PIGLIN_BRUTE, CultivationRealm.GOLDEN_CORE, 5, 50, 9, 7);
+        // KIMDAN (manh)
+        register(EntityType.WITHER_SKELETON, CultivationRealm.KIMDAN, 5, 50, 8, 6);
+        register(EntityType.PIGLIN_BRUTE, CultivationRealm.KIMDAN, 5, 50, 9, 7);
         
-        // NASCENT_SOUL (boss tier)
-        register(EntityType.ELDER_GUARDIAN, CultivationRealm.NASCENT_SOUL, 6, 80, 10, 8);
+        // NGUYENANH (boss tier)
+        register(EntityType.ELDER_GUARDIAN, CultivationRealm.NGUYENANH, 6, 80, 10, 8);
         
-        // SOUL_FORMATION (world boss)
-        register(EntityType.WITHER, CultivationRealm.SOUL_FORMATION, 8, 300, 15, 10);
-        register(EntityType.ENDER_DRAGON, CultivationRealm.SOUL_FORMATION, 9, 200, 12, 12);
+        // HOATHAN (world boss)
+        register(EntityType.WITHER, CultivationRealm.HOATHAN, 8, 300, 15, 10);
+        register(EntityType.ENDER_DRAGON, CultivationRealm.HOATHAN, 9, 200, 12, 12);
     }
     
     /**
@@ -73,7 +74,7 @@ public class EntityRegistry {
      * Template mac dinh (cho mob chua dang ky)
      */
     private EntityTemplate getDefaultTemplate() {
-        return new EntityTemplate(CultivationRealm.QI_REFINING, 1, 20, 2, 0);
+        return new EntityTemplate(CultivationRealm.LUYENKHI, 1, 20, 2, 0);
     }
     
     /**

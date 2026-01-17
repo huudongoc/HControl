@@ -1,27 +1,19 @@
 package hcontrol.plugin.service;
 
-import hcontrol.plugin.model.Title;
-import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.player.NameplateService;
+import java.util.List;
 
 import org.bukkit.entity.Player;
 
-import java.util.List;
+import hcontrol.plugin.event.EventHelper;
+import hcontrol.plugin.event.PlayerStateChangeType;
+import hcontrol.plugin.model.Title;
+import hcontrol.plugin.player.PlayerProfile;
 
 /**
  * TITLE SERVICE - Logic danh hieu
  * Xu ly unlock, equip, unequip title
  */
 public class TitleService {
-    
-    private NameplateService nameplateService;
-    
-    /**
-     * Inject NameplateService (goi tu CoreContext)
-     */
-    public void setNameplateService(NameplateService nameplateService) {
-        this.nameplateService = nameplateService;
-    }
     
     /**
      * Trang bi danh hieu
@@ -36,13 +28,8 @@ public class TitleService {
         // Execute
         profile.setActiveTitle(title);
         
-        // Update nameplate
-        if (nameplateService != null) {
-            Player player = profile.getPlayer();
-            if (player != null) {
-                nameplateService.updateNameplate(player);
-            }
-        }
+        // Bắn event để NameplateListener tự động cập nhật
+        EventHelper.fireStateChange(profile, PlayerStateChangeType.TITLE_CHANGE, title);
         
         return true;
     }
@@ -51,15 +38,11 @@ public class TitleService {
      * Go bo danh hieu
      */
     public void unequipTitle(PlayerProfile profile) {
+        Title oldTitle = profile.getActiveTitle();
         profile.setActiveTitle(Title.NONE);
         
-        // Update nameplate
-        if (nameplateService != null) {
-            Player player = profile.getPlayer();
-            if (player != null) {
-                nameplateService.updateNameplate(player);
-            }
-        }
+        // Bắn event để NameplateListener tự động cập nhật
+        EventHelper.fireStateChange(profile, PlayerStateChangeType.TITLE_CHANGE, oldTitle);
     }
     
     /**
@@ -125,12 +108,12 @@ public class TitleService {
             }
         }
         
-        // IMMORTAL - giet 100 nguoi
+        // CHANTIEN - giet 100 nguoi
         if (totalKills >= 100) {
-            if (unlockTitle(killer, Title.IMMORTAL)) {
+            if (unlockTitle(killer, Title.CHANTIEN)) {
                 Player player = killer.getPlayer();
                 if (player != null) {
-                    player.sendMessage("§6✦ Da mo khoa danh hieu: " + Title.IMMORTAL.getFullDisplay());
+                    player.sendMessage("§6✦ Da mo khoa danh hieu: " + Title.CHANTIEN.getFullDisplay());
                 }
             }
         }

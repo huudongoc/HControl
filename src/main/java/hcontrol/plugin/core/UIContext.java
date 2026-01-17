@@ -12,6 +12,7 @@ import hcontrol.plugin.ui.player.NameplateService;
 import hcontrol.plugin.ui.player.PlayerUIService;
 import hcontrol.plugin.ui.player.ScoreboardService;
 import hcontrol.plugin.ui.player.ScoreboardUpdateTask;
+import hcontrol.plugin.ui.sect.SectWarBossBarService;
 import hcontrol.plugin.ui.tribulation.TribulationUI;
 import hcontrol.plugin.ui.tribulation.UiStateService;
 
@@ -39,6 +40,9 @@ public class UIContext {
     private UiStateService uiStateService;
     private TribulationUI tribulationUI;
     
+    // Sect UI
+    private SectWarBossBarService sectWarBossBarService;
+    
     // Runtime tasks
     private ScoreboardUpdateTask scoreboardUpdateTask;
     
@@ -54,13 +58,16 @@ public class UIContext {
     public void initPlayerUI(PlayerManager playerManager, hcontrol.plugin.service.CultivationProgressService cultivationProgressService) {
         this.playerUIService = new PlayerUIService(playerManager, displayFormatService, cultivationProgressService);
         this.scoreboardService = new ScoreboardService(playerManager, displayFormatService, cultivationProgressService);
-        this.nameplateService = new NameplateService(playerManager, displayFormatService);
+        this.nameplateService = new NameplateService(playerManager);
         this.chatBubbleService = new ChatBubbleService(plugin);
         this.chatFormatService = new ChatFormatService();
         
         // Tribulation UI
         this.uiStateService = new UiStateService();
         this.tribulationUI = new TribulationUI(plugin, uiStateService);
+        
+        // Sect UI
+        this.sectWarBossBarService = new SectWarBossBarService(plugin);
     }
     
     /**
@@ -69,7 +76,10 @@ public class UIContext {
     public void initEntityUI(EntityManager entityManager) {
         this.entityNameplateService = new EntityNameplateService(entityManager, plugin, displayFormatService);
         this.entityDialogService = new EntityDialogService(plugin);
+
+        entityNameplateService.startGlobalUpdater();
     }
+
     
     // ========== GETTERS ==========
     
@@ -86,6 +96,8 @@ public class UIContext {
     
     public UiStateService getUiStateService() { return uiStateService; }
     public TribulationUI getTribulationUI() { return tribulationUI; }
+    
+    public SectWarBossBarService getSectWarBossBarService() { return sectWarBossBarService; }
     
     public ScoreboardUpdateTask getScoreboardUpdateTask() { return scoreboardUpdateTask; }
     

@@ -129,6 +129,10 @@ public class LifecycleManager {
         
         CoreContext.reset();
         CoreContext.initialize(plugin, this);
+        
+        // 🔥 FIX: Set EventRegistry lại sau khi reload (giống như Main.onEnable)
+        CoreContext.getInstance().setEventRegistry(new hcontrol.plugin.listener.BukkitEventRegistry(plugin));
+        
         CoreContext.getInstance().registerAllModules();
         
         enableAll();

@@ -7,7 +7,7 @@ import hcontrol.plugin.core.LifecycleManager;
 import hcontrol.plugin.listener.BukkitEventRegistry;
 
 /**
- * PHASE 0 — FOUNDATION
+ * PHASE 0 — TRUCCO
  * Main chỉ làm wiring, không chứa logic
  */
 public class Main extends JavaPlugin {

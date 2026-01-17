@@ -22,6 +22,34 @@ public class ReloadCommand implements CommandExecutor {
             sender.sendMessage(ChatColor.RED + "Bạn không có quyền sử dụng lệnh này!");
             return true;
         }
+        
+        // Check neu co arg "config" thi chi reload config
+        if (args.length > 0 && args[0].equalsIgnoreCase("config")) {
+            sender.sendMessage(ChatColor.YELLOW + "Đang reload config...");
+            try {
+                var deathMsgConfig = hcontrol.plugin.core.CoreContext.getInstance()
+                    .getCombatContext().getDeathService();
+                sender.sendMessage(ChatColor.GOLD + "Xóa và tạo lại file death-messages.yml...");
+                
+                // Force delete va recreate config file
+                java.io.File configFile = new java.io.File(
+                    hcontrol.plugin.core.CoreContext.getInstance().getPlugin().getDataFolder(), 
+                    "death-messages.yml"
+                );
+                if (configFile.exists()) {
+                    configFile.delete();
+                }
+                
+                // Reload se tao file moi
+                lifecycle.reloadAll();
+                sender.sendMessage(ChatColor.GREEN + "✔ Reload config thành công!");
+                return true;
+            } catch (Exception e) {
+                sender.sendMessage(ChatColor.RED + "✖ Lỗi khi reload config: " + e.getMessage());
+                e.printStackTrace();
+                return true;
+            }
+        }
 
         sender.sendMessage(ChatColor.YELLOW + "Đang reload plugin...");
 

@@ -66,10 +66,10 @@ public class TribulationContext {
      */
     private int calculateMaxWaves(CultivationRealm targetRealm) {
         return switch (targetRealm) {
-            case FOUNDATION -> 3;
-            case GOLDEN_CORE -> 5;
-            case NASCENT_SOUL -> 7;
-            case SOUL_FORMATION -> 9;
+            case TRUCCO -> 3;
+            case KIMDAN -> 5;
+            case NGUYENANH -> 7;
+            case HOATHAN -> 9;
             default -> 3; // mac dinh
         };
     }
@@ -159,7 +159,7 @@ public class TribulationContext {
 
     public boolean hasQuestionPhase() {
         // chi realm cao moi co question (Nguyen Anh tro len)
-        return toRealm.ordinal() >= CultivationRealm.NASCENT_SOUL.ordinal();
+        return toRealm.ordinal() >= CultivationRealm.NGUYENANH.ordinal();
     }
 
     // ===== GETTERS =====

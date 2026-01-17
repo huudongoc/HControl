@@ -6,6 +6,7 @@ import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -42,6 +43,7 @@ public class ScoreboardService {
         
         Scoreboard board = manager.getNewScoreboard();
         Objective obj = board.registerNewObjective("tutienstats", "dummy", "§6§l TU TIEN");
+        obj.numberFormat(NumberFormat.blank());
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         
         updateScoreboard(player, profile, obj);
@@ -52,15 +54,24 @@ public class ScoreboardService {
      * Update scoreboard
      */
     public void updateScoreboard(Player player) {
+        // Skip if player is null or offline
+        if (player == null || !player.isOnline()) return;
+        
         PlayerProfile profile = playerManager.get(player.getUniqueId());
         if (profile == null) return;
         
         Scoreboard board = player.getScoreboard();
         Objective obj = board.getObjective("tutienstats");
-        if (obj == null) {
-            createScoreboard(player);
-            return;
+        
+        // FIX: Unregister và recreate objective để đảm bảo không có entries cũ
+        if (obj != null) {
+            obj.unregister();
         }
+        
+        // Recreate objective
+        obj = board.registerNewObjective("tutienstats", "dummy", "§6§l TU TIEN");
+        obj.numberFormat(NumberFormat.blank());
+        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         
         updateScoreboard(player, profile, obj);
     }
@@ -69,16 +80,18 @@ public class ScoreboardService {
      * Update scoreboard content
      */
     private void updateScoreboard(Player player, PlayerProfile profile, Objective obj) {
-        // xoa tat ca entry cu
-        for (String entry : obj.getScoreboard().getEntries()) {
-            obj.getScoreboard().resetScores(entry);
-        }
+        // Objective đã được recreate → không cần xóa entries
         
         int line = 15;
-        
-        // realm + tier (KHONG hien thi level so) - su dung DisplayFormatService
+        obj.numberFormat(NumberFormat.blank());
+        // realm + tier ( hien thi level so) - su dung DisplayFormatService
         obj.getScore("§7§m━━━━━━━━━━━━━").setScore(line--);
+
+        String levelText = String.format("§7§lTang : %d", profile.getLevel()); // §7§l: mau xam, §l: in dam
+        obj.getScore(levelText).setScore(line--);
+
         String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());
+
         obj.getScore("§f⚡ " + realmTierText).setScore(line--);
         
         // tu vi progress - su dung CultivationProgressService
@@ -87,12 +100,20 @@ public class ScoreboardService {
         String cultProgressText = displayFormatService.formatCultivationProgress(cultPercent);
         obj.getScore(cultProgressText).setScore(line--);
         
-        // Sinh Mang & Linh Khi - su dung DisplayFormatService
+        // Sinh Mang & Linh Khi - FIXED: Dùng fixed entry names để tránh duplicate
         obj.getScore("  ").setScore(line--);
-        String hpText = displayFormatService.formatHP(profile.getCurrentHP(), profile.getStats().getMaxHP());
-        obj.getScore(hpText.replace("§c❤ §f", "§c❤ §fSinh Mang: §c")).setScore(line--);
-        String lqText = displayFormatService.formatLingQi(profile.getCurrentLingQi(), profile.getStats().getMaxLingQi());
-        obj.getScore(lqText.replace("§9✦ §f", "§9✦ §fLinh Khi: §9")).setScore(line--);
+        
+        // Format HP với giá trị cụ thể
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getStats().getMaxHP();
+        String hpDisplay = String.format("§c❤ §fSinh Mang: §c%.0f§7/§c%.0f", currentHP, maxHP);
+        obj.getScore(hpDisplay).setScore(line--);
+        
+        // Format Linh Khi
+        double currentLQ = profile.getCurrentLingQi();
+        double maxLQ = profile.getStats().getMaxLingQi();
+        String lqDisplay = String.format("§9✦ §fLinh Khi: §9%.0f§7/§9%.0f", currentLQ, maxLQ);
+        obj.getScore(lqDisplay).setScore(line--);
         
         // Stats tu tien (5 stat chinh)
         obj.getScore("   ").setScore(line--);

@@ -1,0 +1,53 @@
+# DEATH MESSAGES CONFIG
+# Config cho cac cau thong bao chet trong he thong tu tien
+# Co the them bot cau bat ky luc nao ma khong can sua code
+# Template co the dung: {player}, {killer}, {weapon}, {boss}, {location}, {realm}, {level}
+
+normal:
+  - "{player} đã tử vong"
+  - "{player} đã bỏ mạng"
+  - "{player} bị {killer} giết chết"
+  - "{player} đã bỏ mạng dưới tay {killer}"
+  - "{killer} đã kết liễu {player}"
+  - "{player} bị {killer} dùng {weapon} giết chết"
+  - "{player} đã bỏ mạng dưới lưỡi {weapon} của {killer}"
+  - "{killer} đã dùng {weapon} kết liễu {player}"
+  - "{player} bị {killer} chém chết bằng {weapon}"
+
+poison:
+  - "{player} đã chết vì độc khí"
+  - "{player} không chịu nổi kịch độc"
+  - "{player} bị độc khí xâm nhập, nguyên thần tan rã"
+
+boss:
+  - "{player} bị {boss} đánh chết"
+  - "{player} bỏ mạng dưới tay {boss}"
+  - "{player} không thể chống lại sức mạnh của {boss}"
+  - "{boss} đã kết liễu {player}"
+  - "{player} bị {boss} dùng {weapon} giết chết"
+  - "{player} đã bỏ mạng dưới lưỡi {weapon} của {boss}"
+  - "{boss} đã dùng {weapon} kết liễu {player}"
+
+battlefield:
+  - "{player} đã ngã xuống tại chiến trường ngoại vực"
+  - "{player} máu nhuộm ngoại vực"
+  - "{player} hy sinh tại {location}"
+  - "{player} đã tử vong trong cuộc chiến ngoại vực"
+  - "{player} đã ngã xuống tại {location} dưới tay {killer}"
+  - "{player} máu nhuộm {location} bởi {killer}"
+  - "{player} đã ngã xuống tại {location} dưới lưỡi {weapon} của {killer}"
+  - "{player} bị {killer} dùng {weapon} giết chết tại {location}"
+
+secret_realm:
+  - "{player} vĩnh viễn mất tích trong bí cảnh"
+  - "{player} đã chết trong bí cảnh hung hiểm"
+  - "{player} không thể thoát khỏi {location}"
+  - "{player} bị nuốt chửng bởi bí cảnh"
+  - "{player} vĩnh viễn mất tích trong {location} dưới tay {killer}"
+  - "{player} bị {killer} dùng {weapon} giết chết trong {location}"
+
+tribulation:
+  - "{player} không vượt qua được thiên kiếp"
+  - "{player} bị thiên lôi đánh tan nguyên thần"
+  - "{player} thất bại trước thiên đạo"
+  - "{player} hồn phi phách tán dưới thiên lôi"

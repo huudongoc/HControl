@@ -1,5 +1,7 @@
 package hcontrol.plugin.sect;
 
+import hcontrol.plugin.event.EventHelper;
+import hcontrol.plugin.event.PlayerStateChangeType;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -78,6 +80,9 @@ public class SectService {
             return "§cKhông thể tạo môn phái!";
         }
         
+        // Bắn event (tạo môn phái = join môn phái)
+        EventHelper.fireStateChange(player, profile, PlayerStateChangeType.SECT_JOIN, sect);
+        
         return null; // Success
     }
     
@@ -149,6 +154,12 @@ public class SectService {
         if (sect != null) {
             // Thông báo cho cả môn phái
             notifySectMembers(sect, "§a" + player.getName() + " §7đã gia nhập môn phái!");
+            
+            // Bắn event
+            PlayerProfile profile = playerManager.get(uuid);
+            if (profile != null) {
+                EventHelper.fireStateChange(player, profile, PlayerStateChangeType.SECT_JOIN, sect);
+            }
         }
         
         return null; // Success
@@ -177,6 +188,12 @@ public class SectService {
         }
         
         notifySectMembers(sect, "§c" + player.getName() + " §7đã rời khỏi môn phái!");
+        
+        // Bắn event
+        PlayerProfile profile = playerManager.get(uuid);
+        if (profile != null) {
+            EventHelper.fireStateChange(player, profile, PlayerStateChangeType.SECT_LEAVE, sect);
+        }
         
         return null; // Success
     }

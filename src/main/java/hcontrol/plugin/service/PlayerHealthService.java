@@ -115,7 +115,8 @@ public class PlayerHealthService {
         // CHANGED: Update SYNC de tranh delay trong combat (cooldown 100ms da du de tranh lag)
         var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getNameplateService();
         if (nameplateService != null) {
-            nameplateService.updateNameplate(player);
+            // Chỉ update HP (dùng cache static prefix)
+            nameplateService.updateHP(player);
         }
     }
     
@@ -179,9 +180,22 @@ public class PlayerHealthService {
 
     /**
      * Update tablist display name voi HP hien tai
-     * Format: [Realm] PlayerName HP% ❤ 85%
+     * Format: [LK][Thanh Vân] PlayerName ❤85%
+     * 🔥 Reuse NameplateData từ NameplateService
      */
     private void updateTabListName(Player player, PlayerProfile profile) {
+        // Reuse NameplateData từ NameplateService
+        var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getNameplateService();
+        if (nameplateService != null) {
+            String displayName = nameplateService.buildTabListName(player);
+            if (displayName != null) {
+                player.setPlayerListName(displayName);
+                forceTabListRefresh(player);
+                return;
+            }
+        }
+        
+        // Fallback nếu NameplateService không available
         double currentHP = profile.getCurrentHP();
         double maxHP = profile.getStats().getMaxHP();
         double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
@@ -198,7 +212,7 @@ public class PlayerHealthService {
             hpColor = "§c";  // do
         }
         
-        // Format: [LK] PlayerName ❤ 85%
+        // Format fallback: [LK] PlayerName ❤ 85%
         String realmShort = profile.getRealm().getShortName();
         String displayName = String.format("%s§7[%s] §f%s %s❤ %.0f%%",
             profile.getRealm().getColor(),
@@ -208,11 +222,7 @@ public class PlayerHealthService {
             hpPercent
         );
         
-        // Set display name
         player.setPlayerListName(displayName);
-        
-        // FIX: Force refresh cho TẤT CẢ players (để người khác nhìn thấy update)
-        // Method này tự động sync với clients
         forceTabListRefresh(player);
     }
     

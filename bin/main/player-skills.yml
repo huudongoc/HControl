@@ -1,0 +1,133 @@
+# PLAYER SKILLS CONFIG - PHASE 6
+# Format: skillId -> skill data
+
+skills:
+  # ===== CẬN CHIẾN (MELEE) =====
+  basic_strike:
+    display_name: "§fCơ Bản Tấn Công"
+    type: MELEE
+    cost: 10
+    cooldown: 1
+    damage_multiplier: 1.2
+    range: 5.0
+    min_realm: PHAMNHAN
+    min_level: 1
+    description:
+      - "§7Tấn công cơ bản"
+      - "§7Công kích +20%"
+  
+  sword_slash:
+    display_name: "§cKiếm Chém"
+    type: MELEE
+    cost: 30
+    cooldown: 3
+    damage_multiplier: 1.8
+    range: 6.0
+    min_realm: PHAMNHAN
+    min_level: 3
+    effects:
+      - type: SLOW
+        duration: 40
+        amplifier: 1
+    description:
+      - "§7Chém mạnh với kiếm"
+      - "§7Công kích +80%"
+      - "§7Làm chậm mục tiêu 2s"
+  
+  # ===== TẦM XA (RANGED) =====
+  fireball:
+    display_name: "§cHỏa Cầu"
+    type: RANGED
+    cost: 50
+    cooldown: 5
+    damage_multiplier: 2.0
+    range: 32.0
+    projectile_count: 1
+    min_realm: LUYENKHI
+    min_level: 1
+    description:
+      - "§7Bắn cầu lửa"
+      - "§7Công kích +100%"
+  
+  ice_barrage:
+    display_name: "§bBăng Phong Vũ"
+    type: RANGED
+    cost: 80
+    cooldown: 8
+    damage_multiplier: 1.5
+    range: 32.0
+    projectile_count: 5
+    min_realm: LUYENKHI
+    min_level: 5
+    effects:
+      - type: SLOW
+        duration: 100
+        amplifier: 2
+    description:
+      - "§7Bắn 5 mũi băng"
+      - "§7Công kích +50% mỗi mũi"
+      - "§7Làm chậm mạnh 5s"
+  
+  # ===== PHẠM VI (AOE) =====
+  earthquake:
+    display_name: "§6Địa Chấn"
+    type: AOE
+    cost: 100
+    cooldown: 10
+    damage_multiplier: 1.5
+    range: 0
+    area_radius: 8.0
+    min_realm: TRUCCO
+    min_level: 1
+    description:
+      - "§7Tạo chấn động đất"
+      - "§7Sát thương phạm vi 8 blocks"
+      - "§7Công kích +50%"
+  
+  # ===== BUFF =====
+  qi_burst:
+    display_name: "§9Linh Khí Bùng Nổ"
+    type: BUFF
+    cost: 50
+    cooldown: 15
+    damage_multiplier: 0
+    range: 0
+    min_realm: PHAMNHAN
+    min_level: 5
+    effects:
+      - type: SPEED
+        duration: 200
+        amplifier: 1
+      - type: INCREASE_DAMAGE
+        duration: 200
+        amplifier: 0
+    description:
+      - "§7Tăng tốc độ và sát thương"
+      - "§7Kéo dài 10 giây"
+  
+  # ===== HỒI PHỤC (HEAL) =====
+  meditation:
+    display_name: "§aTu Luyện Hồi Phục"
+    type: HEAL
+    cost: 30
+    cooldown: 20
+    damage_multiplier: 0
+    range: 0
+    min_realm: PHAMNHAN
+    min_level: 1
+    description:
+      - "§7Hồi 30% sinh mạng"
+  
+  # ===== DỊCH CHUYỂN (TELEPORT) =====
+  flash_step:
+    display_name: "§dThoát Bộ"
+    type: TELEPORT
+    cost: 40
+    cooldown: 5
+    damage_multiplier: 0
+    range: 10.0
+    min_realm: LUYENKHI
+    min_level: 3
+    description:
+      - "§7Dịch chuyển về phía trước"
+      - "§7Khoảng cách 10 blocks"

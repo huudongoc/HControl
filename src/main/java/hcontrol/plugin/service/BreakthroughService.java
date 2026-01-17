@@ -7,6 +7,8 @@ import java.util.UUID;
 import org.bukkit.entity.Player;
 
 import hcontrol.plugin.core.CoreContext;
+import hcontrol.plugin.event.EventHelper;
+import hcontrol.plugin.event.PlayerStateChangeType;
 import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerProfile;
@@ -139,6 +141,9 @@ public class BreakthroughService {
      * 5. XU LY THANH CONG
      */
     private BreakthroughResult handleSuccess(PlayerProfile profile) {
+        // Lưu realm cũ để bắn event
+        CultivationRealm oldRealm = profile.getRealm();
+        
         // Dot pha len canh gioi moi
         profile.breakthrough();
         
@@ -153,6 +158,9 @@ public class BreakthroughService {
             var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
             healthService.syncHealth(player, profile);
         }
+        
+        // Bắn event để NameplateListener tự động cập nhật
+        EventHelper.fireStateChange(profile, PlayerStateChangeType.REALM_CHANGE, oldRealm);
         
         // Set cooldown ngan (5 phut)
         setCooldown(profile.getUuid(), COOLDOWN_MS);
@@ -266,10 +274,14 @@ public class BreakthroughService {
             profile.addKarmaPoints(-10);  // am nghiep
             
             // Lui ve Dinh (level 10) canh gioi truoc
+            CultivationRealm oldRealm = profile.getRealm();
             CultivationRealm previousRealm = profile.getRealm().getPrevious();
             if (previousRealm != null) {
                 profile.setRealm(previousRealm);
                 profile.setLevel(previousRealm.getMaxLevelInRealm()); // Level 10
+                
+                // Bắn event khi realm bị giảm
+                EventHelper.fireStateChange(profile, PlayerStateChangeType.REALM_CHANGE, oldRealm);
             } else {
                 // Neu khong co realm truoc, chi lui ve tang 1
                 profile.setLevel(1);

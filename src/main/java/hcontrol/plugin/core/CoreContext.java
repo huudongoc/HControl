@@ -232,6 +232,17 @@ public class CoreContext {
             // Inject NameplateService vào RoleService (de update nameplate khi set role)
             cultivationContext.getRoleService().setNameplateService(uiContext.getNameplateService());
             
+            // Inject dependencies vào NameplateService (sau khi sect/master system init)
+            // Sẽ được set trong registerSectSystem và registerMasterSystem
+            
+            // Register NameplateListener (lắng nghe PlayerStateChangeEvent)
+            hcontrol.plugin.listener.NameplateListener nameplateListener = new hcontrol.plugin.listener.NameplateListener(
+                plugin,
+                uiContext.getNameplateService()
+            );
+            eventRegistry.registerEvents(nameplateListener);
+            plugin.getLogger().info("[PHASE 1] ✓ NameplateListener registered");
+            
             // Register Listeners
             joinListener = new JoinServerListener(
                 uiContext.getPlayerUIService(),
@@ -327,6 +338,11 @@ public class CoreContext {
                     .forEach(p -> uiContext.getUiStateService().clear(p.getUuid()));
             }
             
+            // Shutdown SectWarBossBarService
+            if (uiContext.getSectWarBossBarService() != null) {
+                uiContext.getSectWarBossBarService().shutdown();
+            }
+            
             // Save tat ca player dang online
             plugin.getLogger().info("[PHASE 1] Đang lưu dữ liệu " + 
                 playerContext.getPlayerManager().getAllOnline().size() + " player...");
@@ -361,7 +377,7 @@ public class CoreContext {
             combatContext.getCombatService().setNameplateService(uiContext.getNameplateService());
             
             // Inject NameplateService vao TitleService
-            cultivationContext.getTitleService().setNameplateService(uiContext.getNameplateService());
+            // TitleService không cần inject NameplateService nữa - dùng event
             
             // Register CombatListener
             combatListener = new PlayerCombatListener(
@@ -521,6 +537,20 @@ public class CoreContext {
                 plugin.getLogger().info("[SECT] ✓ Đã inject SectManager vào NameplateService");
             }
             
+            // Inject NameplateService vào ChatFormatService (PHASE 5: reuse data)
+            if (uiContext != null && uiContext.getChatFormatService() != null && uiContext.getNameplateService() != null) {
+                uiContext.getChatFormatService().setNameplateService(uiContext.getNameplateService());
+                plugin.getLogger().info("[SECT] ✓ Đã inject NameplateService vào ChatFormatService (reuse data)");
+            }
+            
+            // Register SectWarListener (lắng nghe SectWarStartEvent)
+            if (uiContext != null && uiContext.getSectWarBossBarService() != null) {
+                hcontrol.plugin.listener.SectWarListener sectWarListener = 
+                    new hcontrol.plugin.listener.SectWarListener(uiContext.getSectWarBossBarService());
+                eventRegistry.registerEvents(sectWarListener);
+                plugin.getLogger().info("[SECT] ✓ SectWarListener registered");
+            }
+            
             lifecycleManager.enableModule("SectSystem");
             plugin.getLogger().info("[SECT] ✓ Sect System đã sẵn sàng!");
         });
@@ -583,6 +613,9 @@ public class CoreContext {
                 uiContext.getNameplateService().setMasterManager(masterManager);
                 plugin.getLogger().info("[MASTER] ✓ Đã inject MasterManager vào NameplateService");
             }
+            
+            // ChatFormatService đã được inject NameplateService (reuse data)
+            // Không cần inject MasterManager nữa vì đã reuse từ NameplateService
             
             // Register MasterCommand với SkillCreatorListener
             MasterCommand masterCmd = new MasterCommand(masterService, playerContext.getPlayerManager());

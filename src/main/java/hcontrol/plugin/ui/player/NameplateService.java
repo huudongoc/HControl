@@ -3,34 +3,36 @@ package hcontrol.plugin.ui.player;
 import hcontrol.plugin.master.DiscipleInfo;
 import hcontrol.plugin.master.MasterManager;
 import hcontrol.plugin.master.MasterRelation;
+import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.model.Title;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.sect.Sect;
 import hcontrol.plugin.sect.SectManager;
 import hcontrol.plugin.sect.SectMember;
-import hcontrol.plugin.service.DisplayFormatService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * NAMEPLATE SERVICE
- * Hien thi ten, level, realm, danh hieu, mon phai, su do tren dau player
+ * NAMEPLATE SERVICE - OPTIMIZED
+ * 
+ * 🔥 Cache static prefix (realm, sect, title, master) - chỉ rebuild khi state change
+ * 🔥 HP render riêng (thay đổi liên tục)
+ * 🔥 Batch update để tránh loop spam
  * 
  * Format: [MônPhái] [Sư/Đồ] [CảnhGiới] Player ❤HP% [DanhHiệu]
  */
 public class NameplateService {
     
     private final PlayerManager playerManager;
-    private final DisplayFormatService displayFormatService;
-    private final Map<UUID, Long> lastUpdateTime = new HashMap<>();
-    private static final long UPDATE_COOLDOWN_MS = 100; // 100ms - update NHANH cho combat
+    private final Map<UUID, NameplateData> cache = new HashMap<>();
+    private final Map<UUID, Long> lastHPUpdateTime = new HashMap<>();
+    private static final long HP_UPDATE_COOLDOWN_MS = 100; // 100ms cho HP update
     
     // Optional dependencies (có thể null)
     private SectManager sectManager;
@@ -42,9 +44,8 @@ public class NameplateService {
     private boolean showRealm = true;
     private boolean showTitle = true;
     
-    public NameplateService(PlayerManager playerManager, DisplayFormatService displayFormatService) {
+    public NameplateService(PlayerManager playerManager) {
         this.playerManager = playerManager;
-        this.displayFormatService = displayFormatService;
     }
     
     // Setters for optional dependencies
@@ -57,18 +58,35 @@ public class NameplateService {
     }
     
     // Config setters
-    public void setShowSect(boolean show) { this.showSect = show; }
-    public void setShowMasterStatus(boolean show) { this.showMasterStatus = show; }
-    public void setShowRealm(boolean show) { this.showRealm = show; }
-    public void setShowTitle(boolean show) { this.showTitle = show; }
+    public void setShowSect(boolean show) { 
+        this.showSect = show; 
+        invalidateAllCache(); // Force rebuild khi config thay đổi
+    }
+    
+    public void setShowMasterStatus(boolean show) { 
+        this.showMasterStatus = show; 
+        invalidateAllCache();
+    }
+    
+    public void setShowRealm(boolean show) { 
+        this.showRealm = show; 
+        invalidateAllCache();
+    }
+    
+    public void setShowTitle(boolean show) { 
+        this.showTitle = show; 
+        invalidateAllCache();
+    }
     
     public boolean isShowSect() { return showSect; }
     public boolean isShowMasterStatus() { return showMasterStatus; }
     public boolean isShowRealm() { return showRealm; }
     public boolean isShowTitle() { return showTitle; }
     
+    // ===== PUBLIC API =====
+    
     /**
-     * Update nameplate cho player (voi cooldown de tranh spam)
+     * Update nameplate cho player (với HP update nhanh)
      */
     public void updateNameplate(Player player) {
         updateNameplate(player, false);
@@ -76,69 +94,304 @@ public class NameplateService {
     
     /**
      * Update nameplate cho player
-     * @param force true = bo qua cooldown, false = check cooldown
+     * @param force true = force rebuild static prefix, false = dùng cache nếu có
      */
     public void updateNameplate(Player player, boolean force) {
+        if (player == null || !player.isOnline()) return;
+        
         PlayerProfile profile = playerManager.get(player.getUniqueId());
         if (profile == null) return;
         
         UUID uuid = player.getUniqueId();
         
-        // Check cooldown (neu khong force)
-        if (!force) {
-            long now = System.currentTimeMillis();
-            Long lastUpdate = lastUpdateTime.get(uuid);
-            if (lastUpdate != null && (now - lastUpdate) < UPDATE_COOLDOWN_MS) {
-                return; // skip update (qua nhanh)
-            }
-            lastUpdateTime.put(uuid, now);
+        // Lấy hoặc tạo cache
+        NameplateData data = cache.get(uuid);
+        if (data == null || force) {
+            data = rebuildStaticData(player, profile);
+            cache.put(uuid, data);
         }
         
-        // Build prefix với thông tin mới
-        String prefix = buildFullPrefix(player, profile);
-        String suffix = buildSuffix(player, profile);
+        // Tính HP percent
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getMaxHP();
+        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 0.0;
         
-        // Set vao scoreboard team (khong lam mat custom name)
+        // Build full prefix với HP (HP render riêng)
+        String prefix = data.buildFullPrefix(hpPercent);
+        String suffix = data.getStaticSuffix();
+        
+        // Apply to scoreboard
+        applyToScoreboard(player, prefix, suffix);
+    }
+    
+    /**
+     * 🔥 BATCH UPDATE - Tránh loop spam
+     * Dùng khi: join server, reload plugin, sect war start
+     */
+    public void batchUpdate(Collection<PlayerProfile> profiles) {
+        if (profiles == null || profiles.isEmpty()) return;
+        
+        List<Player> players = profiles.stream()
+            .map(PlayerProfile::getPlayer)
+            .filter(p -> p != null && p.isOnline())
+            .collect(Collectors.toList());
+        
+        if (players.isEmpty()) return;
+        
+        // Rebuild cache cho tất cả (force)
+        for (Player player : players) {
+            PlayerProfile profile = playerManager.get(player.getUniqueId());
+            if (profile != null) {
+                NameplateData data = rebuildStaticData(player, profile);
+                cache.put(player.getUniqueId(), data);
+            }
+        }
+        
+        // Apply tất cả cùng lúc
+        for (Player player : players) {
+            PlayerProfile profile = playerManager.get(player.getUniqueId());
+            if (profile != null) {
+                NameplateData data = cache.get(player.getUniqueId());
+                if (data != null) {
+                    double currentHP = profile.getCurrentHP();
+                    double maxHP = profile.getMaxHP();
+                    double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 0.0;
+                    
+                    String prefix = data.buildFullPrefix(hpPercent);
+                    String suffix = data.getStaticSuffix();
+                    applyToScoreboard(player, prefix, suffix);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Update chỉ HP (nhanh, dùng cache static prefix)
+     */
+    public void updateHP(Player player) {
+        if (player == null || !player.isOnline()) return;
+        
+        UUID uuid = player.getUniqueId();
+        
+        // Throttle HP update
+        long now = System.currentTimeMillis();
+        Long lastUpdate = lastHPUpdateTime.get(uuid);
+        if (lastUpdate != null && (now - lastUpdate) < HP_UPDATE_COOLDOWN_MS) {
+            return; // Skip nếu quá nhanh
+        }
+        lastHPUpdateTime.put(uuid, now);
+        
+        PlayerProfile profile = playerManager.get(uuid);
+        if (profile == null) return;
+        
+        NameplateData data = cache.get(uuid);
+        if (data == null) {
+            // Chưa có cache -> rebuild toàn bộ
+            updateNameplate(player, true);
+            return;
+        }
+        
+        // Chỉ update HP (dùng cache static prefix)
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getMaxHP();
+        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 0.0;
+        
+        String prefix = data.buildFullPrefix(hpPercent);
+        String suffix = data.getStaticSuffix();
+        
+        applyToScoreboard(player, prefix, suffix);
+    }
+    
+    /**
+     * 🔥 Build tab list name từ NameplateData (reuse data)
+     * Format: [LK][Thanh Vân] PlayerName ❤85%
+     * 
+     * @param player Player
+     * @return Tab list display name hoặc null nếu không có data
+     */
+    public String buildTabListName(Player player) {
+        if (player == null || !player.isOnline()) return null;
+        
+        PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile == null) return null;
+        
+        UUID uuid = player.getUniqueId();
+        
+        // Lấy hoặc tạo cache
+        NameplateData data = cache.get(uuid);
+        if (data == null) {
+            data = rebuildStaticData(player, profile);
+            cache.put(uuid, data);
+        }
+        
+        // Tính HP percent
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getMaxHP();
+        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
+        
+        // Lấy màu HP
+        String hpColor = getHPColor(hpPercent);
+        
+        // Build tab list name: [LK][Thanh Vân] PlayerName ❤85%
+        // Format: [CảnhGiới][MônPhái] PlayerName ❤85%
+        
+        // Lấy realm tag trực tiếp
+        String realmTag = "";
+        if (showRealm) {
+            CultivationRealm realm = profile.getRealm();
+            int level = profile.getRealmLevel();
+            realmTag = getRealmTag(realm, level);
+        }
+        
+        // Lấy sect tag
+        String sectTag = "";
+        if (showSect && sectManager != null) {
+            Sect sect = sectManager.getPlayerSect(uuid);
+            if (sect != null) {
+                SectMember member = sect.getMember(uuid);
+                sectTag = buildSectTag(sect, member);
+            }
+        }
+        
+        // Build: [LK][Thanh Vân] PlayerName ❤85%
+        StringBuilder tabListName = new StringBuilder();
+        if (!realmTag.isEmpty()) {
+            tabListName.append(realmTag);
+        }
+        if (!sectTag.isEmpty()) {
+            tabListName.append(sectTag);
+        }
+        tabListName.append(" §f").append(player.getName());
+        tabListName.append(" ").append(hpColor).append("❤").append(String.format("%.0f%%", hpPercent));
+        
+        return tabListName.toString();
+    }
+    
+    /**
+     * Lấy màu HP theo phần trăm (dùng chung với NameplateData)
+     */
+    private String getHPColor(double hpPercent) {
+        if (hpPercent >= 75) {
+            return "§a";  // xanh lá
+        } else if (hpPercent >= 50) {
+            return "§e";  // vàng
+        } else if (hpPercent >= 25) {
+            return "§6";  // cam
+        } else {
+            return "§c";  // đỏ
+        }
+    }
+    
+    /**
+     * 🔥 Build chat prefix từ NameplateData (reuse data)
+     * Format: [Thanh Vân][Sư phụ]
+     * Dùng cho ChatFormatService - PHASE 5
+     * 
+     * @param player Player
+     * @return Chat prefix hoặc empty string
+     */
+    public String buildChatPrefix(Player player) {
+        if (player == null || !player.isOnline()) return "";
+        
+        PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile == null) return "";
+        
+        UUID uuid = player.getUniqueId();
+        
+        // Lấy hoặc tạo cache
+        NameplateData data = cache.get(uuid);
+        if (data == null) {
+            data = rebuildStaticData(player, profile);
+            cache.put(uuid, data);
+        }
+        
+        // Extract sect name và master status từ static prefix
+        // staticPrefix format: [MônPhái] [Sư/Đồ] [CảnhGiới]
+        // Chat cần: [MônPhái][Sư phụ] (không có cảnh giới)
+        
+        StringBuilder chatPrefix = new StringBuilder();
+        
+        // 1. Sect name
+        if (showSect && sectManager != null) {
+            Sect sect = sectManager.getPlayerSect(uuid);
+            if (sect != null) {
+                chatPrefix.append("§7[").append(sect.getName()).append("]");
+            }
+        }
+        
+        // 2. Master status (Sư phụ hoặc Đệ tử)
+        if (showMasterStatus && masterManager != null) {
+            // Kiểm tra là sư phụ
+            MasterRelation masterRel = masterManager.getMaster(uuid);
+            if (masterRel != null && masterRel.getDiscipleCount() > 0) {
+                chatPrefix.append("§7[Sư phụ]");
+            } else {
+                // Kiểm tra là đệ tử
+                DiscipleInfo discipleInfo = masterManager.getDisciple(uuid);
+                if (discipleInfo != null && discipleInfo.hasMaster()) {
+                    chatPrefix.append("§7[Đệ tử]");
+                }
+            }
+        }
+        
+        return chatPrefix.toString();
+    }
+    
+    /**
+     * Invalidate cache cho player (force rebuild khi state change)
+     */
+    public void invalidateCache(UUID playerUuid) {
+        NameplateData data = cache.get(playerUuid);
+        if (data != null) {
+            data.invalidate();
+        }
+    }
+    
+    /**
+     * Update tất cả nameplate (dùng cho join/reload)
+     */
+    public void updateAllNameplates() {
+        Collection<PlayerProfile> online = playerManager.getAllOnline();
+        batchUpdate(online);
+    }
+    
+    /**
+     * Remove nameplate khi quit
+     */
+    public void removeNameplate(Player player) {
+        UUID uuid = player.getUniqueId();
+        cache.remove(uuid);
+        lastHPUpdateTime.remove(uuid);
+        
         Scoreboard scoreboard = player.getScoreboard();
         Team team = scoreboard.getTeam(player.getName());
-        
-        if (team == null) {
-            team = scoreboard.registerNewTeam(player.getName());
-            team.addEntry(player.getName());
+        if (team != null) {
+            team.unregister();
         }
         
-        team.setPrefix(prefix);
-        team.setSuffix(suffix);
-        
-        // ĐẢM BẢO player KHÔNG bị set custom name như entity
-        if (player.getCustomName() != null && !player.getCustomName().equals(player.getName())) {
-            player.setCustomName(null);
-            player.setCustomNameVisible(false);
-        }
-        
-        // Cho player khac nhin thay
+        // Xóa khỏi scoreboard của người khác
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             
             Scoreboard otherBoard = other.getScoreboard();
             Team otherTeam = otherBoard.getTeam(player.getName());
-            
-            if (otherTeam == null) {
-                otherTeam = otherBoard.registerNewTeam(player.getName());
-                otherTeam.addEntry(player.getName());
+            if (otherTeam != null) {
+                otherTeam.unregister();
             }
-            
-            otherTeam.setPrefix(prefix);
-            otherTeam.setSuffix(suffix);
         }
     }
     
+    // ===== PRIVATE HELPERS =====
+    
     /**
-     * Build prefix với tất cả thông tin: [MônPhái] [Sư/Đồ] [CảnhGiới] ❤HP%
+     * 🔥 Rebuild static prefix/suffix (chỉ khi state change)
+     * Cache này không đổi cho đến khi có event
      */
-    private String buildFullPrefix(Player player, PlayerProfile profile) {
-        StringBuilder prefix = new StringBuilder();
+    private NameplateData rebuildStaticData(Player player, PlayerProfile profile) {
         UUID uuid = player.getUniqueId();
+        NameplateData data = new NameplateData(uuid);
+        
+        StringBuilder prefix = new StringBuilder();
         
         // 1. Môn phái
         if (showSect && sectManager != null) {
@@ -158,29 +411,28 @@ public class NameplateService {
             }
         }
         
-        // 3. Cảnh giới + HP (dùng DisplayFormatService)
+        // 3. Cảnh giới (không có HP ở đây)
         if (showRealm) {
-            String titleIcon = "";
-            if (showTitle && profile.getActiveTitle() != null && profile.getActiveTitle().getIcon() != null) {
-                titleIcon = profile.getActiveTitle().getIcon();
-            }
-            prefix.append(displayFormatService.formatPlayerNameplate(profile, titleIcon));
+            CultivationRealm realm = profile.getRealm();
+            int level = profile.getRealmLevel();
+            prefix.append(getRealmTag(realm, level)).append(" ");
         }
         
-        // Giới hạn độ dài (Minecraft limit: 64 chars)
-        String result = prefix.toString();
-        if (result.length() > 60) {
-            result = result.substring(0, 60);
+        // Giới hạn độ dài
+        String staticPrefix = prefix.toString();
+        if (staticPrefix.length() > 50) {
+            staticPrefix = staticPrefix.substring(0, 50);
         }
+        data.setStaticPrefix(staticPrefix);
         
-        return result;
+        // 4. Suffix (danh hiệu)
+        String suffix = buildSuffix(profile);
+        data.setStaticSuffix(suffix);
+        
+        return data;
     }
     
-    /**
-     * Build suffix với danh hiệu
-     */
-    @SuppressWarnings("unused")
-    private String buildSuffix(Player player, PlayerProfile profile) {
+    private String buildSuffix(PlayerProfile profile) {
         if (!showTitle) return "";
         
         Title title = profile.getActiveTitle();
@@ -242,39 +494,56 @@ public class NameplateService {
         return "";
     }
     
-    /**
-     * Update nameplate cho tat ca player online
-     */
-    public void updateAllNameplates() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            updateNameplate(player);
+    private String getRealmTag(CultivationRealm realm, int level) {
+        // Rút gọn tên cảnh giới
+        String shortName = realm.getShortName();
+        String color = realm.getColor();
+        
+        // Thêm số level nếu > 1
+        if (level > 1) {
+            return color + "[" + shortName + " " + level + "]";
         }
+        return color + "[" + shortName + "]";
     }
     
-    /**
-     * Remove nameplate khi quit
-     */
-    public void removeNameplate(Player player) {
-        UUID uuid = player.getUniqueId();
-        
-        // Cleanup cache
-        lastUpdateTime.remove(uuid);
-        
+    private void applyToScoreboard(Player player, String prefix, String suffix) {
         Scoreboard scoreboard = player.getScoreboard();
         Team team = scoreboard.getTeam(player.getName());
-        if (team != null) {
-            team.unregister();
+        
+        if (team == null) {
+            team = scoreboard.registerNewTeam(player.getName());
+            team.addEntry(player.getName());
         }
         
-        // Xoa khoi scoreboard cua nguoi khac
+        team.setPrefix(prefix);
+        team.setSuffix(suffix);
+        
+        // Đảm bảo player không bị set custom name
+        if (player.getCustomName() != null && !player.getCustomName().equals(player.getName())) {
+            player.setCustomName(null);
+            player.setCustomNameVisible(false);
+        }
+        
+        // Cho player khác nhìn thấy
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(player)) continue;
             
             Scoreboard otherBoard = other.getScoreboard();
             Team otherTeam = otherBoard.getTeam(player.getName());
-            if (otherTeam != null) {
-                otherTeam.unregister();
+            
+            if (otherTeam == null) {
+                otherTeam = otherBoard.registerNewTeam(player.getName());
+                otherTeam.addEntry(player.getName());
             }
+            
+            otherTeam.setPrefix(prefix);
+            otherTeam.setSuffix(suffix);
+        }
+    }
+    
+    private void invalidateAllCache() {
+        for (NameplateData data : cache.values()) {
+            data.invalidate();
         }
     }
 }

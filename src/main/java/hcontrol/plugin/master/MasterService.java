@@ -1,5 +1,7 @@
 package hcontrol.plugin.master;
 
+import hcontrol.plugin.event.EventHelper;
+import hcontrol.plugin.event.PlayerStateChangeType;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -151,6 +153,16 @@ public class MasterService {
         // Cập nhật max disciples dựa trên realm
         updateMasterSlots(masterUuid);
         
+        // Bắn event cho cả master và disciple
+        PlayerProfile masterProfile = playerManager.get(masterUuid);
+        PlayerProfile discipleProfile = playerManager.get(discipleUuid);
+        if (masterProfile != null) {
+            EventHelper.fireStateChange(master, masterProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, disciple.getName());
+        }
+        if (discipleProfile != null) {
+            EventHelper.fireStateChange(disciple, discipleProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, master.getName());
+        }
+        
         return null;
     }
     
@@ -276,6 +288,16 @@ public class MasterService {
         
         updateMasterSlots(masterUuid);
         
+        // Bắn event cho cả master và disciple
+        PlayerProfile masterProfile = master != null ? playerManager.get(masterUuid) : null;
+        PlayerProfile discipleProfile = playerManager.get(discipleUuid);
+        if (masterProfile != null && master != null) {
+            EventHelper.fireStateChange(master, masterProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, disciple.getName());
+        }
+        if (discipleProfile != null) {
+            EventHelper.fireStateChange(disciple, discipleProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, masterName);
+        }
+        
         return null;
     }
     
@@ -326,6 +348,18 @@ public class MasterService {
             master.sendMessage("§c" + disciple.getName() + " đã rời khỏi môn hạ của bạn!");
         }
         
+        // Bắn event
+        PlayerProfile discipleProfile = playerManager.get(discipleUuid);
+        if (discipleProfile != null) {
+            EventHelper.fireStateChange(disciple, discipleProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, masterName);
+        }
+        if (master != null) {
+            PlayerProfile masterProfile = playerManager.get(masterUuid);
+            if (masterProfile != null) {
+                EventHelper.fireStateChange(master, masterProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, disciple.getName());
+            }
+        }
+        
         return null;
     }
     
@@ -364,6 +398,16 @@ public class MasterService {
         Player disciple = Bukkit.getPlayer(discipleUuid);
         if (disciple != null) {
             disciple.sendMessage("§cBạn đã bị §6" + master.getName() + " §cđuổi ra khỏi môn hạ!");
+        }
+        
+        // Bắn event
+        PlayerProfile masterProfile = playerManager.get(masterUuid);
+        PlayerProfile discipleProfile = disciple != null ? playerManager.get(discipleUuid) : null;
+        if (masterProfile != null) {
+            EventHelper.fireStateChange(master, masterProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, discipleName);
+        }
+        if (discipleProfile != null && disciple != null) {
+            EventHelper.fireStateChange(disciple, discipleProfile, PlayerStateChangeType.MASTER_RELATION_CHANGE, master.getName());
         }
         
         return null;

@@ -287,6 +287,9 @@ public class NameplateService {
      * Format: [Thanh Vân][Sư phụ]
      * Dùng cho ChatFormatService - PHASE 5
      * 
+     * 📌 LƯU Ý: Chat format cần data REAL-TIME, không dùng cache
+     * Vì chat format được gọi mỗi lần chat, nên luôn lấy data mới nhất
+     * 
      * @param player Player
      * @return Chat prefix hoặc empty string
      */
@@ -298,20 +301,11 @@ public class NameplateService {
         
         UUID uuid = player.getUniqueId();
         
-        // Lấy hoặc tạo cache
-        NameplateData data = cache.get(uuid);
-        if (data == null) {
-            data = rebuildStaticData(player, profile);
-            cache.put(uuid, data);
-        }
-        
-        // Extract sect name và master status từ static prefix
-        // staticPrefix format: [MônPhái] [Sư/Đồ] [CảnhGiới]
-        // Chat cần: [MônPhái][Sư phụ] (không có cảnh giới)
-        
+        // 🔥 Chat format cần data REAL-TIME, không dùng cache
+        // Luôn lấy data mới nhất từ sectManager và masterManager
         StringBuilder chatPrefix = new StringBuilder();
         
-        // 1. Sect name
+        // 1. Sect name (luôn lấy mới)
         if (showSect && sectManager != null) {
             Sect sect = sectManager.getPlayerSect(uuid);
             if (sect != null) {
@@ -319,7 +313,7 @@ public class NameplateService {
             }
         }
         
-        // 2. Master status (Sư phụ hoặc Đệ tử)
+        // 2. Master status (luôn lấy mới)
         if (showMasterStatus && masterManager != null) {
             // Kiểm tra là sư phụ
             MasterRelation masterRel = masterManager.getMaster(uuid);

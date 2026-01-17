@@ -29,40 +29,41 @@ public class ChatFormatService {
      * Format chat message: [Thanh Vân][Sư phụ] Player: nội dung
      * 🔥 Reuse NameplateData từ NameplateService
      * 
+     * 📌 LƯU Ý: Bukkit AsyncPlayerChatEvent.setFormat() cần placeholder:
+     * - %1$s = player name
+     * - %2$s = message
+     * 
      * @param profile Player profile (co the null)
      * @param playerName Ten player
      * @param message Tin nhan chat
-     * @return Formatted message
+     * @return Formatted message với placeholder
      */
     public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
-        if (profile == null) {
-            return "§7" + playerName + ": §f" + message;
-        }
-        
-        Player player = profile.getPlayer();
-        if (player == null || !player.isOnline()) {
-            return "§7" + playerName + ": §f" + message;
-        }
-        
         // 🔥 Reuse NameplateData từ NameplateService
-        // Extract sect name và master status từ static prefix
         String chatPrefix = "";
-        
-        if (nameplateService != null) {
-            // Lấy static prefix từ NameplateService (đã có cache)
-            // Format static prefix: [MônPhái] [Sư/Đồ] [CảnhGiới]
-            // Cần extract: [MônPhái] và [Sư/Đồ] để format chat
-            chatPrefix = nameplateService.buildChatPrefix(player);
+
+        if (profile != null) {
+            Player player = profile.getPlayer();
+            if (player != null && player.isOnline()) {
+                if (nameplateService != null) {
+                    // Lấy static prefix từ NameplateService (real-time data)
+                    chatPrefix = nameplateService.buildChatPrefix(player);
+                } else {
+                    // Fallback: nếu nameplateService null, format đơn giản
+                    return "§7%1$s: §f%2$s";
+                }
+            }
         }
-        
-        // Format: [Thanh Vân][Sư phụ] Player: nội dung
+
+        // Format: [Thanh Vân][Sư phụ] %1$s: %2$s
+        // %1$s = player name, %2$s = message (Bukkit sẽ tự thay thế)
         StringBuilder formatted = new StringBuilder();
-        
+
         if (!chatPrefix.isEmpty()) {
             formatted.append(chatPrefix).append(" ");
         }
-        
-        formatted.append("§f").append(playerName).append(": §f").append(message);
+
+        formatted.append("§f%1$s: §f%2$s");
         
         return formatted.toString();
     }

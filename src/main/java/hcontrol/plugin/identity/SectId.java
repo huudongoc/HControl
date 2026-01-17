@@ -9,32 +9,32 @@ public enum SectId {
     /**
      * Không thuộc môn phái
      */
-    NONE("§7无门", "Tán Tu"),
+    NONE("§7○", "Tán Tu"),
     
     /**
      * Thanh Vân Tông
      */
-    QINGYUN("§a青云宗", "Thanh Vân Tông"),
+    QINGYUN("§a✦", "Thanh Vân Tông"),
     
     /**
      * Thiên Âm Tự
      */
-    TIANYIN("§e天音寺", "Thiên Âm Tự"),
+    TIANYIN("§e◆", "Thiên Âm Tự"),
     
     /**
      * Quỷ Vương Tông
      */
-    GHOST_KING("§8鬼王宗", "Quỷ Vương Tông"),
+    GHOST_KING("§8☠", "Quỷ Vương Tông"),
     
     /**
      * Hợp Hoan Phái
      */
-    HEHUAN("§d合欢派", "Hợp Hoan Phái"),
+    HEHUAN("§d●", "Hợp Hoan Phái"),
     
     /**
      * Thiên Đế Các
      */
-    TIANDI("§6天帝阁", "Thiên Đế Các");
+    TIANDI("§6★", "Thiên Đế Các");
     
     private final String symbol;
     private final String displayName;

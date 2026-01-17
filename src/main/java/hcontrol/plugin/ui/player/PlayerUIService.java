@@ -9,6 +9,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import java.util.Random;
+
 /**
  * PLAYER UI SERVICE
  * Hien thi thong tin player khi join/quit
@@ -107,17 +109,30 @@ public class PlayerUIService {
      * Welcome message don gian (fallback)
      */
     private void sendBasicWelcome(Player player) {
-        player.sendMessage(ChatColor.GOLD + "✦ ═══════════════════ ✦");
-        player.sendMessage(ChatColor.AQUA + "    Chao mung den server!");
-        player.sendMessage(ChatColor.GOLD + "✦ ═══════════════════ ✦");
+        player.sendMessage(ChatColor.DARK_GRAY + "☯ ━━━━━━━━━━━━━━━━━━━━━ ☯");
+        player.sendMessage(ChatColor.GRAY + "  ✦ " + ChatColor.WHITE + "Chào mừng đến với thế giới tu hành");
+        player.sendMessage(ChatColor.DARK_GRAY + "☯ ━━━━━━━━━━━━━━━━━━━━━ ☯");
     }
     
+    private String[] quitMessages = {
+        "đã rời khỏi thế giới tu hành",
+        "tạm lui khỏi con đường tu đạo",
+        "đã bế quan rời server",
+        "đã rời khỏi cõi trần"
+    };
     public void handlePlayerQuit(Player player) {
       
         
-        // Broadcast quit message
-        Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
-        Bukkit.broadcastMessage(ChatColor.GRAY + "    ➜ " + player.getName() + ChatColor.DARK_GRAY + " đã rời khỏi server");
-        Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
+        // // Broadcast quit message
+        // Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
+        // Bukkit.broadcastMessage(ChatColor.GRAY + "    ➜ " + player.getName() + ChatColor.DARK_GRAY + " đã rời khỏi server");
+        // Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
+        
+        
+        String msg = quitMessages[new Random().nextInt(quitMessages.length)];
+
+        Bukkit.broadcastMessage(ChatColor.DARK_GRAY + "☯ "
+                + ChatColor.WHITE + player.getName()
+                + ChatColor.GRAY + " " + msg);
     }
 }

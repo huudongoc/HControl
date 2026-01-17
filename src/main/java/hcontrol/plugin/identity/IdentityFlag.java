@@ -11,37 +11,37 @@ public enum IdentityFlag {
      * Thân thể đột biến
      * VD: có thể dùng skill đặc biệt
      */
-    MUTATED_BODY("§5变异", "Thân Đột Biến"),
+     MUTATED_BODY("§5★", "Thân Đột Biến"),
     
     /**
      * Thiên tuyển chi tử
      * VD: giảm tribulation difficulty
      */
-    HEAVEN_CHOSEN("§e天选", "Thiên Tuyển"),
+    HEAVEN_CHOSEN("§e⚡", "Thiên Tuyển"),
     
     /**
      * Ma tâm
      * VD: có thể dùng demonic skills
      */
-    DEMON_HEART("§c魔心", "Ma Tâm"),
+    DEMON_HEART("§c☠", "Ma Tâm"),
     
     /**
      * Linh hồn bị phong ấn
      * VD: không thể dùng 1 số skill
      */
-    SEALED_SOUL("§8封魂", "Phong Hồn"),
+    SEALED_SOUL("§8●", "Phong Hồn"),
     
     /**
      * Bloodline đặc biệt
      * VD: stat bonus
      */
-    SPECIAL_BLOODLINE("§6血脉", "Huyết Mạch"),
+    SPECIAL_BLOODLINE("§6◆", "Huyết Mạch"),
     
     /**
      * Cursed
      * VD: debuff effects
      */
-    CURSED("§4诅咒", "Nguyền Rủa");
+    CURSED("§4☠", "Nguyền Rủa");
     
     private final String symbol;
     private final String displayName;

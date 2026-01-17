@@ -9,32 +9,32 @@ public enum DaoType {
     /**
      * Dao chính (orthodox cultivation)
      */
-    RIGHTEOUS("§e正道", "Chính Đạo"),
+    RIGHTEOUS("§e✦", "Chính Đạo"),
     
     /**
      * Dao ma (demonic cultivation)
      */
-    DEMONIC("§c魔道", "Ma Đạo"),
+    DEMONIC("§c☠", "Ma Đạo"),
     
     /**
      * Dao quỷ (ghost cultivation)
      */
-    GHOST("§8鬼道", "Quỷ Đạo"),
+    GHOST("§8●", "Quỷ Đạo"),
     
     /**
      * Dao kiếm (sword dao)
      */
-    SWORD("§b剑道", "Kiếm Đạo"),
+    SWORD("§b⚔", "Kiếm Đạo"),
     
     /**
      * Dao đan (alchemy dao)
      */
-    ALCHEMY("§6丹道", "Đan Đạo"),
+    ALCHEMY("§6◆", "Đan Đạo"),
     
     /**
      * Chưa xác định
      */
-    NONE("§7无", "Chưa Định");
+    NONE("§7○", "Chưa Định");
     
     private final String symbol;
     private final String displayName;

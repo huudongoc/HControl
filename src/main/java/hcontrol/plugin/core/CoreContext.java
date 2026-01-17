@@ -13,7 +13,13 @@ import hcontrol.plugin.listener.PlayerChatListener;
 import hcontrol.plugin.listener.PlayerCombatListener;
 import hcontrol.plugin.listener.PlayerDeathListener;
 import hcontrol.plugin.listener.PlayerRespawnListener;
+import hcontrol.plugin.listener.PlayerSkillHotbarListener;
 import hcontrol.plugin.module.boss.BossManager;
+import hcontrol.plugin.ui.skill.SkillMenuGUI;
+import hcontrol.plugin.ui.skill.SkillMenuListener;
+import hcontrol.plugin.playerskill.SkillBookService;
+import hcontrol.plugin.listener.SkillBookListener;
+import hcontrol.plugin.command.SkillBookCommand;
 import hcontrol.plugin.player.AutoSaveTask;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
@@ -69,6 +75,10 @@ public class CoreContext {
     private PlayerRespawnListener respawnListener;
     private EntityLifecycleListener entityLifecycleListener;
     private TribulationInputListener tribulationInputListener;
+    private PlayerSkillHotbarListener skillHotbarListener;
+    private SkillMenuListener skillMenuListener;
+    private SkillBookListener skillBookListener;
+    private SkillBookService skillBookService;
     
     private CoreContext(Main plugin, LifecycleManager lifecycleManager) {
         this.plugin = plugin;
@@ -358,9 +368,58 @@ public class CoreContext {
                 plugin.getLogger().info("[PHASE 7] ✓ AI System đã khởi động!");
             }
             
-            // PHASE 7.2: Init Skill System
+            // PHASE 7.2: Init Mob Skill System
             entityContext.initSkills(combatContext.getCombatService());
-            plugin.getLogger().info("[PHASE 7.2] ✓ Skill System đã khởi động!");
+            plugin.getLogger().info("[PHASE 7.2] ✓ Mob Skill System đã khởi động!");
+            
+            // PHASE 6: Init Player Skill System
+            playerContext.initSkillSystem(
+                combatContext.getCombatService(),
+                combatContext.getIdentityRuleService()
+            );
+            plugin.getLogger().info("[PHASE 6] ✓ Player Skill System đã khởi động!");
+            
+            // PHASE 6: Register Skill Command + GUI (sau khi service đã init)
+            CommandRegistry skillCmdRegistry = new CommandRegistry(plugin, this);
+            SkillMenuGUI skillMenuGUI = skillCmdRegistry.registerSkillCommand();
+            
+            // PHASE 6: Register PlayerSkillHotbarListener (để dùng skill bằng phím F)
+            skillHotbarListener = new PlayerSkillHotbarListener(
+                playerContext.getPlayerManager(),
+                playerContext.getSkillService()
+            );
+            eventRegistry.registerEvents(skillHotbarListener);
+            plugin.getLogger().info("[PHASE 6] ✓ Skill Hotbar Listener đã đăng ký!");
+            
+            // PHASE 6: Register SkillMenuListener (để xử lý click trong GUI)
+            if (skillMenuGUI != null) {
+                skillMenuListener = new SkillMenuListener(
+                    playerContext.getPlayerManager(),
+                    playerContext.getSkillService(),
+                    skillMenuGUI,
+                    plugin
+                );
+                eventRegistry.registerEvents(skillMenuListener);
+                plugin.getLogger().info("[PHASE 6] ✓ Skill Menu Listener đã đăng ký!");
+            }
+            
+            // PHASE 6: Skill Book System
+            skillBookService = new SkillBookService(plugin, playerContext.getSkillRegistry());
+            skillBookListener = new SkillBookListener(
+                playerContext.getPlayerManager(),
+                playerContext.getSkillService(),
+                skillBookService
+            );
+            eventRegistry.registerEvents(skillBookListener);
+            
+            // Register skillbook command
+            org.bukkit.command.PluginCommand skillbookCmd = plugin.getCommand("skillbook");
+            if (skillbookCmd != null) {
+                SkillBookCommand sbCmd = new SkillBookCommand(skillBookService, playerContext.getSkillRegistry());
+                skillbookCmd.setExecutor(sbCmd);
+                skillbookCmd.setTabCompleter(sbCmd);
+            }
+            plugin.getLogger().info("[PHASE 6] ✓ Skill Book System đã khởi động!");
             
             lifecycleManager.enableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã sẵn sàng!");
@@ -379,6 +438,10 @@ public class CoreContext {
             combatListener = null;
             deathListener = null;
             entityLifecycleListener = null;
+            skillHotbarListener = null;
+            skillMenuListener = null;
+            skillBookListener = null;
+            skillBookService = null;
             
             // Cleanup entity UI
             if (uiContext.getEntityNameplateService() != null) {

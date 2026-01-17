@@ -60,6 +60,18 @@ commands:
     usage: /aidebug [info|clear]
     aliases: [aid]
     permission: hcontrol.admin
+    
+  skill:
+    description: Player skill system (PHASE 6)
+    usage: /skill [list|available|learn|cast|bind|unbind|hotbar|info]
+    aliases: [sk, skills]
+    permission: hcontrol.use
+    
+  skillbook:
+    description: Tao skill book item (admin)
+    usage: /skillbook <skillId> [rarity] [player]
+    aliases: [bikip]
+    permission: hcontrol.admin
 
 permissions:
   hcontrol.use:

@@ -1,6 +1,7 @@
 package hcontrol.plugin.command;
 
 import hcontrol.plugin.core.CoreContext;
+import hcontrol.plugin.ui.skill.SkillMenuGUI;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -119,5 +120,38 @@ public class CommandRegistry {
         register("aidebug", () -> new AIDebugCommand());
         
         logger.info("[PHASE 0] ✓ Commands đã được đăng ký!");
+    }
+    
+    /**
+     * PHASE 6: Register Skill command
+     * Gọi riêng sau khi PlayerSkillService đã được init
+     * @return SkillMenuGUI để đăng ký listener
+     */
+    public SkillMenuGUI registerSkillCommand() {
+        // Check if skill service is ready
+        if (coreContext.getPlayerContext().getSkillService() == null) {
+            logger.warning("[PHASE 6] SkillService chưa được init, skip skill command!");
+            return null;
+        }
+        
+        // Tạo SkillMenuGUI
+        SkillMenuGUI menuGUI = new SkillMenuGUI(coreContext.getPlayerContext().getSkillService());
+        
+        // Tạo SkillCommand và inject MenuGUI
+        SkillCommand skillCommand = new SkillCommand(
+            coreContext.getPlayerContext().getPlayerManager(),
+            coreContext.getPlayerContext().getSkillService()
+        );
+        skillCommand.setMenuGUI(menuGUI);
+        
+        // Register command
+        PluginCommand command = plugin.getCommand("skill");
+        if (command != null) {
+            command.setExecutor(skillCommand);
+            command.setTabCompleter(skillCommand);
+        }
+        
+        logger.info("[PHASE 6] ✓ Skill command + GUI đã được đăng ký!");
+        return menuGUI;
     }
 }

@@ -26,7 +26,7 @@ public class ChatFormatService {
     }
     
     /**
-     * Format chat message: [Thanh Vân][Sư phụ] Player: nội dung
+     * Format chat message: [CảnhGiới Level][MônPhái][DanhHiệu] PlayerName ❤HP%: message
      * 🔥 Reuse NameplateData từ NameplateService
      * 
      * 📌 LƯU Ý: Bukkit AsyncPlayerChatEvent.setFormat() cần placeholder:
@@ -40,32 +40,18 @@ public class ChatFormatService {
      */
     public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
         // 🔥 Reuse NameplateData từ NameplateService
-        String chatPrefix = "";
-
         if (profile != null) {
             Player player = profile.getPlayer();
             if (player != null && player.isOnline()) {
                 if (nameplateService != null) {
-                    // Lấy static prefix từ NameplateService (real-time data)
-                    chatPrefix = nameplateService.buildChatPrefix(player);
-                } else {
-                    // Fallback: nếu nameplateService null, format đơn giản
-                    return "§7%1$s: §f%2$s";
+                    // Lấy format đầy đủ từ NameplateService (realm, sect, title, HP)
+                    return nameplateService.buildChatFormat(player);
                 }
             }
         }
-
-        // Format: [Thanh Vân][Sư phụ] %1$s: %2$s
-        // %1$s = player name, %2$s = message (Bukkit sẽ tự thay thế)
-        StringBuilder formatted = new StringBuilder();
-
-        if (!chatPrefix.isEmpty()) {
-            formatted.append(chatPrefix).append(" ");
-        }
-
-        formatted.append("§f%1$s: §f%2$s");
         
-        return formatted.toString();
+        // Fallback: nếu không có profile hoặc nameplateService null
+        return "§7%1$s: §f%2$s";
     }
     
     /**

@@ -284,14 +284,14 @@ public class NameplateService {
     
     /**
      * 🔥 Build chat prefix từ NameplateData (reuse data)
-     * Format: [Thanh Vân][Sư phụ]
+     * Format: [CảnhGiới Level][MônPhái][DanhHiệu] PlayerName ❤HP%
      * Dùng cho ChatFormatService - PHASE 5
      * 
      * 📌 LƯU Ý: Chat format cần data REAL-TIME, không dùng cache
      * Vì chat format được gọi mỗi lần chat, nên luôn lấy data mới nhất
      * 
      * @param player Player
-     * @return Chat prefix hoặc empty string
+     * @return Chat prefix với đầy đủ thông tin: realm, sect, title, HP
      */
     public String buildChatPrefix(Player player) {
         if (player == null || !player.isOnline()) return "";
@@ -302,10 +302,18 @@ public class NameplateService {
         UUID uuid = player.getUniqueId();
         
         // 🔥 Chat format cần data REAL-TIME, không dùng cache
-        // Luôn lấy data mới nhất từ sectManager và masterManager
+        // Luôn lấy data mới nhất
         StringBuilder chatPrefix = new StringBuilder();
         
-        // 1. Sect name (luôn lấy mới)
+        // 1. Cảnh giới + Level
+        if (showRealm) {
+            CultivationRealm realm = profile.getRealm();
+            int level = profile.getRealmLevel();
+            String realmTag = getRealmTag(realm, level);
+            chatPrefix.append(realmTag);
+        }
+        
+        // 2. Môn phái
         if (showSect && sectManager != null) {
             Sect sect = sectManager.getPlayerSect(uuid);
             if (sect != null) {
@@ -313,22 +321,69 @@ public class NameplateService {
             }
         }
         
-        // 2. Master status (luôn lấy mới)
+        // 3. Danh hiệu (Title)
+        if (showTitle) {
+            Title title = profile.getActiveTitle();
+            if (title != null && title != Title.NONE) {
+                String color = title.getRarity().getColor();
+                chatPrefix.append(" ").append(color).append("〈").append(title.getDisplayName()).append("〉");
+            }
+        }
+        
+        // 4. Master status (Sư phụ hoặc Đệ tử)
         if (showMasterStatus && masterManager != null) {
             // Kiểm tra là sư phụ
             MasterRelation masterRel = masterManager.getMaster(uuid);
             if (masterRel != null && masterRel.getDiscipleCount() > 0) {
-                chatPrefix.append("§7[Sư phụ]");
+                chatPrefix.append(" §7[Sư phụ]");
             } else {
                 // Kiểm tra là đệ tử
                 DiscipleInfo discipleInfo = masterManager.getDisciple(uuid);
                 if (discipleInfo != null && discipleInfo.hasMaster()) {
-                    chatPrefix.append("§7[Đệ tử]");
+                    chatPrefix.append(" §7[Đệ tử]");
                 }
             }
         }
         
         return chatPrefix.toString();
+    }
+    
+    /**
+     * Build chat format với HP
+     * Format: [CảnhGiới Level][MônPhái][DanhHiệu] PlayerName ❤HP%: message
+     * 
+     * @param player Player
+     * @return Chat format string với placeholder %1$s (player name) và %2$s (message)
+     */
+    public String buildChatFormat(Player player) {
+        if (player == null || !player.isOnline()) return "§7%1$s: §f%2$s";
+        
+        PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile == null) return "§7%1$s: §f%2$s";
+        
+        // Lấy prefix (realm, sect, title, master)
+        String prefix = buildChatPrefix(player);
+        
+        // Tính HP percent
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getMaxHP();
+        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
+        
+        // Lấy màu HP
+        String hpColor = getHPColor(hpPercent);
+        
+        // Build format: prefix + PlayerName + ❤HP%: message
+        StringBuilder format = new StringBuilder();
+        
+        if (!prefix.isEmpty()) {
+            format.append(prefix).append(" ");
+        }
+        
+        format.append("§f%1$s ");  // Player name
+        format.append(hpColor).append("❤").append(String.format("%.0f%%", hpPercent));  // HP
+        format.append(": §f%2$s");  // Message
+        
+        return format.toString();
     }
     
     /**

@@ -67,7 +67,7 @@ public class PlayerUIService {
         player.sendMessage("");
         
         // Canh gioi + tier (KHONG hien thi level so) - su dung DisplayFormatService
-        String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());
+        String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getRealmLevel());
         player.sendMessage("§7  ► Canh gioi: " + realmTierText);
         
         // Tu vi progress - su dung CultivationProgressService

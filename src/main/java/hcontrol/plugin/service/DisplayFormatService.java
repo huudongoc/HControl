@@ -61,7 +61,7 @@ public class DisplayFormatService {
      */
     public String formatPlayerNameplate(PlayerProfile profile, String titleIcon) {
         CultivationRealm realm = profile.getRealm();
-        int level = profile.getLevel();
+        int level = profile.getRealmLevel();
         
         // Tinh % HP
         double currentHP = profile.getCurrentHP();

@@ -4,6 +4,7 @@ import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.playerskill.PlayerSkill;
 import hcontrol.plugin.playerskill.PlayerSkillRegistry;
+import hcontrol.plugin.service.CombatService;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.LivingEntity;
@@ -19,19 +20,21 @@ import org.bukkit.plugin.Plugin;
 /**
  * PHASE 6 — PLAYER SKILL PROJECTILE LISTENER
  * Xử lý khi projectile từ player skill trúng mục tiêu
+ * PHASE 5A — Sử dụng CombatService với skillId để class modifiers hoạt động
  */
 public class PlayerSkillProjectileListener implements Listener {
     
-    private final Plugin plugin;
     private final PlayerManager playerManager;
     private final PlayerSkillRegistry skillRegistry;
+    private final CombatService combatService;
     private final NamespacedKey skillIdKey;
     
     public PlayerSkillProjectileListener(Plugin plugin, PlayerManager playerManager, 
-                                         PlayerSkillRegistry skillRegistry) {
-        this.plugin = plugin;
+                                         PlayerSkillRegistry skillRegistry,
+                                         CombatService combatService) {
         this.playerManager = playerManager;
         this.skillRegistry = skillRegistry;
+        this.combatService = combatService;
         this.skillIdKey = new NamespacedKey(plugin, "player_skill_id");
     }
     
@@ -70,18 +73,9 @@ public class PlayerSkillProjectileListener implements Listener {
         
         // Check hit entity
         if (event.getHitEntity() instanceof LivingEntity target) {
-            // Không damage player (PvP sẽ xử lý riêng nếu cần)
-            if (target instanceof Player) {
-                return;
-            }
-            
-            // Calculate damage
-            double baseDamage = shooterProfile.getRealm().getBaseDamage();
-            double finalDamage = baseDamage * skill.getDamageMultiplier();
-            
-            // Deal damage
-            double newHealth = Math.max(0, target.getHealth() - finalDamage);
-            target.setHealth(newHealth);
+            // PHASE 5A: Use CombatService với skillId để class modifiers hoạt động
+            // PvP: Cho phép damage player (CombatService sẽ xử lý)
+            combatService.handlePlayerAttack(shooter, target, shooterProfile, skillId);
             
             // Apply skill effects
             for (PlayerSkill.SkillEffect effect : skill.getEffects()) {
@@ -94,7 +88,7 @@ public class PlayerSkillProjectileListener implements Listener {
             
             // Visual feedback
             shooter.sendMessage("§c⚔ " + skill.getDisplayName() + " §c→ " + 
-                target.getType().name() + " §7(" + (int) finalDamage + " damage)");
+                (target instanceof Player ? ((Player) target).getName() : target.getType().name()));
             
             // Particles at hit location
             target.getWorld().spawnParticle(

@@ -41,8 +41,10 @@ import hcontrol.plugin.service.LevelService;
 import hcontrol.plugin.service.LevelUpEffectService;
 import hcontrol.plugin.service.PlayerHealthService;
 import hcontrol.plugin.service.SoundService;
+import hcontrol.plugin.service.SpiritualRootService;
 import hcontrol.plugin.service.StatService;
 import hcontrol.plugin.service.TitleService;
+import hcontrol.plugin.service.TribulationLogicService;
 import hcontrol.plugin.service.TribulationService;
 import hcontrol.plugin.ui.chat.ChatBubbleService;
 import hcontrol.plugin.ui.entity.EntityDialogService;
@@ -288,9 +290,11 @@ public class CoreContext {
             eventRegistry.registerEvents(chatListener);
             
             // Breakthrough input listener (F/Q keys)
+            // 🔥 Sử dụng TribulationService để xử lý logic thiên kiếp
             tribulationInputListener = new TribulationInputListener(
                 uiContext.getUiStateService(),
                 uiContext.getTribulationUI(),
+                cultivationContext.getTribulationService(),
                 cultivationContext.getBreakthroughService(),
                 playerContext.getPlayerManager()
             );
@@ -427,6 +431,15 @@ public class CoreContext {
             entityContext.initSkills(combatContext.getCombatService());
             plugin.getLogger().info("[PHASE 7.2] ✓ Mob Skill System đã khởi động!");
             
+            // WORLD BOSS SYSTEM - ENDGAME (sau khi có Ascension)
+            entityContext.initWorldBoss(
+                plugin,
+                playerContext.getPlayerManager(),
+                cultivationContext.getAscensionService(),
+                combatContext.getCombatService()
+            );
+            plugin.getLogger().info("[World Boss] ✓ World Boss System đã khởi động!");
+            
             // PHASE 6: Init Player Skill System
             playerContext.initSkillSystem(
                 combatContext.getCombatService(),
@@ -477,10 +490,12 @@ public class CoreContext {
             plugin.getLogger().info("[PHASE 6] ✓ Skill Book System đã khởi động!");
             
             // PHASE 6: Register PlayerSkillProjectileListener (xử lý ranged skill hit)
+            // PHASE 5A: Truyền CombatService để class modifiers hoạt động
             skillProjectileListener = new PlayerSkillProjectileListener(
                 plugin,
                 playerContext.getPlayerManager(),
-                playerContext.getSkillRegistry()
+                playerContext.getSkillRegistry(),
+                combatContext.getCombatService()
             );
             eventRegistry.registerEvents(skillProjectileListener);
             plugin.getLogger().info("[PHASE 6] ✓ Skill Projectile Listener đã đăng ký!");
@@ -496,6 +511,12 @@ public class CoreContext {
             if (entityContext.getAIService() != null) {
                 entityContext.getAIService().stop();
                 plugin.getLogger().info("[PHASE 7] ✓ AI System đã tắt!");
+            }
+            
+            // WORLD BOSS SYSTEM: Shutdown
+            if (entityContext.getWorldBossManager() != null) {
+                entityContext.getWorldBossManager().shutdown();
+                plugin.getLogger().info("[World Boss] ✓ World Boss System đã tắt!");
             }
             
             // Clear listeners
@@ -605,10 +626,13 @@ public class CoreContext {
                 plugin.getLogger().info("[SECT] ✓ Đã inject SectManager vào NameplateService");
             }
             
-            // Inject NameplateService vào ChatFormatService (PHASE 5: reuse data)
-            if (uiContext != null && uiContext.getChatFormatService() != null && uiContext.getNameplateService() != null) {
-                uiContext.getChatFormatService().setNameplateService(uiContext.getNameplateService());
-                plugin.getLogger().info("[SECT] ✓ Đã inject NameplateService vào ChatFormatService (reuse data)");
+            // Inject NameplateService và SectManager vào ChatFormatService (PHASE 5: reuse data)
+            if (uiContext != null && uiContext.getChatFormatService() != null) {
+                if (uiContext.getNameplateService() != null) {
+                    uiContext.getChatFormatService().setNameplateService(uiContext.getNameplateService());
+                }
+                uiContext.getChatFormatService().setSectManager(sectManager);
+                plugin.getLogger().info("[SECT] ✓ Đã inject SectManager vào ChatFormatService (bubble format)");
             }
             
             // Register SectWarListener (lắng nghe SectWarStartEvent)
@@ -682,8 +706,11 @@ public class CoreContext {
                 plugin.getLogger().info("[MASTER] ✓ Đã inject MasterManager vào NameplateService");
             }
             
-            // ChatFormatService đã được inject NameplateService (reuse data)
-            // Không cần inject MasterManager nữa vì đã reuse từ NameplateService
+            // Inject MasterManager vào ChatFormatService (bubble format)
+            if (uiContext != null && uiContext.getChatFormatService() != null) {
+                uiContext.getChatFormatService().setMasterManager(masterManager);
+                plugin.getLogger().info("[MASTER] ✓ Đã inject MasterManager vào ChatFormatService (bubble format)");
+            }
             
             // Register MasterCommand với SkillCreatorListener
             MasterCommand masterCmd = new MasterCommand(masterService, playerContext.getPlayerManager());
@@ -815,6 +842,10 @@ public class CoreContext {
     @Deprecated
     public BossManager getBossManager() { return entityContext.getBossManager(); }
     
+    public hcontrol.plugin.module.boss.WorldBossManager getWorldBossManager() { 
+        return entityContext.getWorldBossManager(); 
+    }
+    
     @Deprecated
     public BreakthroughService getBreakthroughService() { return cultivationContext.getBreakthroughService(); }
     
@@ -823,6 +854,10 @@ public class CoreContext {
     
     @Deprecated
     public TribulationService getTribulationService() { return cultivationContext.getTribulationService(); }
+    
+    public TribulationLogicService getTribulationLogicService() { return cultivationContext.getTribulationLogicService(); }
+    
+    public SpiritualRootService getSpiritualRootService() { return playerContext.getSpiritualRootService(); }
     
     @Deprecated
     public PlayerUIService getPlayerUIService() { return uiContext.getPlayerUIService(); }

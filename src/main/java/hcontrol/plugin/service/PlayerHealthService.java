@@ -3,6 +3,7 @@ package hcontrol.plugin.service;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 
+import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerProfile;
 
 /**
@@ -212,11 +213,14 @@ public class PlayerHealthService {
             hpColor = "§c";  // do
         }
         
-        // Format fallback: [LK] PlayerName ❤ 85%
-        String realmShort = profile.getRealm().getShortName();
-        String displayName = String.format("%s§7[%s] §f%s %s❤ %.0f%%",
-            profile.getRealm().getColor(),
-            realmShort,
+        // Format fallback: [CảnhGiới Level] PlayerName ❤ 85% (hiển thị đầy đủ, không viết tắt)
+        CultivationRealm realm = profile.getRealm();
+        String realmName = realm.getDisplayName();
+        int level = profile.getRealmLevel();
+        String displayName = String.format("%s[%s %d] §f%s %s❤ %.0f%%",
+            realm.getColor(),
+            realmName,
+            level,
             player.getName(),
             hpColor,
             hpPercent

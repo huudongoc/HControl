@@ -74,13 +74,16 @@ public class LevelService {
      * Ten tieu canh (ha/trung/thuong/dinh)
      * 4 TIER MAPPING (chot chan)
      * Ha: 1-3, Trung: 4-6, Thuong: 7-9, Dinh: 10
+     * 🔥 Sử dụng DisplayFormatService.getTierName() để thống nhất logic
      */
     private String getSubRealmName(int level) {
         if (level <= 0) return null;
-        if (level <= 3) return "Hạ";
-        if (level <= 6) return "Trung";
-        if (level <= 9) return "Thượng";
-        return "Đỉnh";  // level 10
+        // Sử dụng DisplayFormatService để thống nhất logic tier name
+        hcontrol.plugin.service.DisplayFormatService formatService = 
+            hcontrol.plugin.service.DisplayFormatService.getInstance();
+        String tierName = formatService.getTierName(level);
+        // Remove color codes để dùng cho internal logic (không có màu)
+        return tierName.replaceAll("§[0-9a-fk-or]", "");
     }
     
     // Check xem co dang o tier boundary khong (3, 6, 9)
@@ -126,10 +129,23 @@ public class LevelService {
      * Checkpoint: 3->4, 6->7, 9->10 (can /unlock)
      * 
      * NEU DA MAX LEVEL REALM (level 10) - KHONG NHAN TU VI
+     * 🔥 Áp dụng cultivation multiplier từ spiritual root
      */
     public void addCultivation(PlayerProfile profile, long amount) {
         Player player = profile.getPlayer();
         int maxLevel = getMaxLevelForRealm(profile.getRealm());
+        
+        // 🔥 Áp dụng cultivation multiplier từ spiritual root
+        hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+        if (ctx != null && ctx.getSpiritualRootService() != null) {
+            hcontrol.plugin.service.SpiritualRootService rootService = ctx.getSpiritualRootService();
+            double multiplier = rootService.getCultivationMultiplier(
+                profile.getSpiritualRoot(),
+                profile.getRootQuality(),
+                profile.getInnerInjury()
+            );
+            amount = (long)(amount * multiplier);
+        }
         
         // CONG TU VI (cho phep cong ngay ca khi max level)
         long newCultivation = profile.getCultivation() + amount;

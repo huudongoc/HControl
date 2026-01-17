@@ -35,7 +35,8 @@ public class PlayerStorage {
         PlayerProfile profile = new PlayerProfile(uuid);
         
         // load co ban
-        profile.setLevel(yaml.getInt("level", 1));
+        int level = yaml.getInt("level", 1);
+        profile.setLevel(level);  // setLevel() sẽ tự động sync realmLevel
         profile.setStatPoints(yaml.getInt("statPoints", 0));
         
         
@@ -48,8 +49,7 @@ public class PlayerStorage {
             profile.setRealm(CultivationRealm.PHAMNHAN);
         }
         
-        // load realm level & cultivation
-        profile.setRealmLevel(yaml.getInt("realmLevel", 1));
+        // load cultivation (realmLevel đã được sync trong setLevel() ở trên)
         profile.setCultivation(yaml.getLong("cultivation", 0L));
         
         // load spiritual root
@@ -121,6 +121,10 @@ public class PlayerStorage {
         // load HP/Linh Khi
         profile.setCurrentHP(yaml.getDouble("currentHP", stats.getMaxHP()));
         profile.setCurrentLingQi(yaml.getDouble("currentLingQi", stats.getMaxLingQi()));
+        
+        // load ascension system - ENDGAME
+        int ascensionLevel = yaml.getInt("ascensionLevel", 0);
+        profile.getAscensionProfile().setAscensionLevel(ascensionLevel);
 
         return profile;
     }
@@ -186,6 +190,9 @@ public class PlayerStorage {
         // save HP/Linh Khi
         yaml.set("currentHP", profile.getCurrentHP());
         yaml.set("currentLingQi", profile.getCurrentLingQi());
+        
+        // save ascension system - ENDGAME
+        yaml.set("ascensionLevel", profile.getAscensionProfile().getAscensionLevel());
 
         try {
             yaml.save(file);

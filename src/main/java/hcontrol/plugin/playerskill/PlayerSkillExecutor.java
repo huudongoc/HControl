@@ -62,12 +62,8 @@ public class PlayerSkillExecutor {
             return false;
         }
         
-        // Calculate damage (from REALM, not stat)
-        double baseDamage = profile.getRealm().getBaseDamage();
-        double finalDamage = baseDamage * skill.getDamageMultiplier();
-        
-        // Deal damage manually (CombatService.dealDamage is private)
-        dealSkillDamage(target, finalDamage);
+        // PHASE 5A: Use CombatService với skillId để class modifiers hoạt động
+        combatService.handlePlayerAttack(player, target, profile, skill.getSkillId());
         
         // Apply effects
         applyEffects(target, skill);
@@ -76,7 +72,7 @@ public class PlayerSkillExecutor {
         playMeleeEffects(player, target, skill);
         
         // Notify
-        player.sendMessage("§a⚔ " + skill.getDisplayName() + " §a→ " + getEntityName(target) + " §7(" + (int) finalDamage + " damage)");
+        player.sendMessage("§a⚔ " + skill.getDisplayName() + " §a→ " + getEntityName(target));
         
         return true;
     }
@@ -144,14 +140,10 @@ public class PlayerSkillExecutor {
             return false;
         }
         
-        // Calculate damage (from REALM, not stat)
-        double baseDamage = profile.getRealm().getBaseDamage();
-        double finalDamage = baseDamage * skill.getDamageMultiplier();
-        
-        // Deal damage to all targets
+        // PHASE 5A: Use CombatService với skillId cho mỗi target
         int hitCount = 0;
         for (LivingEntity target : targets) {
-            dealSkillDamage(target, finalDamage);
+            combatService.handlePlayerAttack(player, target, profile, skill.getSkillId());
             applyEffects(target, skill);
             hitCount++;
         }
@@ -332,13 +324,7 @@ public class PlayerSkillExecutor {
         return null;
     }
     
-    /**
-     * Deal skill damage to entity (simple damage without realm suppression)
-     */
-    private void dealSkillDamage(LivingEntity target, double damage) {
-        double newHealth = Math.max(0, target.getHealth() - damage);
-        target.setHealth(newHealth);
-    }
+    // PHASE 5A: Removed dealSkillDamage() - now using CombatService.handlePlayerAttack() with skillId
     
     /**
      * Get entity display name

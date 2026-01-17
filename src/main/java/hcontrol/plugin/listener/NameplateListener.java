@@ -45,6 +45,22 @@ public class NameplateListener implements Listener {
         // Update nameplate (force rebuild)
         nameplateService.updateNameplate(player, true);
         
+        // 🔥 Update tab list khi realm thay đổi (để tab và chat cập nhật cảnh giới)
+        if (event.getType() == hcontrol.plugin.event.PlayerStateChangeType.REALM_CHANGE) {
+            var playerManager = hcontrol.plugin.core.CoreContext.getInstance().getPlayerManager();
+            if (playerManager != null) {
+                var profile = playerManager.get(player.getUniqueId());
+                if (profile != null) {
+                    var healthService = hcontrol.plugin.core.CoreContext.getInstance()
+                        .getPlayerContext().getPlayerHealthService();
+                    if (healthService != null) {
+                        // Update tab list để hiển thị cảnh giới mới
+                        healthService.syncHealth(player, profile);
+                    }
+                }
+            }
+        }
+        
         // Cập nhật nameplate của tất cả player khác để họ thấy thay đổi
         // (ví dụ: player join sect → tất cả player khác cần thấy tag môn phái mới)
         nameplateService.updateAllNameplates();

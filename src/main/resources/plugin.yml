@@ -18,6 +18,18 @@ commands:
     description: Do kiep - breakthrough len dai canh gioi moi (tribulation)
     usage: /dokiep
     permission: hcontrol.use
+    
+  ascend:
+    description: Ascension - thang cap endgame sau CHAN TIEN level 10
+    usage: /ascend [info]
+    aliases: [ascension, thangcap]
+    permission: hcontrol.use
+    
+  worldboss:
+    description: World Boss system - quản lý world boss (ENDGAME)
+    usage: /worldboss [spawn|info|force]
+    aliases: [wb, boss]
+    permission: hcontrol.admin
    
   hc:
     description: HControl main command
@@ -111,6 +123,12 @@ commands:
     description: Nameplate system - Hien thi ten
     usage: /nameplate [toggle|refresh]
     aliases: [np, bangten]
+    permission: hcontrol.use
+    
+  bubbletest:
+    description: Test chat bubble - Hien thi bubble tren dau player
+    usage: /bubbletest <message> [duration]
+    aliases: [btest, chatbubble]
     permission: hcontrol.use
 
 permissions:

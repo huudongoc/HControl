@@ -10,6 +10,7 @@ import hcontrol.plugin.service.PlayerHealthService;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerStorage;
 import hcontrol.plugin.service.CultivationProgressService;
+import hcontrol.plugin.service.SpiritualRootService;
 import hcontrol.plugin.service.StatService;
 import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
@@ -28,6 +29,7 @@ public class PlayerContext {
     private CultivationProgressService cultivationProgressService;  // Khong final de co the inject sau
     private final PlayerHealthService playerHealthService;
     private final StatService statService;
+    private final SpiritualRootService spiritualRootService;
     
     // PHASE 6: Player Skill System
     private final PlayerSkillRegistry skillRegistry;
@@ -43,6 +45,7 @@ public class PlayerContext {
         this.playerStorage = new PlayerStorage(plugin.getDataFolder());
         this.playerHealthService = new PlayerHealthService();
         this.statService = new StatService();
+        this.spiritualRootService = new SpiritualRootService();
         this.levelService = null;  // Inject sau khi CombatContext da tao
         this.cultivationProgressService = null;  // Inject sau khi co LevelService
         
@@ -60,6 +63,7 @@ public class PlayerContext {
         this.playerStorage = new PlayerStorage(plugin.getDataFolder());
         this.playerHealthService = new PlayerHealthService();
         this.statService = new StatService();
+        this.spiritualRootService = new SpiritualRootService();
         this.levelService = levelService;
         
         // PHASE 6: Skill Registry (load từ YAML, fallback to defaults)
@@ -111,6 +115,7 @@ public class PlayerContext {
     public CultivationProgressService getCultivationProgressService() { return cultivationProgressService; }
     public PlayerHealthService getPlayerHealthService() { return playerHealthService; }
     public StatService getStatService() { return statService; }
+    public SpiritualRootService getSpiritualRootService() { return spiritualRootService; }
     public AutoSaveTask getAutoSaveTask() { return autoSaveTask; }
     
     // PHASE 6: Skill System

@@ -2,6 +2,7 @@ package hcontrol.plugin.classsystem;
 
 import hcontrol.plugin.classsystem.modifier.ClassModifier;
 import hcontrol.plugin.classsystem.modifier.impl.SwordDamageModifier;
+import hcontrol.plugin.classsystem.modifier.impl.SpellDamageModifier;
 
 import java.util.*;
 
@@ -27,8 +28,11 @@ public class ClassRegistry {
             List.of(new SwordDamageModifier())
         );
         
-        // Các class khác sẽ thêm sau
-        modifierMap.put(ClassType.SPELL_CULTIVATOR, new ArrayList<>());
+        // SPELL_CULTIVATOR: +0-30% skill damage (scale theo % linh khí)
+        modifierMap.put(
+            ClassType.SPELL_CULTIVATOR,
+            List.of(new SpellDamageModifier())
+        );
         modifierMap.put(ClassType.BODY_REFINER, new ArrayList<>());
         modifierMap.put(ClassType.DEMON_PATH, new ArrayList<>());
         modifierMap.put(ClassType.MEDICAL_CULTIVATOR, new ArrayList<>());

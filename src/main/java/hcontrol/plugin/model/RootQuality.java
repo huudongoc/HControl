@@ -31,10 +31,12 @@ public enum RootQuality {
     
     /**
      * Random root quality
-     * Mac dinh: PHAMNHAN (Pham Can)
-     * TODO: Implement quality-based random (PHASE 8)
+     * @deprecated Sử dụng SpiritualRootService.randomRootQuality() thay thế
+     * Enum method này chỉ return PHAMNHAN, service có logic đầy đủ với tỷ lệ
      */
+    @Deprecated
     public static RootQuality randomQuality() {
-        return PHAMNHAN;  // mac dinh Pham Can
+        // Fallback nếu service chưa sẵn sàng
+        return PHAMNHAN;
     }
 }

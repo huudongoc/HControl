@@ -91,6 +91,15 @@ public class CommandRegistry {
             coreContext.getUIContext()
         ));
         
+        // Ascension command - ENDGAME
+        register("ascend", () -> new AscensionCommand(
+            coreContext.getPlayerContext().getPlayerManager(),
+            coreContext.getCultivationContext().getAscensionService()
+        ));
+        
+        // World Boss command - ENDGAME
+        register("worldboss", () -> new WorldBossCommand());
+        
         // Spawn boss command
         register("spawnboss", () -> new SpawnBossCommand(
             coreContext.getEntityContext().getBossManager()
@@ -132,6 +141,11 @@ public class CommandRegistry {
         // Class command (PHASE 5)
         // Lazy load ClassService trong command để tránh null khi command đăng ký trước ClassContext init
         register("class", () -> new ClassCommand(
+            coreContext.getPlayerContext().getPlayerManager()
+        ));
+        
+        // Chat Bubble Test command
+        register("bubbletest", () -> new ChatBubbleTestCommand(
             coreContext.getPlayerContext().getPlayerManager()
         ));
         

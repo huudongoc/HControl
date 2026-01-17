@@ -74,6 +74,9 @@ public class PlayerProfile implements LivingActor {
     // CLASS SYSTEM - PHASE 5
     private hcontrol.plugin.classsystem.ClassProfile classProfile;  // nullable - chưa chọn class
     
+    // ASCENSION SYSTEM - ENDGAME
+    private hcontrol.plugin.model.AscensionProfile ascensionProfile;  // ascension layer (sau CHANTIEN 10)
+    
     // LINK STATS
     private final PlayerStats stats;
     
@@ -91,9 +94,17 @@ public class PlayerProfile implements LivingActor {
         this.realmLevel = 1;  // level 1 trong canh gioi
         this.cultivation = 0L;  // chua co tu vi
         
-        // khoi tao spiritual root (random)
-        this.spiritualRoot = SpiritualRoot.randomSpiritualRoot();
-        this.rootQuality = RootQuality.randomQuality();
+        // khoi tao spiritual root (random) - sử dụng service nếu có
+        hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+        if (ctx != null && ctx.getPlayerContext() != null && ctx.getPlayerContext().getSpiritualRootService() != null) {
+            hcontrol.plugin.service.SpiritualRootService rootService = ctx.getPlayerContext().getSpiritualRootService();
+            this.spiritualRoot = rootService.randomSpiritualRoot();
+            this.rootQuality = rootService.randomRootQuality();
+        } else {
+            // Fallback nếu context chưa sẵn sàng
+            this.spiritualRoot = SpiritualRoot.randomSpiritualRoot();
+            this.rootQuality = RootQuality.randomQuality();
+        }
             
         // khoi tao dao heart & state
         this.daoHeart = 100.0;  // dao tam hoan hao
@@ -140,6 +151,9 @@ public class PlayerProfile implements LivingActor {
         // khoi tao class system - PHASE 5
         this.classProfile = null;  // chua chon class
         
+        // khoi tao ascension system - ENDGAME
+        this.ascensionProfile = new hcontrol.plugin.model.AscensionProfile();  // bat dau tu level 0
+        
         // khoi tao stats
         this.stats = new PlayerStats();
         this.stats.setLevel(this.level);
@@ -171,6 +185,7 @@ public class PlayerProfile implements LivingActor {
 
     public void setLevel(int level) {
         this.level = level;
+        this.realmLevel = level;  // sync realmLevel với level
         this.stats.setLevel(level); // sync level vao stats
     }
 
@@ -238,8 +253,10 @@ public class PlayerProfile implements LivingActor {
         CultivationRealm next = realm.getNext();
         if (next != null && canBreakthrough()) {
             this.realm = next;
+            this.level = 1;  // reset level ve 1
             this.realmLevel = 1;  // reset ve level 1 trong canh gioi moi
             this.cultivation = 0L;  // reset tu vi
+            this.stats.setLevel(1);  // sync level vao stats
         }
     }
     
@@ -802,6 +819,23 @@ public class PlayerProfile implements LivingActor {
      */
     public void setClassProfile(hcontrol.plugin.classsystem.ClassProfile classProfile) {
         this.classProfile = classProfile;
+    }
+    
+    // ========== ASCENSION SYSTEM - ENDGAME ==========
+    
+    /**
+     * Get ascension profile
+     */
+    public hcontrol.plugin.model.AscensionProfile getAscensionProfile() {
+        return ascensionProfile;
+    }
+    
+    /**
+     * Check có thể ascension không
+     * Chỉ mở khi: realm == CHANTIEN && level == 10
+     */
+    public boolean canAscend() {
+        return realm == CultivationRealm.CHANTIEN && level >= realm.getMaxLevelInRealm();
     }
     
     /**

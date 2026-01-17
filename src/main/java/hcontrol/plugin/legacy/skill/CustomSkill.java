@@ -1,4 +1,4 @@
-package hcontrol.plugin.master.skill;
+package hcontrol.plugin.legacy.skill;
 
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.playerskill.PlayerSkill;
@@ -12,7 +12,21 @@ import java.util.*;
 /**
  * CUSTOM SKILL - Công pháp do Sư Phụ tự tạo
  * Wraps PlayerSkill với thêm metadata về người tạo
+ * 
+ * ⚠️ DEPRECATED - LEGACY DATA MODEL
+ * 
+ * Class này chỉ dùng cho:
+ * - Data migration từ CustomSkillManager cũ
+ * - Import skill từ bản cũ
+ * 
+ * ❌ KHÔNG được dùng trong runtime logic
+ * ✅ Architecture mới: SkillTemplateRegistry + SkillInstanceManager
+ * 
+ * @deprecated Sử dụng SkillTemplateRegistry và SkillInstanceManager thay thế
+ * 
+ * 📌 Package legacy/ - Cursor sẽ tự tránh code trong package này
  */
+@Deprecated
 public class CustomSkill {
     
     // Wrapped PlayerSkill

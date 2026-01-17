@@ -8,6 +8,8 @@ import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityRegistry;
 import hcontrol.plugin.entity.EntityService;
 import hcontrol.plugin.module.boss.BossManager;
+import hcontrol.plugin.module.boss.WorldBossManager;
+import hcontrol.plugin.service.AscensionService;
 import hcontrol.plugin.service.CombatService;
 import hcontrol.plugin.skill.SkillCooldownManager;
 import hcontrol.plugin.skill.SkillExecutor;
@@ -32,6 +34,9 @@ public class EntityContext {
     private final SkillRegistry skillRegistry;
     private final SkillCooldownManager cooldownManager;
     private SkillExecutor skillExecutor;  // init sau (can CombatService)
+    
+    // WORLD BOSS SYSTEM - ENDGAME
+    private WorldBossManager worldBossManager;  // init sau (can nhiều dependencies)
     
     public EntityContext() {
         this.entityManager = new EntityManager();
@@ -58,6 +63,20 @@ public class EntityContext {
         this.skillExecutor = new SkillExecutor(combatService, cooldownManager);
     }
     
+    /**
+     * Init World Boss system (can nhiều dependencies)
+     */
+    public void initWorldBoss(hcontrol.plugin.Main plugin, 
+                              hcontrol.plugin.player.PlayerManager playerManager,
+                              AscensionService ascensionService,
+                              CombatService combatService) {
+        this.worldBossManager = new WorldBossManager(
+            plugin, bossManager, entityManager, entityService,
+            playerManager, ascensionService, combatService
+        );
+        this.worldBossManager.initialize();
+    }
+    
     // ========== GETTERS ==========
     
     public EntityManager getEntityManager() { return entityManager; }
@@ -69,4 +88,5 @@ public class EntityContext {
     public SkillRegistry getSkillRegistry() { return skillRegistry; }
     public SkillCooldownManager getCooldownManager() { return cooldownManager; }
     public SkillExecutor getSkillExecutor() { return skillExecutor; }
+    public WorldBossManager getWorldBossManager() { return worldBossManager; }
 }

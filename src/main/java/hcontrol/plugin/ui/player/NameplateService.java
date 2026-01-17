@@ -204,8 +204,11 @@ public class NameplateService {
     }
     
     /**
-     * 🔥 Build tab list name từ NameplateData (reuse data)
-     * Format: [LK][Thanh Vân] PlayerName ❤85%
+     * 🔥 Build tab list name - REAL-TIME (không dùng cache cho realm)
+     * Format: [CảnhGiới Level][MônPhái] PlayerName ❤85%
+     * 
+     * 📌 LƯU Ý: Tab list cần data REAL-TIME để cập nhật khi realm thay đổi
+     * Luôn lấy realm trực tiếp từ profile (không dùng cache)
      * 
      * @param player Player
      * @return Tab list display name hoặc null nếu không có data
@@ -218,13 +221,6 @@ public class NameplateService {
         
         UUID uuid = player.getUniqueId();
         
-        // Lấy hoặc tạo cache
-        NameplateData data = cache.get(uuid);
-        if (data == null) {
-            data = rebuildStaticData(player, profile);
-            cache.put(uuid, data);
-        }
-        
         // Tính HP percent
         double currentHP = profile.getCurrentHP();
         double maxHP = profile.getMaxHP();
@@ -233,10 +229,9 @@ public class NameplateService {
         // Lấy màu HP
         String hpColor = getHPColor(hpPercent);
         
-        // Build tab list name: [LK][Thanh Vân] PlayerName ❤85%
-        // Format: [CảnhGiới][MônPhái] PlayerName ❤85%
+        // Build tab list name: [CảnhGiới Level][MônPhái] PlayerName ❤85%
         
-        // Lấy realm tag trực tiếp
+        // 🔥 Lấy realm tag TRỰC TIẾP từ profile (REAL-TIME, không dùng cache)
         String realmTag = "";
         if (showRealm) {
             CultivationRealm realm = profile.getRealm();
@@ -254,7 +249,7 @@ public class NameplateService {
             }
         }
         
-        // Build: [LK][Thanh Vân] PlayerName ❤85%
+        // Build: [CảnhGiới Level][MônPhái] PlayerName ❤85%
         StringBuilder tabListName = new StringBuilder();
         if (!realmTag.isEmpty()) {
             tabListName.append(realmTag);
@@ -580,15 +575,15 @@ public class NameplateService {
     }
     
     private String getRealmTag(CultivationRealm realm, int level) {
-        // Rút gọn tên cảnh giới
-        String shortName = realm.getShortName();
+        // Hiển thị đầy đủ tên cảnh giới (không viết tắt)
+        String displayName = realm.getDisplayName();
         String color = realm.getColor();
         
         // Thêm số level nếu > 1
         if (level >= 1) {
-            return color + "[" + shortName + " " + level + "]";
+            return color + "[" + displayName + " " + level + "]";
         }
-        return color + "[" + shortName + "]";
+        return color + "[" + displayName + "]";
     }
     
     private void applyToScoreboard(Player player, String prefix, String suffix) {

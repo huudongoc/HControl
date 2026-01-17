@@ -1,8 +1,13 @@
 package hcontrol.plugin.ui.chat;
 
+import hcontrol.plugin.master.MasterManager;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.model.Title;
 import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.sect.Sect;
+import hcontrol.plugin.sect.SectManager;
+import hcontrol.plugin.sect.SectMember;
+import hcontrol.plugin.sect.SectRank;
 import hcontrol.plugin.ui.player.NameplateService;
 import org.bukkit.entity.Player;
 
@@ -17,12 +22,24 @@ public class ChatFormatService {
     // Inject NameplateService để reuse data
     private NameplateService nameplateService;
     
+    // Optional dependencies cho bubble format (sect rank, admin status)
+    private SectManager sectManager;
+    private MasterManager masterManager;
+    
     public ChatFormatService() {
         // Dependencies sẽ được set từ CoreContext
     }
     
     public void setNameplateService(NameplateService nameplateService) {
         this.nameplateService = nameplateService;
+    }
+    
+    public void setSectManager(SectManager sectManager) {
+        this.sectManager = sectManager;
+    }
+    
+    public void setMasterManager(MasterManager masterManager) {
+        this.masterManager = masterManager;
     }
     
     /**
@@ -70,31 +87,85 @@ public class ChatFormatService {
 
     
     /**
-     * Format bubble text don gian cho chat bubble (khong co khung phuc tap)
-     * Hien thi title icon neu co, neu khong hien thi realm
+     * Format bubble text đẹp cho chat bubble
+     * Hiển thị: [Title Icon] [Sect Rank] [Admin/VIP] message
+     * 🔥 Format đẹp với rank màu sắc và admin status
      */
     public String formatBubbleText(PlayerProfile profile, String message) {
-        if (profile != null) {
-            // Uu tien title icon
-            if (profile.getActiveTitle() != null) {
-                Title title = profile.getActiveTitle();
-                if (title != Title.NONE) {
-                    return title.getIcon() + " §f" + message;
+        if (profile == null) {
+            return "§f" + message;
+        }
+        
+        Player player = profile.getPlayer();
+        if (player == null || !player.isOnline()) {
+            return "§f" + message;
+        }
+        
+        StringBuilder prefix = new StringBuilder();
+        
+        // 1. Title icon (ưu tiên cao nhất)
+        Title title = profile.getActiveTitle();
+        if (title != null && title != Title.NONE) {
+            prefix.append(title.getIcon()).append(" ");
+        }
+        
+        // 2. Sect rank với màu đẹp (nếu có)
+        if (sectManager != null) {
+            Sect sect = sectManager.getPlayerSect(player.getUniqueId());
+            if (sect != null) {
+                SectMember member = sect.getMember(player.getUniqueId());
+                if (member != null) {
+                    SectRank rank = member.getRank();
+                    String rankColor = getSectRankColor(rank);
+                    
+                    // Rút gọn tên môn phái nếu dài
+                    String sectName = sect.getName();
+                    if (sectName.length() > 6) {
+                        sectName = sectName.substring(0, 5) + "..";
+                    }
+                    
+                    prefix.append(rankColor).append("[").append(sectName).append("] ");
                 }
             }
-            
-            // // Neu khong co title, hien thi realm (don gian)
-            // CultivationRealm realm = profile.getRealm();
-            // if (realm != null) {
-            //     return realm.getColor() + "[" + realm.getDisplayName() + "] §f" + message;
-            // }
-
-            // Neu khong co title, hien thi realm (don gian)
+        }
+        
+        // 3. Admin/VIP status (nếu có)
+        if (player.isOp() || player.hasPermission("hcontrol.admin")) {
+            // Check title có phải ADMIN/DEVELOPER không
+            if (title == Title.ADMIN || title == Title.DEVELOPER) {
+                prefix.append(title.getIcon()).append(" ");
+            } else {
+                // Nếu không có title admin nhưng là op → hiển thị admin icon
+                prefix.append("§c§l✦ ");
+            }
+        } else if (title == Title.VIP) {
+            prefix.append(title.getIcon()).append(" ");
+        }
+        
+        // 4. Realm color (fallback nếu không có gì)
+        if (prefix.length() == 0) {
             CultivationRealm realm = profile.getRealm();
             if (realm != null) {
-                return realm.getColor()  + " §f" + message;
+                prefix.append(realm.getColor()).append(" ");
             }
         }
-        return "§f" + message;
+        
+        return prefix.toString() + "§f" + message;
+    }
+    
+    /**
+     * Lấy màu theo sect rank (giống NameplateService.buildSectTag)
+     */
+    private String getSectRankColor(SectRank rank) {
+        if (rank == null) return "§7";
+        
+        return switch (rank) {
+            case LEADER -> "§6§l";        // Vàng đậm - Chưởng Môn
+            case VICE_LEADER -> "§6";     // Vàng - Phó Môn
+            case ELDER -> "§e";           // Vàng nhạt - Trưởng Lão
+            case CORE_DISCIPLE -> "§a";   // Xanh lá - Chân Truyền
+            case INNER_DISCIPLE -> "§2";  // Xanh đậm - Nội Môn
+            case OUTER_DISCIPLE -> "§7";  // Xám - Ngoại Môn
+        };
     }
 }

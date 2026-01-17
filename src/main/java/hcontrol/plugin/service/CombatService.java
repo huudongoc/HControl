@@ -143,6 +143,14 @@ public class CombatService {
      * @param techniqueModifier modifier cong phap (1.0 = pham phap)
      */
     public void handleCombat(LivingActor attacker, LivingActor defender, double techniqueModifier) {
+        handleCombat(attacker, defender, techniqueModifier, null);
+    }
+    
+    /**
+     * PHASE 5A — Handle combat với skill support
+     * @param skillId Skill ID đang được dùng (null nếu đánh thường)
+     */
+    public void handleCombat(LivingActor attacker, LivingActor defender, double techniqueModifier, String skillId) {
         // CHECK: Defender da chet - khong cho tan cong
         if (defender.getCurrentHP() <= 0) {
             return; // Defender da chet, khong xu ly damage
@@ -213,8 +221,19 @@ public class CombatService {
         // Random dao factor (nho - khong phai crit)
         double daoFactor = 0.9 + (random.nextDouble() * 0.2);  // 0.9 - 1.1
         
+        // 🔥 Spiritual Root damage bonus (nếu attacker là player)
+        double rootDamageBonus = 1.0;
+        if (attacker instanceof PlayerProfile attackerProfile) {
+            hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+            if (ctx != null && ctx.getSpiritualRootService() != null) {
+                hcontrol.plugin.service.SpiritualRootService rootService = ctx.getSpiritualRootService();
+                double bonus = rootService.getDamageBonus(attackerProfile.getSpiritualRoot());
+                rootDamageBonus = 1.0 + (bonus / 100.0);  // Convert +50% -> 1.5x
+            }
+        }
+        
         // FINAL DAMAGE (tính base damage trước)
-        double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
+        double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor * rootDamageBonus;
         
         // PHASE 8A: Apply item stat bonuses vào final damage (sau tất cả modifiers)
         // Item bonus được scale theo các modifiers để giữ balance
@@ -235,20 +254,50 @@ public class CombatService {
         
         // PHASE 5: Apply class modifiers (sau item bonus)
         if (attacker instanceof PlayerProfile attackerProfile && classService != null) {
-            hcontrol.plugin.classsystem.modifier.ModifierContext modifierCtx = 
-                new hcontrol.plugin.classsystem.modifier.ModifierContext(attacker, defender);
+            hcontrol.plugin.classsystem.ClassProfile classProfile = attackerProfile.getClassProfile();
             
-            for (hcontrol.plugin.classsystem.modifier.ClassModifier modifier : classService.getModifiers(attackerProfile)) {
-                if (modifier.getType() == hcontrol.plugin.classsystem.modifier.ModifierType.DAMAGE) {
-                    double oldDamage = damage;
-                    damage = modifier.modify(attacker, modifierCtx, damage);
-                    if (damage != oldDamage) {
-                        plugin.getLogger().info("[DEBUG] Class modifier applied: " + 
-                            attackerProfile.getClassProfile().getType() + 
-                            " → damage: " + String.format("%.2f", oldDamage) + 
-                            " → " + String.format("%.2f", damage));
+            // Debug: Check class profile
+            if (classProfile == null) {
+                // Player chưa chọn class - không có modifiers
+                // plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + " chưa có class profile");
+            } else {
+                hcontrol.plugin.classsystem.modifier.ModifierContext modifierCtx = 
+                    new hcontrol.plugin.classsystem.modifier.ModifierContext(attacker, defender, skillId);
+                
+                var modifiers = classService.getModifiers(attackerProfile);
+                // Debug: Check modifiers
+                // plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + 
+                //     " class=" + classProfile.getType() + " có " + modifiers.size() + " modifiers");
+                
+                for (hcontrol.plugin.classsystem.modifier.ClassModifier modifier : modifiers) {
+                    if (modifier.getType() == hcontrol.plugin.classsystem.modifier.ModifierType.DAMAGE) {
+                        double oldDamage = damage;
+                        damage = modifier.modify(attacker, modifierCtx, damage);
+                        if (damage != oldDamage) {
+                            plugin.getLogger().info("[DEBUG] Class modifier applied: " + 
+                                classProfile.getType() + 
+                                " (skill=" + (skillId != null ? skillId : "none") + ")" +
+                                " → damage: " + String.format("%.2f", oldDamage) + 
+                                " → " + String.format("%.2f", damage));
+                        }
                     }
                 }
+            }
+        }
+        
+        // ASCENSION SYSTEM - ENDGAME: Apply ascension power multiplier (sau class modifiers, trước apply damage)
+        if (attacker instanceof PlayerProfile attackerProfile) {
+            hcontrol.plugin.model.AscensionProfile ascension = attackerProfile.getAscensionProfile();
+            if (ascension != null && ascension.isAscended()) {
+                double ascensionPower = ascension.getAscensionPower();
+                damage *= ascensionPower;
+                
+                // Debug log (có thể comment sau)
+                plugin.getLogger().info("[DEBUG] Ascension power applied: " + 
+                    attackerProfile.getName() + 
+                    " (level " + ascension.getAscensionLevel() + 
+                    ", power " + String.format("%.2f", ascensionPower) + "x)" +
+                    " → damage: " + String.format("%.2f", damage));
             }
         }
         
@@ -256,6 +305,27 @@ public class CombatService {
         
         double newHP = Math.max(0, defender.getCurrentHP() - damage);
         defender.setCurrentHP(newHP);
+        
+        // WORLD BOSS PARTICIPATION TRACKING - Track damage khi player đánh world boss
+        if (attacker instanceof PlayerProfile attackerProfile && 
+            defender instanceof EntityProfile defenderProfile) {
+            // Check xem defender có phải world boss không
+            hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+            if (ctx != null && ctx.getWorldBossManager() != null) {
+                // Check xem entity có phải world boss không
+                UUID defenderUUID = defenderProfile.getUUID();
+                hcontrol.plugin.module.boss.BossEntity boss = 
+                    ctx.getBossManager().getBoss(defenderUUID);
+                if (boss != null && boss.getType() == hcontrol.plugin.module.boss.BossType.WORLD_BOSS) {
+                    // Track participation
+                    ctx.getWorldBossManager().trackDamage(
+                        attackerProfile.getUuid(),
+                        defenderUUID,
+                        damage
+                    );
+                }
+            }
+        }
         
         // ===== SYNC VANILLA HEALTH (NEU CO BUKKIT ENTITY) =====
         
@@ -359,6 +429,14 @@ public class CombatService {
      * REFACTORED: Wrapper around handleCombat()
      */
     public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile) {
+        handlePlayerAttack(attacker, target, attackerProfile, null);
+    }
+    
+    /**
+     * PHASE 5A — Handle player attack với skill support
+     * @param skillId Skill ID đang được dùng (null nếu đánh thường)
+     */
+    public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile, String skillId) {
         // CHECK: Target da chet - khong xu ly damage
         if (target.isDead()) {
             return; // Target da chet, khong xu ly damage
@@ -378,7 +456,7 @@ public class CombatService {
             }
             
             // Dung unified combat
-            handleCombat(attackerProfile, targetProfile, techniqueModifier);
+            handleCombat(attackerProfile, targetProfile, techniqueModifier, skillId);
             return;
         }
         
@@ -391,7 +469,7 @@ public class CombatService {
         }
         
         // Dung unified combat
-        handleCombat(attackerProfile, mobProfile, techniqueModifier);
+        handleCombat(attackerProfile, mobProfile, techniqueModifier, skillId);
     }
     
     // LOAI BO calculateDamage / checkCrit / checkDodge

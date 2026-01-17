@@ -1,10 +1,24 @@
 HControl RPG – Core Architecture Lock
 
+
 Mục tiêu:
 Giữ engine ổn định lâu dài, mở rộng được đến endgame,
 tránh refactor lớn, tránh hard-code, tránh “sửa cho chạy”.
 
 ☯️ TRIẾT LÝ CỐT LÕI
+UI services must not duplicate status logic.
+ActionBar-based status display is deprecated unless explicitly approved.
+Legacy skill systems must not coexist with SkillTemplateRegistry.
+Any code under /legacy is read-only.
+New code MUST NOT depend on legacy packages.
+
+## Phase Lock Policy
+
+- Phase 5 (Identity + Class) is LOCKED.
+- No modification to existing interfaces or models.
+- Extensions must be additive only.
+- All gameplay systems must depend on Phase 5, not modify it.
+
 
 Engine > Feature
 

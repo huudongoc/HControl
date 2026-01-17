@@ -123,6 +123,18 @@ public class CommandRegistry {
         // AI Debug command (PHASE 7 testing)
         register("aidebug", () -> new AIDebugCommand());
         
+        // Item Test command (PHASE 8A testing)
+        // Lazy load ItemService trong command để tránh null khi command đăng ký trước ItemContext init
+        register("itemtest", () -> new ItemTestCommand(
+            coreContext.getPlayerContext().getPlayerManager()
+        ));
+        
+        // Class command (PHASE 5)
+        // Lazy load ClassService trong command để tránh null khi command đăng ký trước ClassContext init
+        register("class", () -> new ClassCommand(
+            coreContext.getPlayerContext().getPlayerManager()
+        ));
+        
         logger.info("[PHASE 0] ✓ Commands đã được đăng ký!");
     }
     

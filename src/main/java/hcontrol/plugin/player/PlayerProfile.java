@@ -65,8 +65,14 @@ public class PlayerProfile implements LivingActor {
     private final java.util.Set<String> learnedSkills;  // skills da hoc
     private final java.util.Map<Integer, String> skillHotbar;  // slot 1-9 -> skillId
     
+    // ITEM SYSTEM - PHASE 8A
+    private final java.util.Map<hcontrol.plugin.item.EquipmentSlot, String> equippedItems;  // slot -> itemId
+    
     // IDENTITY SYSTEM - PHASE 5
     private hcontrol.plugin.identity.PlayerIdentity identity;  // identity layer
+    
+    // CLASS SYSTEM - PHASE 5
+    private hcontrol.plugin.classsystem.ClassProfile classProfile;  // nullable - chưa chọn class
     
     // LINK STATS
     private final PlayerStats stats;
@@ -125,8 +131,14 @@ public class PlayerProfile implements LivingActor {
         this.learnedSkills = new java.util.HashSet<>();
         this.skillHotbar = new java.util.HashMap<>();
         
+        // khoi tao item system - PHASE 8A
+        this.equippedItems = new java.util.HashMap<>();
+        
         // khoi tao identity system - PHASE 5
         this.identity = new hcontrol.plugin.identity.PlayerIdentity();  // default identity
+        
+        // khoi tao class system - PHASE 5
+        this.classProfile = null;  // chua chon class
         
         // khoi tao stats
         this.stats = new PlayerStats();
@@ -744,6 +756,59 @@ public class PlayerProfile implements LivingActor {
      */
     public void unbindSkill(int slot) {
         skillHotbar.remove(slot);
+    }
+    
+    // ========== ITEM SYSTEM - PHASE 8A ==========
+    
+    /**
+     * Equip item vào slot
+     */
+    public void equipItem(hcontrol.plugin.item.EquipmentSlot slot, String itemId) {
+        equippedItems.put(slot, itemId);
+    }
+    
+    /**
+     * Unequip item từ slot
+     */
+    public void unequipItem(hcontrol.plugin.item.EquipmentSlot slot) {
+        equippedItems.remove(slot);
+    }
+    
+    /**
+     * Get item ở slot
+     */
+    public String getItemAtSlot(hcontrol.plugin.item.EquipmentSlot slot) {
+        return equippedItems.get(slot);
+    }
+    
+    /**
+     * Get tất cả equipped items
+     */
+    public java.util.Map<hcontrol.plugin.item.EquipmentSlot, String> getEquippedItems() {
+        return new java.util.HashMap<>(equippedItems);
+    }
+    
+    // ========== CLASS SYSTEM - PHASE 5 ==========
+    
+    /**
+     * Get class profile
+     */
+    public hcontrol.plugin.classsystem.ClassProfile getClassProfile() {
+        return classProfile;
+    }
+    
+    /**
+     * Set class profile
+     */
+    public void setClassProfile(hcontrol.plugin.classsystem.ClassProfile classProfile) {
+        this.classProfile = classProfile;
+    }
+    
+    /**
+     * Check if player has class
+     */
+    public boolean hasClass() {
+        return classProfile != null;
     }
     
     /**

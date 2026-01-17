@@ -38,21 +38,36 @@ public class ChatFormatService {
      * @param message Tin nhan chat
      * @return Formatted message với placeholder
      */
-    public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
-        // 🔥 Reuse NameplateData từ NameplateService
-        if (profile != null) {
-            Player player = profile.getPlayer();
-            if (player != null && player.isOnline()) {
-                if (nameplateService != null) {
-                    // Lấy format đầy đủ từ NameplateService (realm, sect, title, HP)
-                    return nameplateService.buildChatFormat(player);
-                }
-            }
-        }
+    // public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
+    //     // 🔥 Reuse NameplateData từ NameplateService
+    //     if (profile != null) {
+    //         Player player = profile.getPlayer();
+    //         if (player != null && player.isOnline()) {
+    //             if (nameplateService != null) {
+    //                 // Lấy format đầy đủ từ NameplateService (realm, sect, title, HP)
+    //                 return nameplateService.buildChatMessage(player, message);
+    //             }
+    //         }
+    //     }
         
-        // Fallback: nếu không có profile hoặc nameplateService null
-        return "§7%1$s: §f%2$s";
+    //     // Fallback: nếu không có profile hoặc nameplateService null
+    //     return "§7%1$s: §f%2$s";
+    // }
+
+    public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
+
+    // 🔥 Reuse NameplateData từ NameplateService
+    if (profile != null) {
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline() && nameplateService != null) {
+            return nameplateService.buildChatMessage(player, message);
+        }
     }
+
+    // ✅ Fallback an toàn – KHÔNG format string
+    return "§7" + playerName + "§7: §f" + message;
+}
+
     
     /**
      * Format bubble text don gian cho chat bubble (khong co khung phuc tap)

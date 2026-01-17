@@ -33,6 +33,7 @@ public class NameplateService {
     private final Map<UUID, NameplateData> cache = new HashMap<>();
     private final Map<UUID, Long> lastHPUpdateTime = new HashMap<>();
     private static final long HP_UPDATE_COOLDOWN_MS = 100; // 100ms cho HP update
+    private static final String CHAT_SEPARATOR = " §8» §f";
     
     // Optional dependencies (có thể null)
     private SectManager sectManager;
@@ -355,36 +356,71 @@ public class NameplateService {
      * @param player Player
      * @return Chat format string với placeholder %1$s (player name) và %2$s (message)
      */
-    public String buildChatFormat(Player player) {
-        if (player == null || !player.isOnline()) return "§7%1$s: §f%2$s";
+    // public String buildChatFormat(Player player) {
+    //     if (player == null || !player.isOnline()) return "§7%1$s: §f%2$s";
         
-        PlayerProfile profile = playerManager.get(player.getUniqueId());
-        if (profile == null) return "§7%1$s: §f%2$s";
+    //     PlayerProfile profile = playerManager.get(player.getUniqueId());
+    //     if (profile == null) return "§7%1$s: §f%2$s";
         
-        // Lấy prefix (realm, sect, title, master)
-        String prefix = buildChatPrefix(player);
+    //     // Lấy prefix (realm, sect, title, master)
+    //     String prefix = buildChatPrefix(player);
         
-        // Tính HP percent
-        double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getMaxHP();
-        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
+    //     // Tính HP percent
+    //     double currentHP = profile.getCurrentHP();
+    //     double maxHP = profile.getMaxHP();
+    //     double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
         
-        // Lấy màu HP
-        String hpColor = getHPColor(hpPercent);
+    //     // Lấy màu HP
+    //     String hpColor = getHPColor(hpPercent);
         
-        // Build format: prefix + PlayerName + ❤HP%: message
-        StringBuilder format = new StringBuilder();
+    //     // Build format: prefix + PlayerName + ❤HP%: message
+    //     StringBuilder format = new StringBuilder();
         
-        if (!prefix.isEmpty()) {
-            format.append(prefix).append(" ");
+    //     if (!prefix.isEmpty()) {
+    //         format.append(prefix).append(" ");
+    //     }
+        
+    //     format.append("§f%1$s ");  // Player name
+    //     // Format HP percent và escape % thành %% để tránh lỗi format specifier
+    //     String hpPercentStr = String.format("%.0f", hpPercent) + "%%";
+    //     format.append(hpColor).append("❤").append(hpPercentStr);  // HP
+    //     format.append(": §f%2$s");  // Message
+        
+    //     return format.toString();
+    // }
+
+    public String buildChatMessage(Player player, String message) {
+        if (player == null || !player.isOnline()) {
+            return "§7" + player.getName() + ": §f" + message;
         }
-        
-        format.append("§f%1$s ");  // Player name
-        format.append(hpColor).append("❤").append(String.format("%.0f%%", hpPercent));  // HP
-        format.append(": §f%2$s");  // Message
-        
-        return format.toString();
+    
+        PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile == null) {
+            return "§7" + player.getName() + ": §f" + message;
+        }
+    
+        String prefix = buildChatPrefix(player);
+    
+        double hpPercent = profile.getMaxHP() > 0
+                ? (profile.getCurrentHP() / profile.getMaxHP()) * 100.0
+                : 100.0;
+    
+        String hpColor = getHPColor(hpPercent);
+    
+        StringBuilder sb = new StringBuilder();
+    
+        if (!prefix.isEmpty()) {
+            sb.append(prefix).append(" ");
+        }
+    
+        sb.append("§f").append(player.getName()).append(" ");
+        sb.append(hpColor).append("❤").append((int) hpPercent).append("%");
+        sb.append(CHAT_SEPARATOR).append(message);
+
+    
+        return sb.toString();
     }
+    
     
     /**
      * Invalidate cache cho player (force rebuild khi state change)
@@ -549,7 +585,7 @@ public class NameplateService {
         String color = realm.getColor();
         
         // Thêm số level nếu > 1
-        if (level > 1) {
+        if (level >= 1) {
             return color + "[" + shortName + " " + level + "]";
         }
         return color + "[" + shortName + "]";

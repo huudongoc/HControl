@@ -61,6 +61,16 @@ commands:
     aliases: [aid]
     permission: hcontrol.admin
     
+  itemtest:
+    description: Item test commands (PHASE 8A testing)
+    usage: /itemtest [equip|unequip|stats|list]
+    aliases: [itest, itemdebug]
+  class:
+    description: Class system command (PHASE 5)
+    usage: /class <set|info|list> [classType]
+    permission: op
+    permission: hcontrol.admin
+    
   skill:
     description: Player skill system (PHASE 6)
     usage: /skill [list|available|learn|cast|bind|unbind|hotbar|info]

@@ -36,6 +36,8 @@ public class CombatService {
     private final DamageEffectService effectService;
     private final EntityManager entityManager;
     private NameplateService nameplateService;  // inject sau tu CoreContext
+    private hcontrol.plugin.item.ItemService itemService;  // PHASE 8A: inject sau tu ItemContext
+    private hcontrol.plugin.classsystem.ClassService classService;  // PHASE 5: inject sau tu ClassContext
     
     // Track last attacker cho moi player (de hien thi trong death message)
     // Key: victim UUID, Value: attacker info (UUID + timestamp + weapon)
@@ -115,6 +117,20 @@ public class CombatService {
      */
     public void setNameplateService(NameplateService nameplateService) {
         this.nameplateService = nameplateService;
+    }
+    
+    /**
+     * PHASE 8A: Inject ItemService (goi tu ItemContext)
+     */
+    public void setItemService(hcontrol.plugin.item.ItemService itemService) {
+        this.itemService = itemService;
+    }
+    
+    /**
+     * PHASE 5: Inject ClassService (goi tu ClassContext)
+     */
+    public void setClassService(hcontrol.plugin.classsystem.ClassService classService) {
+        this.classService = classService;
     }
     
     // ===== MILESTONE 4: UNIFIED COMBAT (LIVING ACTOR) =====
@@ -197,8 +213,44 @@ public class CombatService {
         // Random dao factor (nho - khong phai crit)
         double daoFactor = 0.9 + (random.nextDouble() * 0.2);  // 0.9 - 1.1
         
-        // FINAL DAMAGE
+        // FINAL DAMAGE (tính base damage trước)
         double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
+        
+        // PHASE 8A: Apply item stat bonuses vào final damage (sau tất cả modifiers)
+        // Item bonus được scale theo các modifiers để giữ balance
+        if (attacker instanceof PlayerProfile attackerProfile && itemService != null) {
+            double itemAttackBonus = itemService.getStat(attackerProfile, hcontrol.plugin.item.StatType.ATTACK);
+            if (itemAttackBonus > 0) {
+                // Apply item bonus với cùng modifiers như base damage
+                double itemDamageBonus = itemAttackBonus * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
+                damage += itemDamageBonus;
+                
+                // Debug log (có thể comment sau)
+                plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + 
+                    " có item ATTACK bonus: " + itemAttackBonus + 
+                    " → thêm damage: " + String.format("%.2f", itemDamageBonus) + 
+                    " (total: " + String.format("%.2f", damage) + ")");
+            }
+        }
+        
+        // PHASE 5: Apply class modifiers (sau item bonus)
+        if (attacker instanceof PlayerProfile attackerProfile && classService != null) {
+            hcontrol.plugin.classsystem.modifier.ModifierContext modifierCtx = 
+                new hcontrol.plugin.classsystem.modifier.ModifierContext(attacker, defender);
+            
+            for (hcontrol.plugin.classsystem.modifier.ClassModifier modifier : classService.getModifiers(attackerProfile)) {
+                if (modifier.getType() == hcontrol.plugin.classsystem.modifier.ModifierType.DAMAGE) {
+                    double oldDamage = damage;
+                    damage = modifier.modify(attacker, modifierCtx, damage);
+                    if (damage != oldDamage) {
+                        plugin.getLogger().info("[DEBUG] Class modifier applied: " + 
+                            attackerProfile.getClassProfile().getType() + 
+                            " → damage: " + String.format("%.2f", oldDamage) + 
+                            " → " + String.format("%.2f", damage));
+                    }
+                }
+            }
+        }
         
         // ===== APPLY DAMAGE =====
         

@@ -68,12 +68,14 @@ public class CoreContext {
     private final LifecycleManager lifecycleManager;
     private EventRegistry eventRegistry;
     
-    // Domain Contexts (5 SubContext)
+    // Domain Contexts (7 SubContext)
     private final PlayerContext playerContext;
     private final CombatContext combatContext;
     private final EntityContext entityContext;
     private final UIContext uiContext;
     private final CultivationContext cultivationContext;
+    private final ItemContext itemContext;  // PHASE 8A
+    private final ClassContext classContext;  // PHASE 5
     
     // Listeners (lifecycle-managed, KHONG nen de trong SubContext)
     private JoinServerListener joinListener;
@@ -131,6 +133,12 @@ public class CoreContext {
         
         // 6. UI Context (init sau trong lifecycle callbacks)
         this.uiContext = new UIContext(plugin);
+        
+        // 7. Item Context (PHASE 8A - phu thuoc Plugin)
+        this.itemContext = new ItemContext(plugin);
+        
+        // 8. Class Context (PHASE 5 - phu thuoc Plugin)
+        this.classContext = new ClassContext(plugin);
     }
     
     /**
@@ -194,9 +202,9 @@ public class CoreContext {
         registerCombatSystem();
         
         // PHASE 5+: Thêm các module mới ở đây
-        // registerClassSystem();     // PHASE 5
+        registerClassSystem();     // PHASE 5
         // registerSkillSystem();     // PHASE 6 (thêm vào CombatContext)
-        // registerItemSystem();      // PHASE 8
+        registerItemSystem();      // PHASE 8A
         // registerWorldSystem();     // PHASE 9
         
         // SECT SYSTEM
@@ -376,6 +384,8 @@ public class CoreContext {
             // Inject NameplateService vao CombatService
             combatContext.getCombatService().setNameplateService(uiContext.getNameplateService());
             
+            // PHASE 8A: ItemService sẽ được inject trong registerItemSystem() (sau khi ItemContext initialize)
+            
             // Inject NameplateService vao TitleService
             // TitleService không cần inject NameplateService nữa - dùng event
             
@@ -511,6 +521,64 @@ public class CoreContext {
             
             lifecycleManager.disableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã tắt!");
+        });
+    }
+    
+    /**
+     * PHASE 8A — ITEM SYSTEM
+     */
+    private void registerItemSystem() {
+        lifecycleManager.registerOnEnable(() -> {
+            plugin.getLogger().info("[PHASE 8A] Đang khởi tạo Item System...");
+            
+            // Initialize ItemContext (load items.yml, registry, cache)
+            itemContext.initialize();
+            
+            // Inject ItemService vào CombatService (nếu chưa inject trong registerCombatSystem)
+            if (itemContext.getItemService() != null && combatContext.getCombatService() != null) {
+                combatContext.getCombatService().setItemService(itemContext.getItemService());
+                plugin.getLogger().info("[PHASE 8A] ✓ ItemService đã inject vào CombatService");
+            }
+            
+            lifecycleManager.enableModule("ItemSystem");
+            plugin.getLogger().info("[PHASE 8A] ✓ Item System đã sẵn sàng!");
+        });
+        
+        lifecycleManager.registerOnDisable(() -> {
+            plugin.getLogger().info("[PHASE 8A] Đang tắt Item System...");
+            
+            // Clear cache if needed (ItemContext không có state cần clear)
+            
+            lifecycleManager.disableModule("ItemSystem");
+            plugin.getLogger().info("[PHASE 8A] ✓ Item System đã tắt!");
+        });
+    }
+    
+    /**
+     * PHASE 5 — CLASS SYSTEM
+     */
+    private void registerClassSystem() {
+        lifecycleManager.registerOnEnable(() -> {
+            plugin.getLogger().info("[PHASE 5] Đang khởi tạo Class System...");
+            
+            // Initialize ClassContext
+            classContext.initialize();
+            
+            // Inject ClassService vào CombatService
+            if (classContext.getClassService() != null && combatContext.getCombatService() != null) {
+                combatContext.getCombatService().setClassService(classContext.getClassService());
+                plugin.getLogger().info("[PHASE 5] ✓ ClassService đã inject vào CombatService");
+            }
+            
+            lifecycleManager.enableModule("ClassSystem");
+            plugin.getLogger().info("[PHASE 5] ✓ Class System đã sẵn sàng!");
+        });
+        
+        lifecycleManager.registerOnDisable(() -> {
+            plugin.getLogger().info("[PHASE 5] Đang tắt Class System...");
+            
+            lifecycleManager.disableModule("ClassSystem");
+            plugin.getLogger().info("[PHASE 5] ✓ Class System đã tắt!");
         });
     }
     
@@ -693,6 +761,8 @@ public class CoreContext {
     public EntityContext getEntityContext() { return entityContext; }
     public UIContext getUIContext() { return uiContext; }
     public CultivationContext getCultivationContext() { return cultivationContext; }
+    public ItemContext getItemContext() { return itemContext; }  // PHASE 8A
+    public ClassContext getClassContext() { return classContext; }  // PHASE 5
     
     // ===== GETTERS — System Level =====
     

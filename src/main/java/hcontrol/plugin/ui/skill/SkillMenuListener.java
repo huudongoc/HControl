@@ -71,26 +71,26 @@ public class SkillMenuListener implements Listener {
             return;
         }
         
-        // ===== LEARNED SKILL SLOT =====
-        if (menuGUI.isLearnedSkillSlot(slot)) {
-            if (shiftClick) {
-                // Shift+Click → Mở dialog bind hotbar
-                openBindDialog(player, skillId);
+        // ===== ALL SKILLS AREA (slot 10-44 trừ cột 0 và 8) =====
+        if (menuGUI.isSkillSlot(slot)) {
+            // Kiểm tra trạng thái skill
+            boolean hasLearned = profile.hasLearnedSkill(skillId);
+            
+            if (hasLearned) {
+                // Đã học: Cast hoặc Bind
+                if (shiftClick) {
+                    openBindDialog(player, skillId);
+                } else {
+                    player.closeInventory();
+                    skillService.castSkill(player, skillId);
+                }
             } else {
-                // Click → Cast skill
-                player.closeInventory();
-                skillService.castSkill(player, skillId);
-            }
-            return;
-        }
-        
-        // ===== AVAILABLE SKILL SLOT =====
-        if (menuGUI.isAvailableSkillSlot(slot)) {
-            // Click → Learn skill
-            boolean success = skillService.learnSkill(player, skillId);
-            if (success) {
-                // Refresh menu
-                refreshMenu(player, profile);
+                // Chưa học: Thử learn
+                boolean success = skillService.learnSkill(player, skillId);
+                if (success) {
+                    refreshMenu(player, profile);
+                }
+                // Nếu không thành công, message đã được gửi trong learnSkill()
             }
             return;
         }

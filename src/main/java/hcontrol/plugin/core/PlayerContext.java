@@ -11,6 +11,8 @@ import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerStorage;
 import hcontrol.plugin.service.CultivationProgressService;
 import hcontrol.plugin.service.StatService;
+import org.bukkit.configuration.file.YamlConfiguration;
+import java.io.File;
 
 /**
  * PLAYER CONTEXT — PHASE 1 + PHASE 6
@@ -44,9 +46,9 @@ public class PlayerContext {
         this.levelService = null;  // Inject sau khi CombatContext da tao
         this.cultivationProgressService = null;  // Inject sau khi co LevelService
         
-        // PHASE 6: Skill Registry (load defaults, YAML sau)
+        // PHASE 6: Skill Registry (load từ YAML, fallback to defaults)
         this.skillRegistry = new PlayerSkillRegistry();
-        this.skillRegistry.registerDefaultSkills();
+        loadSkillsFromConfig();
     }
     
     /**
@@ -60,9 +62,34 @@ public class PlayerContext {
         this.statService = new StatService();
         this.levelService = levelService;
         
-        // PHASE 6: Skill Registry
+        // PHASE 6: Skill Registry (load từ YAML, fallback to defaults)
         this.skillRegistry = new PlayerSkillRegistry();
-        this.skillRegistry.registerDefaultSkills();
+        loadSkillsFromConfig();
+    }
+    
+    /**
+     * Load skills từ player-skills.yml
+     */
+    private void loadSkillsFromConfig() {
+        File skillsFile = new File(plugin.getDataFolder(), "player-skills.yml");
+        
+        // Save default config nếu chưa tồn tại
+        if (!skillsFile.exists()) {
+            plugin.saveResource("player-skills.yml", false);
+        }
+        
+        // Load từ YAML
+        if (skillsFile.exists()) {
+            YamlConfiguration config = YamlConfiguration.loadConfiguration(skillsFile);
+            skillRegistry.loadFromConfig(config);
+            plugin.getLogger().info("[PHASE 6] Đã load " + skillRegistry.size() + " skills từ YAML");
+        }
+        
+        // Fallback nếu YAML rỗng hoặc lỗi
+        if (skillRegistry.size() == 0) {
+            skillRegistry.registerDefaultSkills();
+            plugin.getLogger().info("[PHASE 6] Dùng default skills (fallback)");
+        }
     }
     
     /**
@@ -71,7 +98,7 @@ public class PlayerContext {
      */
     public void initSkillSystem(hcontrol.plugin.service.CombatService combatService, 
                                  hcontrol.plugin.identity.IdentityRuleService identityRules) {
-        this.skillExecutor = new PlayerSkillExecutor(combatService);
+        this.skillExecutor = new PlayerSkillExecutor(combatService, plugin);
         this.skillService = new PlayerSkillService(playerManager, skillRegistry, identityRules, skillExecutor);
     }
     

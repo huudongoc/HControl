@@ -2,6 +2,7 @@ package hcontrol.plugin.core;
 
 import hcontrol.plugin.Main;
 import hcontrol.plugin.command.CommandRegistry;
+import hcontrol.plugin.command.MasterCommand;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityRegistry;
 import hcontrol.plugin.entity.EntityService;
@@ -15,10 +16,18 @@ import hcontrol.plugin.listener.PlayerDeathListener;
 import hcontrol.plugin.listener.PlayerRespawnListener;
 import hcontrol.plugin.listener.PlayerSkillHotbarListener;
 import hcontrol.plugin.module.boss.BossManager;
+import hcontrol.plugin.master.MasterManager;
+import hcontrol.plugin.master.MasterService;
+import hcontrol.plugin.listener.SkillCreatorListener;
+import hcontrol.plugin.skill.custom.SkillInstanceManager;
+import hcontrol.plugin.skill.custom.SkillTemplateRegistry;
+import hcontrol.plugin.sect.SectManager;
+import hcontrol.plugin.sect.SectService;
 import hcontrol.plugin.ui.skill.SkillMenuGUI;
 import hcontrol.plugin.ui.skill.SkillMenuListener;
 import hcontrol.plugin.playerskill.SkillBookService;
 import hcontrol.plugin.listener.SkillBookListener;
+import hcontrol.plugin.listener.PlayerSkillProjectileListener;
 import hcontrol.plugin.command.SkillBookCommand;
 import hcontrol.plugin.player.AutoSaveTask;
 import hcontrol.plugin.player.PlayerManager;
@@ -79,6 +88,20 @@ public class CoreContext {
     private SkillMenuListener skillMenuListener;
     private SkillBookListener skillBookListener;
     private SkillBookService skillBookService;
+    private PlayerSkillProjectileListener skillProjectileListener;
+    
+    // Sect System
+    private SectManager sectManager;
+    private SectService sectService;
+    
+    // Master-Disciple System
+    private MasterManager masterManager;
+    private MasterService masterService;
+    
+    // Custom Skill System (NEW ARCHITECTURE)
+    private SkillTemplateRegistry skillTemplateRegistry;
+    private SkillInstanceManager skillInstanceManager;
+    private SkillCreatorListener skillCreatorListener;
     
     private CoreContext(Main plugin, LifecycleManager lifecycleManager) {
         this.plugin = plugin;
@@ -175,6 +198,12 @@ public class CoreContext {
         // registerSkillSystem();     // PHASE 6 (thêm vào CombatContext)
         // registerItemSystem();      // PHASE 8
         // registerWorldSystem();     // PHASE 9
+        
+        // SECT SYSTEM
+        registerSectSystem();
+        
+        // MASTER-DISCIPLE SYSTEM
+        registerMasterSystem();
         // registerEconomySystem();   // PHASE 10
     }
     /**
@@ -421,6 +450,15 @@ public class CoreContext {
             }
             plugin.getLogger().info("[PHASE 6] ✓ Skill Book System đã khởi động!");
             
+            // PHASE 6: Register PlayerSkillProjectileListener (xử lý ranged skill hit)
+            skillProjectileListener = new PlayerSkillProjectileListener(
+                plugin,
+                playerContext.getPlayerManager(),
+                playerContext.getSkillRegistry()
+            );
+            eventRegistry.registerEvents(skillProjectileListener);
+            plugin.getLogger().info("[PHASE 6] ✓ Skill Projectile Listener đã đăng ký!");
+            
             lifecycleManager.enableModule("CombatSystem");
             plugin.getLogger().info("[PHASE 3] ✓ Combat System đã sẵn sàng!");
         });
@@ -442,6 +480,7 @@ public class CoreContext {
             skillMenuListener = null;
             skillBookListener = null;
             skillBookService = null;
+            skillProjectileListener = null;
             
             // Cleanup entity UI
             if (uiContext.getEntityNameplateService() != null) {
@@ -459,6 +498,160 @@ public class CoreContext {
         });
     }
     
+    /**
+     * SECT SYSTEM — Môn Phái
+     */
+    private void registerSectSystem() {
+        lifecycleManager.registerOnEnable(() -> {
+            plugin.getLogger().info("[SECT] Đang khởi tạo Sect System...");
+            
+            // Init SectManager (CRUD + Storage)
+            sectManager = new SectManager(plugin);
+            
+            // Init SectService (Business Logic)
+            sectService = new SectService(sectManager, playerContext.getPlayerManager());
+            
+            // Register SectCommand
+            CommandRegistry sectCmdRegistry = new CommandRegistry(plugin, this);
+            sectCmdRegistry.registerSectCommand(sectService);
+            
+            // Inject SectManager vào NameplateService
+            if (uiContext != null && uiContext.getNameplateService() != null) {
+                uiContext.getNameplateService().setSectManager(sectManager);
+                plugin.getLogger().info("[SECT] ✓ Đã inject SectManager vào NameplateService");
+            }
+            
+            lifecycleManager.enableModule("SectSystem");
+            plugin.getLogger().info("[SECT] ✓ Sect System đã sẵn sàng!");
+        });
+        
+        lifecycleManager.registerOnDisable(() -> {
+            plugin.getLogger().info("[SECT] Đang tắt Sect System...");
+            
+            // Save data
+            if (sectManager != null) {
+                sectManager.saveData();
+            }
+            
+            sectManager = null;
+            sectService = null;
+            
+            lifecycleManager.disableModule("SectSystem");
+            plugin.getLogger().info("[SECT] ✓ Sect System đã tắt!");
+        });
+    }
+    
+    /**
+     * MASTER-DISCIPLE SYSTEM — Bái Sư + Custom Skill Creation
+     */
+    private void registerMasterSystem() {
+        lifecycleManager.registerOnEnable(() -> {
+            plugin.getLogger().info("[MASTER] Đang khởi tạo Master-Disciple System...");
+            
+            // Init MasterManager (CRUD + Storage)
+            masterManager = new MasterManager(plugin);
+            
+            // Init MasterService (Business Logic)
+            masterService = new MasterService(
+                masterManager, 
+                playerContext.getPlayerManager(),
+                playerContext.getSkillService(),
+                playerContext.getSkillRegistry()
+            );
+            
+            // ===== NEW CUSTOM SKILL ARCHITECTURE =====
+            // 1. SkillTemplateRegistry - quản lý bản thiết kế skill
+            skillTemplateRegistry = new SkillTemplateRegistry(plugin);
+            plugin.getLogger().info("[MASTER] ✓ SkillTemplateRegistry loaded " + 
+                skillTemplateRegistry.getTemplateCount() + " custom templates");
+            
+            // 2. SkillInstanceManager - quản lý skill đã học của mỗi người
+            skillInstanceManager = new SkillInstanceManager(plugin, skillTemplateRegistry);
+            plugin.getLogger().info("[MASTER] ✓ SkillInstanceManager initialized");
+            
+            // 3. SkillCreatorListener - xử lý GUI tạo skill mới
+            skillCreatorListener = new SkillCreatorListener(
+                plugin,
+                skillTemplateRegistry,
+                skillInstanceManager
+            );
+            eventRegistry.registerEvents(skillCreatorListener);
+            plugin.getLogger().info("[MASTER] ✓ SkillCreatorListener registered");
+            
+            // Inject MasterManager vào NameplateService
+            if (uiContext != null && uiContext.getNameplateService() != null) {
+                uiContext.getNameplateService().setMasterManager(masterManager);
+                plugin.getLogger().info("[MASTER] ✓ Đã inject MasterManager vào NameplateService");
+            }
+            
+            // Register MasterCommand với SkillCreatorListener
+            MasterCommand masterCmd = new MasterCommand(masterService, playerContext.getPlayerManager());
+            masterCmd.setSkillCreatorListener(skillCreatorListener);
+            
+            org.bukkit.command.PluginCommand cmd = plugin.getCommand("master");
+            if (cmd != null) {
+                cmd.setExecutor(masterCmd);
+                cmd.setTabCompleter(masterCmd);
+                plugin.getLogger().info("[MASTER] ✓ Master command đã được đăng ký!");
+            }
+            
+            // Register AdminSkillCommand (backdoor)
+            hcontrol.plugin.command.AdminSkillCommand adminSkillCmd = new hcontrol.plugin.command.AdminSkillCommand();
+            org.bukkit.command.PluginCommand askillCmd = plugin.getCommand("askill");
+            if (askillCmd != null) {
+                askillCmd.setExecutor(adminSkillCmd);
+                askillCmd.setTabCompleter(adminSkillCmd);
+                plugin.getLogger().info("[MASTER] ✓ Admin Skill command đã được đăng ký!");
+            }
+            
+            // Register HControlAdminCommand (backdoor tổng hợp)
+            hcontrol.plugin.command.HControlAdminCommand hadminCmd = new hcontrol.plugin.command.HControlAdminCommand();
+            org.bukkit.command.PluginCommand hadminPluginCmd = plugin.getCommand("hadmin");
+            if (hadminPluginCmd != null) {
+                hadminPluginCmd.setExecutor(hadminCmd);
+                hadminPluginCmd.setTabCompleter(hadminCmd);
+                plugin.getLogger().info("[MASTER] ✓ HControl Admin command đã được đăng ký!");
+            }
+            
+            // Register NameplateCommand
+            if (uiContext != null && uiContext.getNameplateService() != null) {
+                hcontrol.plugin.command.NameplateCommand npCmd = new hcontrol.plugin.command.NameplateCommand(uiContext.getNameplateService());
+                org.bukkit.command.PluginCommand npPluginCmd = plugin.getCommand("nameplate");
+                if (npPluginCmd != null) {
+                    npPluginCmd.setExecutor(npCmd);
+                    npPluginCmd.setTabCompleter(npCmd);
+                    plugin.getLogger().info("[MASTER] ✓ Nameplate command đã được đăng ký!");
+                }
+            }
+            
+            lifecycleManager.enableModule("MasterSystem");
+            plugin.getLogger().info("[MASTER] ✓ Master-Disciple System đã sẵn sàng!");
+        });
+        
+        lifecycleManager.registerOnDisable(() -> {
+            plugin.getLogger().info("[MASTER] Đang tắt Master-Disciple System...");
+            
+            // Save data
+            if (masterManager != null) {
+                masterManager.saveData();
+            }
+            if (skillTemplateRegistry != null) {
+                skillTemplateRegistry.saveData();
+            }
+            if (skillInstanceManager != null) {
+                skillInstanceManager.saveData();
+            }
+            
+            masterManager = null;
+            masterService = null;
+            skillTemplateRegistry = null;
+            skillInstanceManager = null;
+            skillCreatorListener = null;
+            
+            lifecycleManager.disableModule("MasterSystem");
+            plugin.getLogger().info("[MASTER] ✓ Master-Disciple System đã tắt!");
+        });
+    }
 
     // ===== GETTERS — SubContext (PRIMARY) =====
     
@@ -575,4 +768,20 @@ public class CoreContext {
     public hcontrol.plugin.skill.SkillCooldownManager getCooldownManager() {
         return entityContext.getCooldownManager();
     }
+    
+    // ===== MASTER-DISCIPLE SYSTEM GETTERS =====
+    
+    public MasterManager getMasterManager() { return masterManager; }
+    public MasterService getMasterService() { return masterService; }
+    
+    // ===== CUSTOM SKILL SYSTEM GETTERS (NEW ARCHITECTURE) =====
+    
+    public SkillTemplateRegistry getSkillTemplateRegistry() { return skillTemplateRegistry; }
+    public SkillInstanceManager getSkillInstanceManager() { return skillInstanceManager; }
+    public SkillCreatorListener getSkillCreatorListener() { return skillCreatorListener; }
+    
+    // ===== SECT SYSTEM GETTERS =====
+    
+    public SectManager getSectManager() { return sectManager; }
+    public SectService getSectService() { return sectService; }
 }

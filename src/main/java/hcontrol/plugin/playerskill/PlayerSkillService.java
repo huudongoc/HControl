@@ -73,9 +73,12 @@ public class PlayerSkillService {
             return false;
         }
         
-        // 4. Check level requirement
-        if (profile.getRealmLevel() < skill.getMinLevel()) {
-            player.sendMessage("§cCần đạt level " + skill.getMinLevel() + " trong cảnh giới để học!");
+        // 4. Check level requirement (CHỈ KHI CÙNG CẢNH GIỚI)
+        // Nếu player ở cảnh giới CAO HƠN skill yêu cầu → bỏ qua check level
+        if (profile.getRealm().ordinal() == skill.getMinRealm().ordinal() 
+            && profile.getRealmLevel() < skill.getMinLevel()) {
+            player.sendMessage("§cCần đạt level " + skill.getMinLevel() + " trong " + 
+                skill.getMinRealm().getDisplayName() + " để học!");
             return false;
         }
         

@@ -4,12 +4,15 @@ import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.service.CombatService;
 import hcontrol.plugin.skill.SkillType;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Fireball;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
@@ -22,9 +25,11 @@ import java.util.List;
 public class PlayerSkillExecutor {
     
     private final CombatService combatService;
+    private final NamespacedKey skillIdKey;
     
-    public PlayerSkillExecutor(CombatService combatService) {
+    public PlayerSkillExecutor(CombatService combatService, Plugin plugin) {
         this.combatService = combatService;
+        this.skillIdKey = new NamespacedKey(plugin, "player_skill_id");
     }
     
     /**
@@ -114,10 +119,10 @@ public class PlayerSkillExecutor {
         fireball.setYield(0); // No explosion damage (custom damage)
         fireball.setIsIncendiary(false);
         
-        // Store skill data trong metadata hoặc custom tag
-        // TODO: Handle projectile hit via listener để apply damage
+        // Store skill ID trong persistent data để listener xử lý khi hit
+        fireball.getPersistentDataContainer().set(skillIdKey, PersistentDataType.STRING, skill.getSkillId());
         
-        // Particle trail (optional)
+        // Particle trail
         player.getWorld().spawnParticle(Particle.FLAME, spawnLoc, 5, 0.1, 0.1, 0.1, 0.01);
     }
     

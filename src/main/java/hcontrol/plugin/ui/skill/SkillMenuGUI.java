@@ -46,8 +46,7 @@ public class SkillMenuGUI {
         
         // Render các phần của menu
         renderHeader(inv, profile);
-        renderLearnedSkills(inv, player, profile);
-        renderAvailableSkills(inv, player, profile);
+        renderAllSkills(inv, player, profile);  // Hiển thị TẤT CẢ skills
         renderHotbar(inv, profile);
         renderDecoration(inv);
         
@@ -73,20 +72,16 @@ public class SkillMenuGUI {
         );
         inv.setItem(4, info);
         
-        // Slot 0: Learned Skills label
-        ItemStack learnedLabel = createItem(Material.BOOK,
-            "§a§lSkills Đã Học",
-            "§7Click để sử dụng skill",
-            "§7Shift+Click để bind hotbar"
+        // Slot 0: All Skills label
+        ItemStack allSkillsLabel = createItem(Material.ENCHANTED_BOOK,
+            "§6§lTẤT CẢ SKILLS",
+            "§a● Xanh: §7Đã học",
+            "§e● Vàng: §7Có thể học",
+            "§c● Đỏ: §7Chưa đủ điều kiện",
+            "",
+            "§7Click để học/sử dụng"
         );
-        inv.setItem(9, learnedLabel);
-        
-        // Slot 27: Available Skills label
-        ItemStack availableLabel = createItem(Material.WRITABLE_BOOK,
-            "§e§lSkills Có Thể Học",
-            "§7Click để học skill mới"
-        );
-        inv.setItem(27, availableLabel);
+        inv.setItem(9, allSkillsLabel);
         
         // Slot 45: Hotbar label
         ItemStack hotbarLabel = createItem(Material.BLAZE_ROD,
@@ -98,53 +93,178 @@ public class SkillMenuGUI {
     }
     
     /**
-     * Row 2-3: Learned Skills
+     * Row 2-5: TẤT CẢ Skills (thay vì chỉ learned + available)
+     * Hiển thị với màu khác nhau theo trạng thái
      */
-    private void renderLearnedSkills(Inventory inv, Player player, PlayerProfile profile) {
-        List<PlayerSkill> learnedSkills = skillService.getLearnedSkills(player);
+    private void renderAllSkills(Inventory inv, Player player, PlayerProfile profile) {
+        List<PlayerSkill> allSkills = registry.getAllSkills();
         
         int startSlot = 10; // Bắt đầu từ slot 10
-        int maxSlots = 16;  // 16 slots cho learned skills (2 rows - label)
+        int slotIndex = 0;
         
-        for (int i = 0; i < Math.min(learnedSkills.size(), maxSlots); i++) {
-            PlayerSkill skill = learnedSkills.get(i);
+        for (PlayerSkill skill : allSkills) {
+            if (slotIndex >= 28) break; // Max 28 skills (4 rows x 7 columns)
             
-            // Check cooldown
-            boolean onCooldown = skillService.isOnCooldown(player.getUniqueId(), skill.getSkillId());
-            long remainingCD = skillService.getRemainingCooldown(player.getUniqueId(), skill.getSkillId());
+            // Xác định trạng thái skill
+            SkillStatus status = getSkillStatus(player, profile, skill);
             
-            ItemStack item = createSkillItem(skill, true, onCooldown, remainingCD, profile);
-            
-            int slot = startSlot + i;
-            // Skip sang hàng tiếp nếu đến cuối
-            if ((slot - 9) % 9 == 8) {
-                slot += 2; // Skip 2 slots (cuối hàng + đầu hàng tiếp)
+            // Check cooldown nếu đã học
+            boolean onCooldown = false;
+            long remainingCD = 0;
+            if (status == SkillStatus.LEARNED) {
+                onCooldown = skillService.isOnCooldown(player.getUniqueId(), skill.getSkillId());
+                remainingCD = skillService.getRemainingCooldown(player.getUniqueId(), skill.getSkillId());
             }
             
+            // Tạo item với màu theo trạng thái
+            ItemStack item = createSkillItemWithStatus(skill, status, onCooldown, remainingCD, profile);
+            
+            // Tính slot (skip cột 0 và 8)
+            int row = slotIndex / 7;
+            int col = slotIndex % 7 + 1; // Cột 1-7
+            int slot = (row + 1) * 9 + col; // Row 1-4 (slot 10-17, 19-26, 28-35, 37-44)
+            
             inv.setItem(slot, item);
+            slotIndex++;
         }
     }
     
     /**
-     * Row 4-5: Available Skills
+     * Enum trạng thái skill
      */
-    private void renderAvailableSkills(Inventory inv, Player player, PlayerProfile profile) {
-        List<PlayerSkill> availableSkills = skillService.getAvailableSkills(player);
-        
-        int startSlot = 28; // Bắt đầu từ slot 28
-        int maxSlots = 16;  // 16 slots
-        
-        for (int i = 0; i < Math.min(availableSkills.size(), maxSlots); i++) {
-            PlayerSkill skill = availableSkills.get(i);
-            ItemStack item = createSkillItem(skill, false, false, 0, profile);
-            
-            int slot = startSlot + i;
-            if ((slot - 27) % 9 == 8) {
-                slot += 2;
-            }
-            
-            inv.setItem(slot, item);
+    private enum SkillStatus {
+        LEARNED,      // Đã học (xanh)
+        AVAILABLE,    // Có thể học (vàng)
+        LOCKED        // Chưa đủ điều kiện (đỏ)
+    }
+    
+    /**
+     * Xác định trạng thái của skill
+     * 
+     * Logic level check:
+     * - Nếu player realm > skill required realm → bỏ qua check level
+     * - Nếu player realm == skill required realm → check level
+     * - Nếu player realm < skill required realm → LOCKED
+     */
+    private SkillStatus getSkillStatus(Player player, PlayerProfile profile, PlayerSkill skill) {
+        // Đã học
+        if (profile.hasLearnedSkill(skill.getSkillId())) {
+            return SkillStatus.LEARNED;
         }
+        
+        int playerRealmOrd = profile.getRealm().ordinal();
+        int skillRealmOrd = skill.getMinRealm().ordinal();
+        
+        // Player cảnh giới thấp hơn → LOCKED
+        if (playerRealmOrd < skillRealmOrd) {
+            return SkillStatus.LOCKED;
+        }
+        
+        // Player cảnh giới CAO HƠN → AVAILABLE (bỏ qua level check)
+        if (playerRealmOrd > skillRealmOrd) {
+            return SkillStatus.AVAILABLE;
+        }
+        
+        // Player CÙNG cảnh giới → check level
+        if (profile.getRealmLevel() >= skill.getMinLevel()) {
+            return SkillStatus.AVAILABLE;
+        }
+        
+        return SkillStatus.LOCKED;
+    }
+    
+    /**
+     * Tạo skill item với màu theo trạng thái
+     */
+    private ItemStack createSkillItemWithStatus(PlayerSkill skill, SkillStatus status,
+                                                 boolean onCooldown, long remainingCD,
+                                                 PlayerProfile profile) {
+        Material mat = getSkillMaterial(skill);
+        
+        // Thay đổi material theo trạng thái
+        if (status == SkillStatus.LOCKED) {
+            mat = Material.BARRIER; // Khóa
+        } else if (onCooldown) {
+            mat = Material.GRAY_DYE; // Cooldown
+        }
+        
+        List<String> lore = new ArrayList<>();
+        
+        // Trạng thái badge
+        String statusBadge = switch (status) {
+            case LEARNED -> "§a§l✓ ĐÃ HỌC";
+            case AVAILABLE -> "§e§l○ CÓ THỂ HỌC";
+            case LOCKED -> "§c§l✗ CHƯA ĐỦ ĐIỀU KIỆN";
+        };
+        lore.add(statusBadge);
+        lore.add("");
+        
+        // Description
+        for (String line : skill.getDescription()) {
+            lore.add("§7" + line);
+        }
+        lore.add("");
+        
+        // Stats
+        lore.add("§eLoại: §f" + skill.getType().name());
+        lore.add("§eCost: §b" + (int) skill.getCost().getLingQi() + " Linh Khí");
+        lore.add("§eCooldown: §f" + skill.getCooldown() + "s");
+        if (skill.getDamageMultiplier() > 0) {
+            lore.add("§eDamage: §c" + String.format("%.0f%%", skill.getDamageMultiplier() * 100));
+        }
+        if (skill.getRange() > 0) {
+            lore.add("§eRange: §f" + String.format("%.1f", skill.getRange()) + " blocks");
+        }
+        lore.add("");
+        
+        // Requirements - Logic màu đúng
+        int playerRealmOrd = profile.getRealm().ordinal();
+        int skillRealmOrd = skill.getMinRealm().ordinal();
+        
+        String realmColor = (playerRealmOrd >= skillRealmOrd) ? "§a" : "§c";
+        
+        // Level color: xanh nếu realm cao hơn HOẶC (cùng realm VÀ đủ level)
+        String levelColor;
+        if (playerRealmOrd > skillRealmOrd) {
+            levelColor = "§a"; // Cảnh giới cao hơn → tự động đạt
+        } else if (playerRealmOrd == skillRealmOrd && profile.getRealmLevel() >= skill.getMinLevel()) {
+            levelColor = "§a"; // Cùng cảnh giới và đủ level
+        } else {
+            levelColor = "§c"; // Chưa đạt
+        }
+        
+        lore.add("§7Yêu cầu:");
+        lore.add("  " + realmColor + "▸ Cảnh giới: §f" + skill.getMinRealm().getDisplayName());
+        lore.add("  " + levelColor + "▸ Level: §f" + skill.getMinLevel());
+        lore.add("");
+        
+        // Actions based on status
+        switch (status) {
+            case LEARNED -> {
+                if (onCooldown) {
+                    lore.add("§c⏳ Cooldown: " + (remainingCD / 1000) + "s");
+                } else {
+                    lore.add("§a▶ Click để sử dụng");
+                }
+                lore.add("§e⚡ Shift+Click để bind hotbar");
+            }
+            case AVAILABLE -> {
+                lore.add("§a📚 Click để học skill này");
+            }
+            case LOCKED -> {
+                lore.add("§c🔒 Nâng cảnh giới/level để mở khóa");
+            }
+        }
+        
+        // Title color based on status
+        String titleColor = switch (status) {
+            case LEARNED -> onCooldown ? "§7" : "§a";
+            case AVAILABLE -> "§e";
+            case LOCKED -> "§c";
+        };
+        String title = titleColor + skill.getDisplayName();
+        
+        return createItem(mat, title, lore.toArray(new String[0]));
     }
     
     /**
@@ -294,25 +414,19 @@ public class SkillMenuGUI {
     }
     
     /**
-     * Lấy skill ID từ item (nếu có)
+     * Lấy skill ID từ slot (cho tất cả skills)
      */
     public String getSkillIdFromSlot(Inventory inv, int slot, Player player, PlayerProfile profile) {
-        // Learned skills: slot 10-17, 19-26
-        if ((slot >= 10 && slot <= 17) || (slot >= 19 && slot <= 26)) {
-            List<PlayerSkill> learned = skillService.getLearnedSkills(player);
-            int index = calculateSkillIndex(slot, 10);
-            if (index >= 0 && index < learned.size()) {
-                return learned.get(index).getSkillId();
-            }
+        // All skills area: slot 10-17, 19-26, 28-35, 37-44
+        if (!isSkillSlot(slot)) {
+            return null;
         }
         
-        // Available skills: slot 28-35, 37-44
-        if ((slot >= 28 && slot <= 35) || (slot >= 37 && slot <= 44)) {
-            List<PlayerSkill> available = skillService.getAvailableSkills(player);
-            int index = calculateSkillIndex(slot, 28);
-            if (index >= 0 && index < available.size()) {
-                return available.get(index).getSkillId();
-            }
+        List<PlayerSkill> allSkills = registry.getAllSkills();
+        int index = calculateSkillIndex(slot);
+        
+        if (index >= 0 && index < allSkills.size()) {
+            return allSkills.get(index).getSkillId();
         }
         
         return null;
@@ -321,25 +435,40 @@ public class SkillMenuGUI {
     /**
      * Tính index skill từ slot
      */
-    private int calculateSkillIndex(int slot, int startSlot) {
-        int row = (slot - startSlot) / 9;
-        int col = (slot - startSlot) % 9;
-        if (col > 7) return -1; // Skip slot 8
+    private int calculateSkillIndex(int slot) {
+        // Tính row (0-3) và col (1-7)
+        int row = (slot / 9) - 1;  // Row 1-4 → 0-3
+        int col = (slot % 9) - 1;  // Col 1-7 → 0-6
+        
+        if (col < 0 || col > 6) return -1; // Không phải cột skill
+        if (row < 0 || row > 3) return -1; // Không phải hàng skill
+        
         return row * 7 + col;
     }
     
     /**
-     * Kiểm tra slot có phải là learned skill area không
+     * Kiểm tra slot có phải là skill area không (tất cả skills)
      */
-    public boolean isLearnedSkillSlot(int slot) {
-        return (slot >= 10 && slot <= 17) || (slot >= 19 && slot <= 26);
+    public boolean isSkillSlot(int slot) {
+        // Rows 1-4, columns 1-7
+        int row = slot / 9;
+        int col = slot % 9;
+        
+        return row >= 1 && row <= 4 && col >= 1 && col <= 7;
     }
     
     /**
-     * Kiểm tra slot có phải là available skill area không
+     * Kiểm tra slot có phải là learned skill area không (deprecated - dùng isSkillSlot)
+     */
+    public boolean isLearnedSkillSlot(int slot) {
+        return isSkillSlot(slot);
+    }
+    
+    /**
+     * Kiểm tra slot có phải là available skill area không (deprecated - dùng isSkillSlot)
      */
     public boolean isAvailableSkillSlot(int slot) {
-        return (slot >= 28 && slot <= 35) || (slot >= 37 && slot <= 44);
+        return isSkillSlot(slot);
     }
     
     /**

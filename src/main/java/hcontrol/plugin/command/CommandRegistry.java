@@ -1,6 +1,10 @@
 package hcontrol.plugin.command;
 
 import hcontrol.plugin.core.CoreContext;
+import hcontrol.plugin.master.MasterManager;
+import hcontrol.plugin.master.MasterService;
+import hcontrol.plugin.sect.SectManager;
+import hcontrol.plugin.sect.SectService;
 import hcontrol.plugin.ui.skill.SkillMenuGUI;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -120,6 +124,51 @@ public class CommandRegistry {
         register("aidebug", () -> new AIDebugCommand());
         
         logger.info("[PHASE 0] ✓ Commands đã được đăng ký!");
+    }
+    
+    /**
+     * SECT SYSTEM: Register sect command
+     * Gọi riêng sau khi SectManager đã được init
+     */
+    public void registerSectCommand(SectService sectService) {
+        if (sectService == null) {
+            logger.warning("[SECT] SectService chưa được init, skip sect command!");
+            return;
+        }
+        
+        SectCommand sectCommand = new SectCommand(
+            sectService,
+            coreContext.getPlayerContext().getPlayerManager()
+        );
+        
+        PluginCommand command = plugin.getCommand("sect");
+        if (command != null) {
+            command.setExecutor(sectCommand);
+            command.setTabCompleter(sectCommand);
+            logger.info("[SECT] ✓ Sect command đã được đăng ký!");
+        }
+    }
+    
+    /**
+     * MASTER SYSTEM: Register master command
+     */
+    public void registerMasterCommand(MasterService masterService) {
+        if (masterService == null) {
+            logger.warning("[MASTER] MasterService chưa được init, skip master command!");
+            return;
+        }
+        
+        MasterCommand masterCommand = new MasterCommand(
+            masterService,
+            coreContext.getPlayerContext().getPlayerManager()
+        );
+        
+        PluginCommand command = plugin.getCommand("master");
+        if (command != null) {
+            command.setExecutor(masterCommand);
+            command.setTabCompleter(masterCommand);
+            logger.info("[MASTER] ✓ Master command đã được đăng ký!");
+        }
     }
     
     /**

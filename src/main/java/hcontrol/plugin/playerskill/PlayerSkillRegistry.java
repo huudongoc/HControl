@@ -100,8 +100,7 @@ public class PlayerSkillRegistry {
                 PlayerSkill skill = buildSkillFromConfig(skillId, skillSection);
                 registerSkill(skill);
             } catch (Exception e) {
-                System.err.println("[PlayerSkillRegistry] Failed to load skill: " + skillId);
-                e.printStackTrace();
+                org.bukkit.Bukkit.getLogger().warning("[PlayerSkillRegistry] Failed to load skill: " + skillId + " - " + e.getMessage());
             }
         }
     }
@@ -122,7 +121,7 @@ public class PlayerSkillRegistry {
                 SkillType type = SkillType.valueOf(section.getString("type").toUpperCase());
                 builder.type(type);
             } catch (IllegalArgumentException e) {
-                System.err.println("[PlayerSkillRegistry] Invalid skill type for " + skillId);
+                org.bukkit.Bukkit.getLogger().warning("[PlayerSkillRegistry] Invalid skill type for " + skillId);
             }
         }
         
@@ -154,7 +153,8 @@ public class PlayerSkillRegistry {
                 CultivationRealm realm = CultivationRealm.valueOf(realmName);
                 builder.minRealm(realm);
             } catch (IllegalArgumentException e) {
-                System.err.println("[PlayerSkillRegistry] Invalid realm for " + skillId);
+                org.bukkit.Bukkit.getLogger().warning("[PlayerSkillRegistry] Invalid realm '" + section.getString("min_realm") + "' for skill " + skillId + ". Using PHAMNHAN as default.");
+                builder.minRealm(CultivationRealm.PHAMNHAN);
             }
         }
         
@@ -190,7 +190,7 @@ public class PlayerSkillRegistry {
                                 builder.addEffect(new PlayerSkill.SkillEffect(effectType, duration, amplifier));
                             }
                         } catch (Exception e) {
-                            System.err.println("[PlayerSkillRegistry] Invalid effect type: " + typeName);
+                            org.bukkit.Bukkit.getLogger().warning("[PlayerSkillRegistry] Invalid effect type: " + typeName);
                         }
                     }
                 }

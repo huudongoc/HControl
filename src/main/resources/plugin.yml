@@ -72,6 +72,36 @@ commands:
     usage: /skillbook <skillId> [rarity] [player]
     aliases: [bikip]
     permission: hcontrol.admin
+    
+  sect:
+    description: Sect system - Mon phai
+    usage: /sect [create|info|list|join|leave|invite|kick|promote|demote|transfer|disband|members]
+    aliases: [monphai, guild]
+    permission: hcontrol.use
+    
+  master:
+    description: Master-Disciple system - Bai su
+    usage: /master [request|accept|deny|invite|join|decline|leave|kick|teach|list|toggle|title|disciples]
+    aliases: [sufu, baisu, disciple]
+    permission: hcontrol.use
+    
+  askill:
+    description: Admin skill commands - backdoor
+    usage: /askill [list|info|give|remove|setmastery|setrefinement|create|delete|reload|bypass|instances|stats]
+    aliases: [adminskill, as]
+    permission: hcontrol.admin.skill
+    
+  hadmin:
+    description: HControl Admin - backdoor tong hop
+    usage: /hadmin [player|realm|sect|master|reload|stats]
+    aliases: [hca, hcontroladmin]
+    permission: hcontrol.admin
+    
+  nameplate:
+    description: Nameplate system - Hien thi ten
+    usage: /nameplate [toggle|refresh]
+    aliases: [np, bangten]
+    permission: hcontrol.use
 
 permissions:
   hcontrol.use:
@@ -80,4 +110,8 @@ permissions:
     
   hcontrol.admin:
     description: Admin commands
+    default: op
+    
+  hcontrol.admin.skill:
+    description: Admin skill system commands (backdoor)
     default: op

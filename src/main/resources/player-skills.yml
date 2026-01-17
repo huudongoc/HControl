@@ -43,7 +43,7 @@ skills:
     damage_multiplier: 2.0
     range: 32.0
     projectile_count: 1
-    min_realm: KIENCO
+    min_realm: LUYENKHI
     min_level: 1
     description:
       - "§7Bắn cầu lửa"
@@ -57,7 +57,7 @@ skills:
     damage_multiplier: 1.5
     range: 32.0
     projectile_count: 5
-    min_realm: KIENCO
+    min_realm: LUYENKHI
     min_level: 5
     effects:
       - type: SLOW
@@ -126,7 +126,7 @@ skills:
     cooldown: 5
     damage_multiplier: 0
     range: 10.0
-    min_realm: KIENCO
+    min_realm: LUYENKHI
     min_level: 3
     description:
       - "§7Dịch chuyển về phía trước"

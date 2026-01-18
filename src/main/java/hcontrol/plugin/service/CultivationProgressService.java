@@ -57,12 +57,20 @@ public class CultivationProgressService {
         }
         
         // Su dung LevelService de tinh
-        return levelService.getRequiredCultivation(level + 1, profile.getRealm());
+        long required = levelService.getRequiredCultivation(level + 1, profile.getRealm());
+        
+        // Đảm bảo không trả về 0 nếu chưa max level (tránh lỗi chia cho 0)
+        if (required <= 0 && level < maxLevel) {
+            // Fallback: tính lại với level hiện tại + 1
+            return levelService.getRequiredCultivation(level + 1, profile.getRealm());
+        }
+        
+        return required;
     }
     
     /**
      * Tinh phan tram cultivation progress (0-100)
-     * Tra ve 100 neu da max level
+     * Tra ve 100 neu da max level hoặc đã đủ tu vi để lên level tiếp
      */
     public double getCultivationPercent(PlayerProfile profile) {
         int level = profile.getLevel();
@@ -76,11 +84,18 @@ public class CultivationProgressService {
         long currentCult = profile.getCultivation();
         long requiredCult = getRequiredCultivation(profile);
         
+        // Check requiredCult hợp lệ - nếu <= 0 thì có vấn đề
         if (requiredCult <= 0) {
+            // Debug: log để kiểm tra
+            // System.out.println("[DEBUG] getCultivationPercent: requiredCult <= 0, level=" + level + ", maxLevel=" + maxLevel);
             return 100.0;
         }
         
-        return (double) currentCult / requiredCult * 100.0;
+        // Tính phần trăm
+        double percent = ((double) currentCult / (double) requiredCult) * 100.0;
+        
+        // Clamp 0-100 (nếu đã đủ tu vi nhưng chưa level up, vẫn hiển thị 100%)
+        return Math.min(100.0, Math.max(0.0, percent));
     }
     
     /**

@@ -103,9 +103,9 @@ public class ScoreboardService {
         // Sinh Mang & Linh Khi - FIXED: Dùng fixed entry names để tránh duplicate
         obj.getScore("  ").setScore(line--);
         
-        // Format HP với giá trị cụ thể
+        // Format HP với số cụ thể (người chơi thấy số HP của mình)
         double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getStats().getMaxHP();
+        double maxHP = profile.getMaxHP();  // Dung profile.getMaxHP() de apply realm multiplier
         String hpDisplay = String.format("§c❤ §fSinh Mang: §c%.0f§7/§c%.0f", currentHP, maxHP);
         obj.getScore(hpDisplay).setScore(line--);
         

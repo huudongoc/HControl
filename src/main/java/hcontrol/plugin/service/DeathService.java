@@ -404,12 +404,22 @@ public class DeathService {
     
     /**
      * Kiem tra chet trong thien kiep
-     * TODO: Tich hop voi TribulationContext khi co
+     * Check qua UiStateService xem player co dang trong tribulation khong
      */
     private boolean isTribulationDeath(Player player, PlayerProfile profile) {
-        // TODO: Kiem tra player co dang trong tribulation khong
-        // Co the check qua UiStateService hoac TribulationContext
-        // Tam thoi return false
+        try {
+            var ctx = hcontrol.plugin.core.CoreContext.getInstance();
+            if (ctx != null && ctx.getUIContext() != null) {
+                var uiStateService = ctx.getUIContext().getUiStateService();
+                if (uiStateService != null) {
+                    var state = uiStateService.getState(player.getUniqueId());
+                    // Check xem player co dang trong tribulation khong
+                    return state == hcontrol.plugin.ui.tribulation.UiState.TRIBULATION_IN_PROGRESS;
+                }
+            }
+        } catch (Exception e) {
+            // Ignore - service chua san sang
+        }
         return false;
     }
     

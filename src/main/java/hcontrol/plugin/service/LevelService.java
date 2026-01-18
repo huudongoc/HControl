@@ -32,7 +32,9 @@ public class LevelService {
     public void sendLevelInfo(Player player, PlayerProfile profile) {
         long currentCultivation = profile.getCultivation();
         long requiredCultivation = getRequiredCultivation(profile.getLevel() + 1, profile.getRealm());
-        long cultivationProgress = requiredCultivation > 0 ? currentCultivation * 100 / requiredCultivation : 100;
+        // ✅ FIX: Dùng double division để khớp với scoreboard (CultivationProgressService)
+        double cultivationProgress = requiredCultivation > 0 ? ((double) currentCultivation / (double) requiredCultivation) * 100.0 : 100.0;
+        cultivationProgress = Math.min(100.0, Math.max(0.0, cultivationProgress)); // Clamp 0-100
         
         int maxLevel = getMaxLevelForRealm(profile.getRealm());
         boolean realmCapped = profile.getLevel() >= maxLevel;
@@ -49,8 +51,45 @@ public class LevelService {
         // Debug: chi tu than thay level so
         player.sendMessage("§8[Debug: Tầng " + profile.getLevel() + "/" + maxLevel + "]");
         
-        player.sendMessage("§7  ├─ §dTu vi: §e" + currentCultivation + "§7/§e" + requiredCultivation + " §7(§e" + cultivationProgress + "%§7)");
+        player.sendMessage("§7  ├─ §dTu vi: §e" + currentCultivation + "§7/§e" + requiredCultivation + " §7(§e" + String.format("%.1f", cultivationProgress) + "%§7)");
         player.sendMessage("§7  ├─ §aĐiểm thuộc tính: §e" + profile.getStatPoints());
+        
+        // Linh căn và phẩm chất
+        if (profile.getSpiritualRoot() != null && profile.getRootQuality() != null) {
+            String rootDisplay = profile.getSpiritualRoot().toString();
+            String qualityDisplay = profile.getRootQuality().toString();
+            player.sendMessage("§7  ├─ §bLinh căn: " + rootDisplay + " §7(" + qualityDisplay + "§7)");
+        }
+        
+        // Đạo tâm
+        double daoHeart = profile.getDaoHeart();
+        String daoHeartColor = daoHeart >= 80 ? "§a" : daoHeart >= 50 ? "§e" : daoHeart >= 20 ? "§6" : "§c";
+        player.sendMessage("§7  ├─ §5Đạo tâm: " + daoHeartColor + String.format("%.1f", daoHeart) + "§7/100");
+        
+        // Damage (base attack)
+        double baseAttack = profile.getAttack();
+        // Tính damage bonus từ linh căn
+        double rootDamageBonus = 1.0;
+        hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+        if (ctx != null && ctx.getSpiritualRootService() != null && profile.getSpiritualRoot() != null) {
+            hcontrol.plugin.service.SpiritualRootService rootService = ctx.getSpiritualRootService();
+            double bonus = rootService.getDamageBonus(profile.getSpiritualRoot());
+            rootDamageBonus = 1.0 + (bonus / 100.0);
+        }
+        // Base damage từ realm
+        double realmBaseDamage = profile.getRealm().getBaseDamage();
+        // Ước lượng damage trung bình (base * root bonus, không tính realm suppression vì phụ thuộc target)
+        double estimatedDamage = realmBaseDamage * rootDamageBonus;
+        player.sendMessage("§7  ├─ §cSát thương: §e" + String.format("%.1f", baseAttack) + " §7(base) | §c~" + String.format("%.1f", estimatedDamage) + " §7(ước lượng)");
+        
+        // HP và Linh Khí
+        double currentHP = profile.getCurrentHP();
+        double maxHP = profile.getMaxHP();
+        double currentLingQi = profile.getCurrentLingQi();
+        double maxLingQi = profile.getMaxLingQi();
+        String hpColor = currentHP / maxHP >= 0.8 ? "§a" : currentHP / maxHP >= 0.5 ? "§e" : currentHP / maxHP >= 0.2 ? "§6" : "§c";
+        player.sendMessage("§7  ├─ " + hpColor + "Sinh mạng: §c" + String.format("%.0f", currentHP) + "§7/§c" + String.format("%.0f", maxHP));
+        player.sendMessage("§7  ├─ §9Linh khí: §b" + String.format("%.0f", currentLingQi) + "§7/§b" + String.format("%.0f", maxLingQi));
         
         // Dieu kien mo khoa
         if (currentCultivation >= requiredCultivation) {
@@ -152,11 +191,20 @@ public class LevelService {
         profile.setCultivation(newCultivation);
         
         // AUTO LEVEL UP trong cung tier
-        while (newCultivation >= getRequiredCultivation(profile.getLevel() + 1, profile.getRealm())) {
-            int nextLevel = profile.getLevel() + 1;
+        while (true) {
+            int currentLevel = profile.getLevel();
+            int nextLevel = currentLevel + 1;
             
-            // Check xem co vuot tier boundary khong
-            if (isAtTierBoundary(profile.getLevel())) {
+            // Check max level
+            if (nextLevel > maxLevel) break;
+            
+            // Check xem co du tu vi de len level tiep theo khong
+            long requiredCult = getRequiredCultivation(nextLevel, profile.getRealm());
+            if (newCultivation < requiredCult) break;
+            
+            // Check xem co vuot tier boundary khong (kiem tra current level, khong phai next level)
+            // Tier boundary: 3->4, 6->7, 9->10 (can /unlock)
+            if (isAtTierBoundary(currentLevel)) {
                 // Can unlock de vuot tier
                 String nextTier = getSubRealmName(nextLevel);
                 if (player != null && player.isOnline()) {
@@ -167,9 +215,6 @@ public class LevelService {
             }
             
             // AUTO LEVEL UP trong cung tier
-            if (nextLevel > maxLevel) break;
-            
-            long requiredCult = getRequiredCultivation(nextLevel, profile.getRealm());
             newCultivation -= requiredCult;
             profile.setCultivation(newCultivation);
             profile.setLevel(nextLevel);
@@ -193,13 +238,27 @@ public class LevelService {
     
     /**
      * TU VI CAN DE LEN LEVEL (TRONG CUNG CANH GIOI)
-     * Formula: base × level² × realmMultiplier × peakMultiplier
-     * - Level 1-9: base = 50
-     * - Level 10: base = 150 (gap 3 lan)
+     * Formula: base × level² × realmMultiplier
+     * - Level 1-9: base = 200
+     * - Level 10: base = 600 (gap 3 lần)
+     * - Realm multiplier: x3 mỗi khi lên realm mới, tăng dần theo realm
+     *   + PHAMNHAN (ordinal 0): x1
+     *   + LUYENKHI (ordinal 1): x3
+     *   + TRUCCO (ordinal 2): x9
+     *   + KIMDAN (ordinal 3): x27
+     *   + ... (3^ordinal)
      */
     public long getRequiredCultivation(int level, CultivationRealm realm) {
-        long base = (level == 10) ? 150 : 50;
-        int realmMultiplier = realm.ordinal() + 1;
+        long base = (level == 10) ? 600 : 200;
+        
+        // ✅ Realm multiplier: x3 mỗi khi lên realm mới (3^ordinal)
+        // PHAMNHAN (0): 3^0 = 1
+        // LUYENKHI (1): 3^1 = 3
+        // TRUCCO (2): 3^2 = 9
+        // KIMDAN (3): 3^3 = 27
+        // ...
+        long realmMultiplier = (long) Math.pow(3, realm.ordinal());
+        
         return base * level * level * realmMultiplier;
     }
     

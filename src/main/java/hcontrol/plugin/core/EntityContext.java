@@ -69,10 +69,11 @@ public class EntityContext {
     public void initWorldBoss(hcontrol.plugin.Main plugin, 
                               hcontrol.plugin.player.PlayerManager playerManager,
                               AscensionService ascensionService,
-                              CombatService combatService) {
+                              CombatService combatService,
+                              hcontrol.plugin.service.LevelService levelService) {
         this.worldBossManager = new WorldBossManager(
             plugin, bossManager, entityManager, entityService,
-            playerManager, ascensionService, combatService
+            playerManager, ascensionService, combatService, levelService
         );
         this.worldBossManager.initialize();
     }

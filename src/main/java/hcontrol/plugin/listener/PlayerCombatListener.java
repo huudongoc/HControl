@@ -4,6 +4,7 @@ import hcontrol.plugin.core.CoreContext;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -85,7 +86,23 @@ public class PlayerCombatListener implements Listener {
         
         // CASE 3: Mob attack player
         if (event.getEntity() instanceof Player player) {
-            if (!(event.getDamager() instanceof LivingEntity mob)) {
+            LivingEntity mob = null;
+            
+            // ✅ FIX: Xử lý cả melee attack và projectile attack
+            if (event.getDamager() instanceof LivingEntity livingMob) {
+                // Melee attack (Zombie, Creeper, etc.)
+                mob = livingMob;
+            } else if (event.getDamager() instanceof Projectile projectile) {
+                // Projectile attack (Arrow từ Skeleton, WitherSkull từ Wither, etc.)
+                // Lấy shooter từ projectile
+                if (projectile.getShooter() instanceof LivingEntity shooter) {
+                    mob = shooter;
+                } else {
+                    // Projectile không có shooter hợp lệ, bỏ qua
+                    return;
+                }
+            } else {
+                // Không phải LivingEntity hoặc Projectile, bỏ qua
                 return;
             }
             
@@ -106,7 +123,12 @@ public class PlayerCombatListener implements Listener {
                 return; // Player da chet trong profile, cancel event
             }
             
-            // mob danh player
+            // CHECK: Mob da chet - khong cho tan cong
+            if (mob.isDead()) {
+                return; // Mob da chet, khong xu ly damage
+            }
+            
+            // mob danh player (cả melee và ranged)
             combatService.handleMobAttackPlayer(mob, player, playerProfile);
         }
     }

@@ -31,6 +31,22 @@ public class EntityLifecycleListener implements Listener {
     }
     
     /**
+     * ✅ TẮT SPAWN TỰ NHIÊN - CHỈ CHO PHÉP SPAWN TỪ HỆ THỐNG TỰ ĐỘNG
+     * Cancel tất cả spawn tự nhiên (NATURAL, DEFAULT)
+     * Chỉ cho phép spawn từ CUSTOM, SPAWNER, COMMAND, etc.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onNaturalSpawn(CreatureSpawnEvent event) {
+        // Chỉ cancel spawn tự nhiên
+        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+        if (reason == CreatureSpawnEvent.SpawnReason.NATURAL || 
+            reason == CreatureSpawnEvent.SpawnReason.DEFAULT) {
+            event.setCancelled(true);
+            return;
+        }
+    }
+    
+    /**
      * ✅ FIX: Khi mob spawn -> CHỈ mark, KHÔNG làm gì nặng
      * EntitySpawnEvent có thể spawn 10-100 entity/tick
      * KHÔNG BAO GIỜ làm logic nặng ở đây
@@ -58,7 +74,7 @@ public class EntityLifecycleListener implements Listener {
         //     entityService.spawnElite(entity);
         // }
     }
-    
+     
     /**
      * Khi mob chet -> cleanup profile + nameplate
      */

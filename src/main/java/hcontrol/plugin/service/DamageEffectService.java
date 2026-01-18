@@ -38,9 +38,9 @@ public class DamageEffectService {
         // Lay location tu hitLocation hoac tu victim
         Location loc;
         if (hitLocation != null) {
-            loc = hitLocation.clone().add(0, 1, 0);
+            loc = hitLocation.clone().add(0, 0.3, 0);
         } else if (victim != null) {
-            loc = victim.getLocation().add(0, 1, 0);
+            loc = victim.getLocation().add(0, 0.3, 0);
         } else {
             return; // Khong the hien thi effect neu khong co location
         }
@@ -247,23 +247,60 @@ public class DamageEffectService {
         Location spawnLoc = loc.clone().add(0, 2.5, 0); // Tang len cao hon de khong conflict voi nameplate
         
         // Spawn armor stand lam floating text (vi tri cao hon entity name)
-        spawnLoc.getWorld().spawn(spawnLoc, org.bukkit.entity.ArmorStand.class, stand -> {
-            stand.setVisible(false);
-            stand.setGravity(false);
-            stand.setMarker(true); // Marker = true de khong block hitbox va nameplate
-            stand.setCustomName(finalText);
-            stand.setCustomNameVisible(true);
-            stand.setSmall(true);
-            stand.setInvulnerable(true);
-            stand.setCollidable(false); // Khong collidable
-            
-            // Remove sau 1.5s (30 ticks)
-            org.bukkit.Bukkit.getScheduler().runTaskLater(
-                org.bukkit.Bukkit.getPluginManager().getPlugin("HControl"),
-                stand::remove,
-                30L
-            );
+        org.bukkit.entity.ArmorStand stand = spawnLoc.getWorld().spawn(spawnLoc, org.bukkit.entity.ArmorStand.class, s -> {
+            s.setVisible(false);
+            s.setGravity(false);
+            s.setMarker(true); // Marker = true de khong block hitbox va nameplate
+            s.setCustomName(finalText);
+            s.setCustomNameVisible(true);
+            s.setSmall(true);
+            s.setInvulnerable(true);
+            s.setCollidable(false); // Khong collidable
         });
+        
+        // Animation: Bay len tren (khong giu nguyen vi tri)
+        org.bukkit.plugin.Plugin plugin = org.bukkit.Bukkit.getPluginManager().getPlugin("HControl");
+        if (plugin == null) return;
+        
+        final double startY = spawnLoc.getY();
+        final double endY = startY + 1.5; // Bay len 1.5 block
+        final int duration = 30; // 1.5 giay (30 ticks)
+        final double yStep = (endY - startY) / duration; // Buoc nhay moi tick
+        
+        // Task de di chuyen len tren
+        final org.bukkit.entity.ArmorStand finalStand = stand; // final reference
+        org.bukkit.scheduler.BukkitTask[] taskRef = new org.bukkit.scheduler.BukkitTask[1]; // Array de luu task reference
+        
+        taskRef[0] = org.bukkit.Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+            private int ticks = 0;
+            
+            @Override
+            public void run() {
+                if (finalStand.isDead() || !finalStand.isValid()) {
+                    // Cancel task neu entity da bi remove
+                    if (taskRef[0] != null) {
+                        taskRef[0].cancel();
+                    }
+                    return;
+                }
+                
+                // Di chuyen len tren
+                Location currentLoc = finalStand.getLocation();
+                double newY = startY + (yStep * ticks);
+                currentLoc.setY(newY);
+                finalStand.teleport(currentLoc);
+                
+                ticks++;
+                
+                // Remove sau khi het thoi gian
+                if (ticks >= duration) {
+                    finalStand.remove();
+                    if (taskRef[0] != null) {
+                        taskRef[0].cancel();
+                    }
+                }
+            }
+        }, 0L, 1L); // Chay moi tick (1 tick = 0.05s)
     }
     
     // ========== VIP EFFECTS ==========

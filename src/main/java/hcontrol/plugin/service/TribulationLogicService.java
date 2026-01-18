@@ -64,4 +64,37 @@ public class TribulationLogicService {
     public int getFinishDuration() {
         return 40; // 2 giay
     }
+    
+    /**
+     * Tính damage của thiên lôi theo wave và tỷ lệ thành công
+     * @param wave Wave hiện tại (1-9)
+     * @param maxWaves Tổng số wave
+     * @param successRate Tỷ lệ thành công breakthrough (0-100)
+     * @param maxHP Max HP của player
+     * @return Damage (số HP bị trừ)
+     * 
+     * Formula:
+     * - Base damage = % maxHP (tăng theo wave)
+     * - Success rate modifier: Tỷ lệ thành công cao → damage thấp hơn
+     * - Wave 1: 2-3% maxHP
+     * - Wave cuối: 8-12% maxHP
+     */
+    public double calculateTribulationDamage(int wave, int maxWaves, double successRate, double maxHP) {
+        // Base damage % tăng theo wave (2% -> 12%)
+        double basePercent = 2.0 + (wave * (10.0 / maxWaves));
+        
+        // Success rate modifier: Tỷ lệ thành công cao → damage giảm
+        // Success rate 100% → damage giảm 50%
+        // Success rate 0% → damage tăng 50%
+        double successModifier = 1.5 - (successRate / 100.0); // 0.5 - 1.5
+        
+        // Random variation (0.8 - 1.2)
+        double randomFactor = 0.8 + (Math.random() * 0.4);
+        
+        // Final damage
+        double damagePercent = basePercent * successModifier * randomFactor;
+        double damage = maxHP * (damagePercent / 100.0);
+        
+        return Math.max(1.0, damage); // Min 1 HP
+    }
 }

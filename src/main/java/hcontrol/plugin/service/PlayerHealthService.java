@@ -34,7 +34,7 @@ public class PlayerHealthService {
         
         // Scale current HP tu tien -> vanilla
         double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getStats().getMaxHP();
+        double maxHP = profile.getMaxHP();  // Dung profile.getMaxHP() de apply realm multiplier
         
         // // Clamp current HP trong range [0, maxHP]
         // currentHP = Math.max(0, Math.min(currentHP, maxHP));
@@ -79,7 +79,7 @@ public class PlayerHealthService {
         if (player == null || !player.isOnline()) return;
         if (player.isDead()) return;
         double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getStats().getMaxHP();
+        double maxHP = profile.getMaxHP();  // Dung profile.getMaxHP() de apply realm multiplier
         // Clamp
         currentHP = Math.max(0, Math.min(currentHP, maxHP));
         
@@ -129,7 +129,7 @@ public class PlayerHealthService {
         if (player == null || !player.isOnline() || profile == null) return;
         
         // Reset HP ve max (hoi sinh full mau)
-        double maxHP = profile.getStats().getMaxHP();
+        double maxHP = profile.getMaxHP();  // Dung profile.getMaxHP() de apply realm multiplier
         profile.setCurrentHP(maxHP);
         
         // Reset Linh Khi ve max
@@ -198,7 +198,7 @@ public class PlayerHealthService {
         
         // Fallback nếu NameplateService không available
         double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getStats().getMaxHP();
+        double maxHP = profile.getMaxHP();  // Dung profile.getMaxHP() de apply realm multiplier
         double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
         
         // Mau sac HP theo %
@@ -213,14 +213,20 @@ public class PlayerHealthService {
             hpColor = "§c";  // do
         }
         
-        // Format fallback: [CảnhGiới Level] PlayerName ❤ 85% (hiển thị đầy đủ, không viết tắt)
+        // Format fallback: [CảnhGiới Tier] PlayerName ❤ 85% (CHỈ HIỆN TIER, không hiện số level)
         CultivationRealm realm = profile.getRealm();
         String realmName = realm.getDisplayName();
         int level = profile.getRealmLevel();
-        String displayName = String.format("%s[%s %d] §f%s %s❤ %.0f%%",
+        
+        // Chỉ hiển thị tier (Hạ/Trung/Thượng/Đỉnh), không hiển thị số level
+        // Dùng DisplayFormatService để lấy tier name
+        var displayFormatService = hcontrol.plugin.service.DisplayFormatService.getInstance();
+        String tierName = displayFormatService.getTierName(level);
+        
+        String displayName = String.format("%s[%s %s] §f%s %s❤ %.0f%%",
             realm.getColor(),
             realmName,
-            level,
+            tierName,
             player.getName(),
             hpColor,
             hpPercent

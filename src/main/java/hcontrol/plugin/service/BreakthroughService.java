@@ -138,14 +138,57 @@ public class BreakthroughService {
     }
     
     /**
+     * ĐỘT PHÁ SAU KHI VƯỢT QUA THIÊN KIẾP
+     * Khi đã vượt qua thiên kiếp, breakthrough phải thành công 100%
+     * Không roll random nữa
+     */
+    public BreakthroughResult attemptBreakthroughAfterTribulation(PlayerProfile profile) {
+        // Kiểm tra điều kiện cơ bản (không check cooldown vì đã vượt qua thiên kiếp)
+        CultivationRealm nextRealm = profile.getRealm().getNext();
+        if (nextRealm == null) {
+            return BreakthroughResult.INSUFFICIENT_CULTIVATION;
+        }
+        
+        // Check tu vi du (can du cultivation de dot pha)
+        long requiredCultivation = nextRealm.getRequiredCultivation();
+        if (profile.getCultivation() < requiredCultivation) {
+            return BreakthroughResult.INSUFFICIENT_CULTIVATION;
+        }
+        
+        // THÀNH CÔNG 100% - đã vượt qua thiên kiếp
+        // ✅ FIX: Truyền requiredCultivation để trừ tu vi sau khi breakthrough
+        return handleSuccess(profile, Long.valueOf(requiredCultivation));
+    }
+    
+    /**
      * 5. XU LY THANH CONG
+     * @param profile Player profile
+     * @param requiredCultivation Tu vi can de dot pha (null neu khong can trừ - cho backward compatibility)
      */
     private BreakthroughResult handleSuccess(PlayerProfile profile) {
+        return handleSuccess(profile, null);
+    }
+    
+    /**
+     * 5. XU LY THANH CONG (overload với requiredCultivation)
+     */
+    private BreakthroughResult handleSuccess(PlayerProfile profile, Long requiredCultivation) {
         // Lưu realm cũ để bắn event
         CultivationRealm oldRealm = profile.getRealm();
+        String oldRealmName = oldRealm.getDisplayName();
+        
+        // ✅ FIX: Trừ tu vi TRƯỚC KHI breakthrough (vì sau khi breakthrough realm sẽ thay đổi)
+        if (requiredCultivation != null && requiredCultivation > 0) {
+            long currentCult = profile.getCultivation();
+            long newCult = Math.max(0, currentCult - requiredCultivation);
+            profile.setCultivation(newCult);
+        }
         
         // Dot pha len canh gioi moi
         profile.breakthrough();
+        
+        CultivationRealm newRealm = profile.getRealm();
+        String newRealmName = newRealm.getDisplayName();
         
         // Reset trang thai
         profile.setDaoHeart(100.0);
@@ -157,6 +200,21 @@ public class BreakthroughService {
         if (player != null && player.isOnline()) {
             var healthService = CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
             healthService.syncHealth(player, profile);
+            
+            // 🔥 HIỆU ỨNG ĐỘT PHÁ ẤN TƯỢNG - DELAY 2 TICKS để đảm bảo tribulation effects đã cleanup
+            var effectService = CoreContext.getInstance().getCombatContext().getLevelUpEffectService();
+            if (effectService != null) {
+                // Delay 2 ticks (0.1s) để đảm bảo tribulation task đã cleanup và không còn particles
+                org.bukkit.Bukkit.getScheduler().runTaskLater(
+                    org.bukkit.Bukkit.getPluginManager().getPlugin("HControl"),
+                    () -> {
+                        if (player.isOnline()) {
+                            effectService.playBreakthroughEffect(player, oldRealmName, newRealmName);
+                        }
+                    },
+                    2L
+                );
+            }
         }
         
         // Bắn event để NameplateListener tự động cập nhật

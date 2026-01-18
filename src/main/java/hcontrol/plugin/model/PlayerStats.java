@@ -74,9 +74,36 @@ public class PlayerStats {
     
     // === DERIVED STAT (TU TIEN FORMULAS) ===
     
-    public int getMaxHP() {
+    /**
+     * Get baseHP tu stat, level, body... (KHONG co realm multiplier)
+     */
+    private int getBaseHP() {
         int phy = getPhysique();  // The Phach
         return phy * 15 + level * 10;  // tu tien: the phach -> sinh mang
+    }
+    
+    /**
+     * Get maxHP with realm multiplier applied
+     * Realm multiplier: realm cao hon -> baseHP cao hon tu nhien
+     * 
+     * 📌 Luật khóa: PlayerStats KHÔNG lưu realm, realm luôn được truyền từ ngoài vào
+     * 
+     * ⚠️ TUYỆT ĐỐI không được để realm == null mà apply multiplier
+     * Nếu realm == null → chỉ trả về baseHP (không có multiplier)
+     */
+    public int getMaxHP(CultivationRealm realm) {
+        double baseHP = getBaseHP();  // HP tu stat, level, body...
+        if (realm == null) {
+            return (int)baseHP;  // Không apply multiplier nếu realm == null
+        }
+        return (int)(baseHP * realm.getStatMultiplier());
+    }
+    
+    /**
+     * Backward compatibility - dùng PHAMNHAN làm default
+     */
+    public int getMaxHP() {
+        return getMaxHP(CultivationRealm.PHAMNHAN);
     }
     
     public int getMaxLingQi() {  // Linh Khi (thay Mana)

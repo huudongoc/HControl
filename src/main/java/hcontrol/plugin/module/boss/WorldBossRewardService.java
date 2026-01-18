@@ -7,6 +7,7 @@ import hcontrol.plugin.model.AscensionProfile;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.service.AscensionService;
+import hcontrol.plugin.service.LevelService;
 
 import java.util.List;
 import java.util.UUID;
@@ -24,10 +25,12 @@ public class WorldBossRewardService {
     
     private final PlayerManager playerManager;
     private final AscensionService ascensionService;
+    private final LevelService levelService;
     
-    public WorldBossRewardService(PlayerManager playerManager, AscensionService ascensionService) {
+    public WorldBossRewardService(PlayerManager playerManager, AscensionService ascensionService, LevelService levelService) {
         this.playerManager = playerManager;
         this.ascensionService = ascensionService;
+        this.levelService = levelService;
     }
     
     /**
@@ -69,8 +72,8 @@ public class WorldBossRewardService {
                 profile.getAscensionProfile().getAscensionLevel()
             );
             
-            // Add cultivation
-            profile.setCultivation(profile.getCultivation() + cultivationReward);
+            // Add cultivation (dùng LevelService để tự động level up)
+            levelService.addCultivation(profile, cultivationReward);
             
             // Item rewards (Phase 8+)
             // TODO: Implement item rewards

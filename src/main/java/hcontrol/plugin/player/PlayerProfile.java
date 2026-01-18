@@ -158,8 +158,8 @@ public class PlayerProfile implements LivingActor {
         this.stats = new PlayerStats();
         this.stats.setLevel(this.level);
         
-        // khoi tao HP/Linh Khi = max
-        this.currentHP = stats.getMaxHP();
+        // khoi tao HP/Linh Khi = max (dung getMaxHP() de apply realm multiplier)
+        this.currentHP = getMaxHP();
         this.currentLingQi = stats.getMaxLingQi();
     }
 
@@ -252,11 +252,20 @@ public class PlayerProfile implements LivingActor {
     public void breakthrough() {
         CultivationRealm next = realm.getNext();
         if (next != null && canBreakthrough()) {
+            // 📌 Tính HP theo tỷ lệ - đây là điểm ăn tiền nhất
+            double oldMaxHP = getMaxHP();  // realm cũ (đã apply multiplier)
+            double hpRatio = oldMaxHP > 0 ? (currentHP / oldMaxHP) : 1.0;
+            
+            // Dot pha len canh gioi moi
             this.realm = next;
             this.level = 1;  // reset level ve 1
             this.realmLevel = 1;  // reset ve level 1 trong canh gioi moi
-            this.cultivation = 0L;  // reset tu vi
-            this.stats.setLevel(1);  // sync level vao stats
+            //this.cultivation = 0L;  // reset tu vi
+            this.stats.setLevel(1);  // sync level vao stats (recalculate stats)
+            
+            // Tinh lai HP theo ty le (realm moi co multiplier cao hon)
+            double newMaxHP = getMaxHP();  // realm mới (đã apply multiplier)
+            setCurrentHP(newMaxHP * hpRatio);  // setCurrentHP() tự động clamp đúng
         }
     }
     
@@ -449,7 +458,8 @@ public class PlayerProfile implements LivingActor {
     }
     
     public void setCurrentHP(double hp) {
-        this.currentHP = Math.max(0, Math.min(hp, stats.getMaxHP()));
+        double maxHP = getMaxHP();  // đã apply realm multiplier
+        this.currentHP = Math.max(0, Math.min(hp, maxHP));
     }
     
     public void addHP(double amount) {
@@ -702,7 +712,7 @@ public class PlayerProfile implements LivingActor {
     
     @Override
     public double getMaxHP() {
-        return stats.getMaxHP();
+        return stats.getMaxHP(realm);
     }
     
     @Override

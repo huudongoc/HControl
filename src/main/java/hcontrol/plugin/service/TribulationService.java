@@ -1,7 +1,6 @@
 package hcontrol.plugin.service;
 
 import hcontrol.plugin.Main;
-import hcontrol.plugin.service.BreakthroughService;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.model.CultivationRealm;
@@ -52,8 +51,9 @@ public class TribulationService {
         new TribulationTask(plugin, player, fromRealm, toRealm, (success) -> {
             // CALLBACK KHI KET THUC THIEN KIEP
             if (success) {
-                // THANH CONG - GỌI BREAKTHROUGH SERVICE
-                BreakthroughResult result = breakthroughService.attemptBreakthrough(profile, isForced);
+                // THANH CONG THIEN KIEP - BREAKTHROUGH PHẢI THÀNH CÔNG 100%
+                // Không roll random nữa vì đã vượt qua thiên kiếp
+                BreakthroughResult result = breakthroughService.attemptBreakthroughAfterTribulation(profile);
                 
                 if (onComplete != null) {
                     onComplete.accept(result);

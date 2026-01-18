@@ -90,7 +90,7 @@ public class PlayerUIService {
         
         // LOAI BO getAttack - damage tu REALM, khong tu stat
         player.sendMessage("§7  ► §9Phong Thu: §f" + String.format("%.0f", stats.getDefense()));
-        player.sendMessage("§7  ► §aMax HP: §f" + stats.getMaxHP());
+        player.sendMessage("§7  ► §aMax HP: §f" + profile.getMaxHP());  // Dung profile.getMaxHP() de apply realm multiplier
         player.sendMessage("§7  ► §3Max Linh Khi: §f" + stats.getMaxLingQi());
         
         player.sendMessage("");

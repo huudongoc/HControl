@@ -1,5 +1,7 @@
 package hcontrol.plugin.command;
 
+import hcontrol.plugin.core.CoreContext;
+import hcontrol.plugin.entity.EntityService;
 import hcontrol.plugin.module.boss.BossEntity;
 import hcontrol.plugin.module.boss.BossManager;
 import hcontrol.plugin.module.boss.BossType;
@@ -21,6 +23,17 @@ public class SpawnBossCommand implements CommandExecutor {
     
     public SpawnBossCommand(BossManager bossManager) {
         this.bossManager = bossManager;
+    }
+    
+    /**
+     * Lấy EntityService từ CoreContext
+     */
+    private EntityService getEntityService() {
+        CoreContext ctx = CoreContext.getInstance();
+        if (ctx == null || ctx.getEntityContext() == null) {
+            return null;
+        }
+        return ctx.getEntityContext().getEntityService();
     }
     
     @Override
@@ -54,20 +67,37 @@ public class SpawnBossCommand implements CommandExecutor {
             }
         }
         
+        // Lấy EntityService
+        EntityService entityService = getEntityService();
+        if (entityService == null) {
+            player.sendMessage("§cLỗi: EntityService chưa được khởi tạo!");
+            return true;
+        }
+        
         // Spawn zombie lam boss test
         LivingEntity entity = (LivingEntity) player.getWorld().spawnEntity(
             player.getLocation().add(0, 0, 3), 
             EntityType.ZOMBIE
         );
         
-        entity.setMaxHealth(500);
-        entity.setHealth(500);
+        // ✅ FIX: Randomize HP để boss có realm khác nhau (100-1000 HP)
+        // HP cao hơn = realm cao hơn
+        double randomHP = 100.0 + (Math.random() * 900.0);  // 100-1000 HP
+        entity.setMaxHealth(randomHP);
+        entity.setHealth(randomHP);
+        
+        // ✅ FIX: Gọi EntityService.spawnBoss() để tạo EntityProfile với realm và level đúng
+        hcontrol.plugin.entity.EntityProfile bossProfile = entityService.spawnBoss(entity, bossName);
         
         // Tao boss entity
         BossEntity boss = new BossEntity(entity, bossName, type);
         bossManager.registerBoss(boss);
         
+        // Hiển thị thông tin boss
         player.sendMessage("§aSpawn boss: " + bossName + " (Type: " + type.getDisplayName() + ")");
+        player.sendMessage("§7Realm: " + bossProfile.getRealm().getDisplayName() + 
+                          " | Level: " + bossProfile.getLevel() + 
+                          " | HP: " + String.format("%.1f", bossProfile.getMaxHP()));
         player.sendMessage("§7Hit boss de test phase transition!");
         
         return true;

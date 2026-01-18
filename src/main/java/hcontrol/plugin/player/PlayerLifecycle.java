@@ -15,8 +15,8 @@ public class PlayerLifecycle {
     public void handleJoin(Player player) {
         PlayerProfile profile = playerStorage.load(player.getUniqueId());
         playerManager.add(profile);
-        System.out.println("JOIN lifecycle: " + player.getName());
-
+        // Debug log đã tắt
+        // System.out.println("JOIN lifecycle: " + player.getName());
     }
 
     public void handleQuit(Player player) {

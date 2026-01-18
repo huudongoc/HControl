@@ -31,6 +31,12 @@ public class EntityService {
         // lay template
         EntityRegistry.EntityTemplate template = entityRegistry.getTemplate(type);
         
+        // Neu chua dang ky -> tao template mac dinh dua tren maxHP cua entity
+        if (template == null) {
+            double entityMaxHP = entity.getMaxHealth();
+            template = entityRegistry.getDefaultTemplate(entityMaxHP);
+        }
+        
         // tao profile theo template
         EntityProfile profile = new EntityProfile(
             uuid,
@@ -74,29 +80,54 @@ public class EntityService {
     
     /**
      * Spawn boss mob (rat manh)
-     * +200% stats, +2 realms
+     * +200% stats, realm tối thiểu NGUYENANH (boss tier)
+     * 
+     * ⚠️ FIX: Không dựa vào template của EntityType (có thể là LUYENKHI)
+     * Set realm trực tiếp dựa trên entityMaxHP để đảm bảo boss có realm cao
      */
     public EntityProfile spawnBoss(LivingEntity entity, String bossName) {
+        // Initialize profile (có thể realm thấp từ template)
         EntityProfile profile = initializeEntity(entity);
         
-        profile.setBoss(true);
-        profile.setMaxHP(profile.getMaxHP() * 3.0);
-        profile.setCurrentHP(profile.getMaxHP());
-        profile.setAttack(profile.getAttack() * 3.0);
-        profile.setDefense(profile.getDefense() * 3.0);
+        // Tính stats sau khi boost (x3)
+        double boostedMaxHP = profile.getMaxHP() * 3.0;
+        double boostedAttack = profile.getAttack() * 3.0;
+        double boostedDefense = profile.getDefense() * 3.0;
         
-        // tang 2 realms
-        CultivationRealm currentRealm = profile.getRealm();
-        CultivationRealm nextRealm = getNextRealm(currentRealm);
-        if (nextRealm != null) {
-            profile.setRealm(nextRealm);
-            CultivationRealm next2 = getNextRealm(nextRealm);
-            if (next2 != null) {
-                profile.setRealm(next2);
-            }
+        // ⚠️ FIX: Set realm dựa trên boostedMaxHP, không dựa vào template
+        // Boss tối thiểu phải ở NGUYENANH (boss tier)
+        CultivationRealm bossRealm;
+        if (boostedMaxHP >= 500) {
+            // Boss rất mạnh - HOATHAN hoặc cao hơn
+            bossRealm = CultivationRealm.HOATHAN;
+        } else if (boostedMaxHP >= 200) {
+            // Boss mạnh - NGUYENANH
+            bossRealm = CultivationRealm.NGUYENANH;
+        } else {
+            // Boss yếu - tối thiểu NGUYENANH
+            bossRealm = CultivationRealm.NGUYENANH;
         }
         
-        return profile;
+        // ✅ FIX: Tạo lại EntityProfile với customName = bossName
+        // Vì customName là final, không thể set sau khi tạo
+        EntityProfile bossProfile = new EntityProfile(
+            entity.getUniqueId(),
+            entity.getType(),
+            bossName,  // Set customName = bossName
+            bossRealm,
+            bossRealm.getMaxLevelInRealm(),  // Boss luôn ở max level (10)
+            boostedMaxHP,
+            boostedAttack,
+            boostedDefense
+        );
+        bossProfile.setBoss(true);
+        bossProfile.setCurrentHP(boostedMaxHP);
+        
+        // Update trong manager
+        entityManager.remove(profile.getEntityUUID());
+        entityManager.add(bossProfile);
+        
+        return bossProfile;
     }
     
     /**

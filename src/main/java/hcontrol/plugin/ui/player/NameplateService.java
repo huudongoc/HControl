@@ -579,11 +579,22 @@ public class NameplateService {
         String displayName = realm.getDisplayName();
         String color = realm.getColor();
         
-        // Thêm số level nếu > 1
-        if (level >= 1) {
-            return color + "[" + displayName + " " + level + "]";
-        }
-        return color + "[" + displayName + "]";
+        // CHỈ hiển thị tier (Hạ/Trung/Thượng/Đỉnh), KHÔNG hiển thị số level
+        // Người khác không thể nhìn ra level cụ thể
+        String tierName = getTierName(level);
+        
+        return color + "[" + displayName + " " + tierName + "]";
+    }
+    
+    /**
+     * Lấy tên tier từ level (Hạ/Trung/Thượng/Đỉnh)
+     * Người khác chỉ thấy tier, không thấy số level cụ thể
+     */
+    private String getTierName(int level) {
+        if (level <= 3) return "§7Hạ";
+        if (level <= 6) return "§eTrung";
+        if (level <= 9) return "§6Thượng";
+        return "§cĐỉnh";
     }
     
     private void applyToScoreboard(Player player, String prefix, String suffix) {

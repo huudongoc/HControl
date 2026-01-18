@@ -118,8 +118,8 @@ public class PlayerStorage {
         container.setBase(StatType.NGO_TINH, yaml.getInt("stats.ngoTinh", 2));
         container.setBase(StatType.KHI_VAN, yaml.getInt("stats.khiVan", 2));
         
-        // load HP/Linh Khi
-        profile.setCurrentHP(yaml.getDouble("currentHP", stats.getMaxHP()));
+        // load HP/Linh Khi (dung profile.getMaxHP() de apply realm multiplier)
+        profile.setCurrentHP(yaml.getDouble("currentHP", profile.getMaxHP()));
         profile.setCurrentLingQi(yaml.getDouble("currentLingQi", stats.getMaxLingQi()));
         
         // load ascension system - ENDGAME

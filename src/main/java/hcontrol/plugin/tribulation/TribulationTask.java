@@ -24,6 +24,8 @@ public class TribulationTask extends BukkitRunnable {
     private final Consumer<Boolean> onComplete; // callback: true = success, false = fail
     private final SoundService soundService;
     private final TribulationLogicService tribulationLogicService;
+    private final hcontrol.plugin.player.PlayerManager playerManager;
+    private final hcontrol.plugin.service.BreakthroughService breakthroughService;
 
     private ParticleSpiralTask spiralTask;
     private int phaseTick; // tick counter trong moi phase (rieng biet)
@@ -41,6 +43,18 @@ public class TribulationTask extends BukkitRunnable {
         } else {
             // Fallback nếu context chưa sẵn sàng
             this.tribulationLogicService = new hcontrol.plugin.service.TribulationLogicService();
+        }
+        // Lấy PlayerManager và BreakthroughService
+        if (ctx != null && ctx.getPlayerContext() != null) {
+            this.playerManager = ctx.getPlayerContext().getPlayerManager();
+            if (ctx.getCultivationContext() != null) {
+                this.breakthroughService = ctx.getCultivationContext().getBreakthroughService();
+            } else {
+                this.breakthroughService = null;
+            }
+        } else {
+            this.playerManager = null;
+            this.breakthroughService = null;
         }
         this.phaseTick = 0;
     }
@@ -140,11 +154,10 @@ public class TribulationTask extends BukkitRunnable {
             );
             player.getWorld().strikeLightningEffect(loc);
             soundService.playLightningStrikeSound(player.getLocation());
+            
+            // 🔥 APPLY DAMAGE KHI SÉT ĐÁNH
+            applyTribulationDamage(wave);
         }
-        
-        // TODO: apply damage theo wave (can PlayerProfile + tribulation damage formula)
-        // double damage = context.getToRealm().getTribulationDamage(wave);
-        // playerProfile.setCurrentHP(currentHP - damage);
     }
 
     /**
@@ -202,5 +215,59 @@ public class TribulationTask extends BukkitRunnable {
         if (spiralTask != null) {
             spiralTask.cancel();
         }
+    }
+    
+    /**
+     * Áp dụng damage khi thiên lôi đánh
+     * Damage tính theo % maxHP, tăng theo wave, giảm theo tỷ lệ thành công
+     */
+    private void applyTribulationDamage(int wave) {
+        if (playerManager == null || breakthroughService == null) {
+            return; // Không có service, skip
+        }
+        
+        hcontrol.plugin.player.PlayerProfile profile = playerManager.get(player.getUniqueId());
+        if (profile == null) {
+            return; // Không có profile, skip
+        }
+        
+        // Tính tỷ lệ thành công breakthrough
+        double successRate = breakthroughService.calculateSuccessRate(profile, false);
+        
+        // Tính damage
+        double maxHP = profile.getMaxHP();
+        double damage = tribulationLogicService.calculateTribulationDamage(
+            wave, 
+            context.getMaxWaves(), 
+            successRate, 
+            maxHP
+        );
+        
+        // Apply damage
+        double newHP = Math.max(0, profile.getCurrentHP() - damage);
+        profile.setCurrentHP(newHP);
+        
+        // Sync vanilla health
+        var healthService = hcontrol.plugin.core.CoreContext.getInstance().getPlayerContext().getPlayerHealthService();
+        if (healthService != null) {
+            healthService.updateCurrentHealth(player, profile);
+        }
+        
+        // Check chết (HP = 0)
+        if (newHP <= 0) {
+            // Set vanilla health = 0 để trigger PlayerDeathEvent
+            // Điều này sẽ trigger PlayerDeathListener để xử lý death message và respawn
+            player.setHealth(0);
+            
+            // Complete tribulation với FAIL_DEATH
+            context.complete(hcontrol.plugin.tribulation.TribulationResult.FAIL_DEATH);
+            phaseTick = 0;
+        }
+        
+        // Floating damage text (optional - có thể comment nếu quá nhiều)
+        // var effectService = hcontrol.plugin.core.CoreContext.getInstance().getCombatContext().getDamageEffectService();
+        // if (effectService != null) {
+        //     effectService.spawnFloatingDamage(player.getLocation(), damage, "§c", false);
+        // }
     }
 }

@@ -185,8 +185,16 @@ public class HControlAdminCommand implements CommandExecutor, TabCompleter {
         PlayerProfile profile = getPlayerManager().get(target.getUniqueId());
         if (profile == null) return;
         
-        profile.addCultivation(amount);
-        sender.sendMessage("§a[Admin] Added §d" + amount + " tu vi §acho §f" + target.getName());
+        // Dùng LevelService để tự động level up
+        hcontrol.plugin.service.LevelService levelService = getLevelService();
+        if (levelService != null) {
+            levelService.addCultivation(profile, amount);
+            sender.sendMessage("§a[Admin] Added §d" + amount + " tu vi §acho §f" + target.getName() + " §7(tự động level up)");
+        } else {
+            // Fallback nếu không có LevelService
+            profile.addCultivation(amount);
+            sender.sendMessage("§a[Admin] Added §d" + amount + " tu vi §acho §f" + target.getName() + " §c(không tự động level up)");
+        }
     }
     
     private void playerHeal(CommandSender sender, String[] args) {
@@ -762,6 +770,14 @@ public class HControlAdminCommand implements CommandExecutor, TabCompleter {
     private MasterManager getMasterManager() {
         try {
             return CoreContext.getInstance().getMasterManager();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private hcontrol.plugin.service.LevelService getLevelService() {
+        try {
+            return CoreContext.getInstance().getPlayerContext().getLevelService();
         } catch (Exception e) {
             return null;
         }

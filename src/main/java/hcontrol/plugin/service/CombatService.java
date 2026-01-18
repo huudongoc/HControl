@@ -21,8 +21,6 @@ import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.model.LivingActor;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
-import hcontrol.plugin.ui.player.NameplateService;
-
 /**
  * PHASE 3 — Combat calculation service
  * Logic tinh damage theo TRIET LY TU TIEN
@@ -35,7 +33,6 @@ public class CombatService {
     private final Plugin plugin;
     private final DamageEffectService effectService;
     private final EntityManager entityManager;
-    private NameplateService nameplateService;  // inject sau tu CoreContext
     private hcontrol.plugin.item.ItemService itemService;  // PHASE 8A: inject sau tu ItemContext
     private hcontrol.plugin.classsystem.ClassService classService;  // PHASE 5: inject sau tu ClassContext
     
@@ -110,13 +107,6 @@ public class CombatService {
      */
     public void clearLastAttacker(UUID victimUUID) {
         lastAttackers.remove(victimUUID);
-    }
-    
-    /**
-     * Inject NameplateService (goi tu CoreContext)
-     */
-    public void setNameplateService(NameplateService nameplateService) {
-        this.nameplateService = nameplateService;
     }
     
     /**
@@ -235,6 +225,10 @@ public class CombatService {
         // FINAL DAMAGE (tính base damage trước)
         double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor * rootDamageBonus;
         
+        // Đảm bảo damage tối thiểu > 0 (ít nhất 1% baseDamage để tránh damage = 0)
+        double minDamage = Math.max(0.1, baseDamage * 0.01);
+        damage = Math.max(minDamage, damage);
+        
         // PHASE 8A: Apply item stat bonuses vào final damage (sau tất cả modifiers)
         // Item bonus được scale theo các modifiers để giữ balance
         if (attacker instanceof PlayerProfile attackerProfile && itemService != null) {
@@ -244,11 +238,11 @@ public class CombatService {
                 double itemDamageBonus = itemAttackBonus * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
                 damage += itemDamageBonus;
                 
-                // Debug log (có thể comment sau)
-                plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + 
-                    " có item ATTACK bonus: " + itemAttackBonus + 
-                    " → thêm damage: " + String.format("%.2f", itemDamageBonus) + 
-                    " (total: " + String.format("%.2f", damage) + ")");
+                // Debug log đã tắt
+                // plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + 
+                //     " có item ATTACK bonus: " + itemAttackBonus + 
+                //     " → thêm damage: " + String.format("%.2f", itemDamageBonus) + 
+                //     " (total: " + String.format("%.2f", damage) + ")");
             }
         }
         
@@ -274,11 +268,12 @@ public class CombatService {
                         double oldDamage = damage;
                         damage = modifier.modify(attacker, modifierCtx, damage);
                         if (damage != oldDamage) {
-                            plugin.getLogger().info("[DEBUG] Class modifier applied: " + 
-                                classProfile.getType() + 
-                                " (skill=" + (skillId != null ? skillId : "none") + ")" +
-                                " → damage: " + String.format("%.2f", oldDamage) + 
-                                " → " + String.format("%.2f", damage));
+                            // Debug log đã tắt
+                            // plugin.getLogger().info("[DEBUG] Class modifier applied: " + 
+                            //     classProfile.getType() + 
+                            //     " (skill=" + (skillId != null ? skillId : "none") + ")" +
+                            //     " → damage: " + String.format("%.2f", oldDamage) + 
+                            //     " → " + String.format("%.2f", damage));
                         }
                     }
                 }
@@ -292,19 +287,35 @@ public class CombatService {
                 double ascensionPower = ascension.getAscensionPower();
                 damage *= ascensionPower;
                 
-                // Debug log (có thể comment sau)
-                plugin.getLogger().info("[DEBUG] Ascension power applied: " + 
-                    attackerProfile.getName() + 
-                    " (level " + ascension.getAscensionLevel() + 
-                    ", power " + String.format("%.2f", ascensionPower) + "x)" +
-                    " → damage: " + String.format("%.2f", damage));
+                // Debug log đã tắt
+                // plugin.getLogger().info("[DEBUG] Ascension power applied: " + 
+                //     attackerProfile.getName() + 
+                //     " (level " + ascension.getAscensionLevel() + 
+                //     ", power " + String.format("%.2f", ascensionPower) + "x)" +
+                //     " → damage: " + String.format("%.2f", damage));
             }
         }
         
         // ===== APPLY DAMAGE =====
         
+        // Debug log đã tắt
+        // if (attacker instanceof PlayerProfile attackerProfile) {
+        //     plugin.getLogger().info("[COMBAT] " + attackerProfile.getName() + 
+        //         " đánh " + (defender instanceof PlayerProfile ? ((PlayerProfile)defender).getName() : defender.getEntity().getType().name()) +
+        //         " | baseDamage=" + String.format("%.1f", baseDamage) +
+        //         " | realmSuppression=" + String.format("%.2f", realmSuppression) +
+        //         " | mitigation=" + String.format("%.2f", mitigation) +
+        //         " | damage=" + String.format("%.1f", damage) +
+        //         " | defenderHP=" + String.format("%.1f", defender.getCurrentHP()) + "/" + String.format("%.1f", defender.getMaxHP()));
+        // }
+        
         double newHP = Math.max(0, defender.getCurrentHP() - damage);
         defender.setCurrentHP(newHP);
+        
+        // Debug log đã tắt
+        // if (attacker instanceof PlayerProfile attackerProfile) {
+        //     plugin.getLogger().info("[COMBAT] Sau khi apply: defenderHP=" + String.format("%.1f", newHP) + "/" + String.format("%.1f", defender.getMaxHP()));
+        // }
         
         // WORLD BOSS PARTICIPATION TRACKING - Track damage khi player đánh world boss
         if (attacker instanceof PlayerProfile attackerProfile && 
@@ -363,18 +374,6 @@ public class CombatService {
             showDamageIndicator(attackerEntity instanceof Player ? (Player) attackerEntity : null, defenderEntity, damage, false);
             //effectService.spawnFloatingDamage(defenderEntity.getLocation(), damage, damageColor, false);
         }
-        
-        // // ActionBar feedback cho attacker (neu la player)
-        // if (attackerEntity instanceof Player attackerPlayer) {
-        //     // CHI HIEN THI DAMAGE, KHONG HIEN THI HP HOAC TEN
-        //     attackerPlayer.sendActionBar(String.format("§e⚔ %.1f", damage));
-        // }
-        
-        // // ActionBar feedback cho defender (neu la player)
-        // if (defenderEntity instanceof Player defenderPlayer) {
-        //     // NOTE: CHI HIEN THI DAMAGE, KHONG HIEN THI REALM/LEVEL/HP
-        //     defenderPlayer.sendActionBar(String.format("§c-%.1f", damage));
-        // }
         
         // Update nameplate cho Entity (mob/boss) - KHONG update cho Player de tranh flash
         // NOTE: Entity nameplate update MỖI HIT de hien thi HP realtime
@@ -477,14 +476,6 @@ public class CombatService {
     // Chi co Realm Suppression va Dao Factor trong DamageFormula
     
     /**
-     * Deal damage to entity
-     */
-    private void dealDamage(LivingEntity target, double damage) {
-        double newHealth = Math.max(0, target.getHealth() - damage);
-        target.setHealth(newHealth);
-    }
-    
-    /**
      * Apply knockback effect (bat lui)
      */
     private void applyKnockback(Location attackerLoc, LivingEntity target, double damage) {
@@ -584,13 +575,6 @@ public class CombatService {
     }
     
     /**
-     * Lay player profile
-     */
-    private PlayerProfile getPlayerProfile(Player player) {
-        return playerManager.get(player.getUniqueId());
-    }
-    
-    /**
      * Handle environmental damage (fall, fire, drown, void, etc.)
      * Damage được tính từ vanilla damage và apply vào tu tiên HP
      * 
@@ -617,10 +601,10 @@ public class CombatService {
             player.setHealth(0);
         }
         
-        // Format message
+        // Format message (dung profile.getMaxHP() de apply realm multiplier)
         String causeMsg = getDamageCauseMessage(cause);
-        return String.format("§c-%.1f HP §7| %s §7| §c%.0f§7/§e%d", 
-            vanillaDamage, causeMsg, newHP, profile.getStats().getMaxHP());
+        return String.format("§c-%.1f HP §7| %s §7| §c%.0f§7/§e%.0f", 
+            vanillaDamage, causeMsg, newHP, profile.getMaxHP());
     }
     
     /**

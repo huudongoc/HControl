@@ -63,9 +63,9 @@ public class DisplayFormatService {
         CultivationRealm realm = profile.getRealm();
         int level = profile.getRealmLevel();
         
-        // Tinh % HP
+        // Tinh % HP (dung profile.getMaxHP() de apply realm multiplier)
         double currentHP = profile.getCurrentHP();
-        double maxHP = profile.getStats().getMaxHP();
+        double maxHP = profile.getMaxHP();
         double hpPercent = (currentHP / maxHP) * 100.0;
         
         // Mau sac HP
@@ -85,7 +85,7 @@ public class DisplayFormatService {
     
     /**
      * Format nameplate cho entity (boss/elite/mob)
-     * Format: [BOSS/Elite] [Realm] Name ❤ currentHP/maxHP
+     * Format: [BOSS/Elite] [Realm] Name ❤ HP% (CHỈ HIỆN % cho người khác)
      */
     public String formatEntityNameplate(EntityProfile profile, String displayName) {
         // Safety check: KHONG format nameplate cho Player
@@ -116,11 +116,11 @@ public class DisplayFormatService {
         String realmColor = realm.getColor();
         String realmName = realm.getDisplayName();
         
-        // Format: [Prefix] [Realm] Name ❤ currentHP/maxHP
+        // Format: [Prefix] [Realm] Name ❤ HP% (CHỈ HIỆN % cho người khác)
         return prefix + 
                realmColor + "[" + realmName + "] §f" + 
                displayName + " " +
-               hpColor + "❤ MODS " + String.format("%.0f", currentHP) + "/" + String.format("%.0f", maxHP) + "%";
+               hpColor + "❤ " + String.format("%.0f%%", hpPercent) + " §f";
     }
     
     /**
@@ -133,10 +133,13 @@ public class DisplayFormatService {
     }
     
     /**
-     * Format HP text (vi du: "§c❤ §f120§7/§c200")
+     * Format HP text - CHỈ HIỆN PHẦN TRĂM (vi du: "§c❤ §f75%")
+     * Người khác chỉ thấy phần trăm, không thấy số HP cụ thể
      */
     public String formatHP(double currentHP, double maxHP) {
-        return "§c❤ §f" + String.format("%.0f", currentHP) + "§7/§c" + String.format("%.0f", maxHP);
+        double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 0.0;
+        String hpColor = getHPColor(hpPercent);
+        return hpColor + "❤ §f" + String.format("%.0f%%", hpPercent);
     }
     
     /**

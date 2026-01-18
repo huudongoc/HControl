@@ -107,6 +107,9 @@ public class CoreContext {
     private SkillInstanceManager skillInstanceManager;
     private SkillCreatorListener skillCreatorListener;
     
+    // Auto Spawn System
+    private hcontrol.plugin.service.AutoSpawnService autoSpawnService;
+    
     private CoreContext(Main plugin, LifecycleManager lifecycleManager) {
         this.plugin = plugin;
         this.lifecycleManager = lifecycleManager;
@@ -385,9 +388,6 @@ public class CoreContext {
         lifecycleManager.registerOnEnable(() -> {
             plugin.getLogger().info("[PHASE 3] Đang khởi tạo Combat System...");
             
-            // Inject NameplateService vao CombatService
-            combatContext.getCombatService().setNameplateService(uiContext.getNameplateService());
-            
             // PHASE 8A: ItemService sẽ được inject trong registerItemSystem() (sau khi ItemContext initialize)
             
             // Inject NameplateService vao TitleService
@@ -420,6 +420,22 @@ public class CoreContext {
             );
             eventRegistry.registerEvents(entityLifecycleListener);
             
+            // Init Auto Spawn System
+            autoSpawnService = new hcontrol.plugin.service.AutoSpawnService(
+                plugin,
+                entityContext.getEntityService()
+            );
+            plugin.getLogger().info("[AutoSpawn] ✓ Auto Spawn Service đã khởi tạo!");
+            
+            // Register AutoSpawnCommand
+            org.bukkit.command.PluginCommand autospawnCmd = plugin.getCommand("autospawn");
+            if (autospawnCmd != null) {
+                hcontrol.plugin.command.AutoSpawnCommand autoSpawnCommand = new hcontrol.plugin.command.AutoSpawnCommand();
+                autospawnCmd.setExecutor(autoSpawnCommand);
+                autospawnCmd.setTabCompleter(autoSpawnCommand);
+                plugin.getLogger().info("[AutoSpawn] ✓ Auto Spawn Command đã đăng ký!");
+            }
+            
             // PHASE 7: Init AI System
             entityContext.initAI(plugin);
             if (entityContext.getAIService() != null) {
@@ -436,7 +452,8 @@ public class CoreContext {
                 plugin,
                 playerContext.getPlayerManager(),
                 cultivationContext.getAscensionService(),
-                combatContext.getCombatService()
+                combatContext.getCombatService(),
+                playerContext.getLevelService()
             );
             plugin.getLogger().info("[World Boss] ✓ World Boss System đã khởi động!");
             
@@ -841,6 +858,10 @@ public class CoreContext {
     
     @Deprecated
     public BossManager getBossManager() { return entityContext.getBossManager(); }
+    
+    public hcontrol.plugin.service.AutoSpawnService getAutoSpawnService() { 
+        return autoSpawnService; 
+    }
     
     public hcontrol.plugin.module.boss.WorldBossManager getWorldBossManager() { 
         return entityContext.getWorldBossManager(); 

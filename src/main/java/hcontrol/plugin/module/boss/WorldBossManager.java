@@ -33,6 +33,7 @@ public class WorldBossManager {
     private final PlayerManager playerManager;
     private final AscensionService ascensionService;
     private final CombatService combatService;
+    private final hcontrol.plugin.service.LevelService levelService;
     
     private WorldBossSpawnService spawnService;
     private WorldBossRewardService rewardService;
@@ -45,7 +46,7 @@ public class WorldBossManager {
     public WorldBossManager(Main plugin, BossManager bossManager, 
                             EntityManager entityManager, EntityService entityService,
                             PlayerManager playerManager, AscensionService ascensionService,
-                            CombatService combatService) {
+                            CombatService combatService, hcontrol.plugin.service.LevelService levelService) {
         this.plugin = plugin;
         this.bossManager = bossManager;
         this.entityManager = entityManager;
@@ -53,6 +54,7 @@ public class WorldBossManager {
         this.playerManager = playerManager;
         this.ascensionService = ascensionService;
         this.combatService = combatService;
+        this.levelService = levelService;
     }
     
     /**
@@ -64,7 +66,7 @@ public class WorldBossManager {
             plugin, bossManager, entityManager, entityService, playerManager
         );
         this.spawnService.setWorldBossManager(this);  // Set reference để spawn service có thể set participation
-        this.rewardService = new WorldBossRewardService(playerManager, ascensionService);
+        this.rewardService = new WorldBossRewardService(playerManager, ascensionService, levelService);
         
         // Create listener
         this.listener = new WorldBossListener(

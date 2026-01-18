@@ -130,6 +130,12 @@ commands:
     usage: /bubbletest <message> [duration]
     aliases: [btest, chatbubble]
     permission: hcontrol.use
+    
+  autospawn:
+    description: Quản lý hệ thống spawn tự động
+    usage: /autospawn [start|stop|pos1|pos2|setarea|cleararea|info|interval|radius]
+    aliases: [aspawn, mobspawn]
+    permission: hcontrol.admin
 
 permissions:
   hcontrol.use:

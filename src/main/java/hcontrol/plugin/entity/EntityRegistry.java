@@ -60,7 +60,59 @@ public class EntityRegistry {
      * Lay template cho entity type
      */
     public EntityTemplate getTemplate(EntityType type) {
-        return templates.getOrDefault(type, getDefaultTemplate());
+        return templates.getOrDefault(type, null);
+    }
+    
+    /**
+     * Lay template mac dinh dua tren maxHP cua entity
+     * Phan bo realm dua tren HP: HP cao -> realm cao
+     */
+    public EntityTemplate getDefaultTemplate(double entityMaxHP) {
+        CultivationRealm realm;
+        int level;
+        double maxHP;
+        double attack;
+        double defense;
+        
+        // Phan bo realm dua tren maxHP cua entity
+        if (entityMaxHP >= 200) {
+            // Boss tier - Hoa Than hoac cao hon
+            realm = CultivationRealm.HOATHAN;
+            level = 8;
+            maxHP = entityMaxHP;
+            attack = entityMaxHP * 0.15;
+            defense = entityMaxHP * 0.05;
+        } else if (entityMaxHP >= 100) {
+            // Strong mob - Nguyen Anh
+            realm = CultivationRealm.NGUYENANH;
+            level = 6;
+            maxHP = entityMaxHP;
+            attack = entityMaxHP * 0.12;
+            defense = entityMaxHP * 0.04;
+        } else if (entityMaxHP >= 50) {
+            // Medium-strong mob - Kim Dan
+            realm = CultivationRealm.KIMDAN;
+            level = 5;
+            maxHP = entityMaxHP;
+            attack = entityMaxHP * 0.10;
+            defense = entityMaxHP * 0.03;
+        } else if (entityMaxHP >= 30) {
+            // Medium mob - Truc Co
+            realm = CultivationRealm.TRUCCO;
+            level = 3;
+            maxHP = entityMaxHP;
+            attack = entityMaxHP * 0.08;
+            defense = entityMaxHP * 0.02;
+        } else {
+            // Weak mob - Luyen Khi
+            realm = CultivationRealm.LUYENKHI;
+            level = 1;
+            maxHP = entityMaxHP;
+            attack = entityMaxHP * 0.06;
+            defense = 0;
+        }
+        
+        return new EntityTemplate(realm, level, maxHP, attack, defense);
     }
     
     /**
@@ -68,13 +120,6 @@ public class EntityRegistry {
      */
     public boolean isRegistered(EntityType type) {
         return templates.containsKey(type);
-    }
-    
-    /**
-     * Template mac dinh (cho mob chua dang ky)
-     */
-    private EntityTemplate getDefaultTemplate() {
-        return new EntityTemplate(CultivationRealm.LUYENKHI, 1, 20, 2, 0);
     }
     
     /**

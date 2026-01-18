@@ -18,6 +18,18 @@ commands:
     description: Do kiep - breakthrough len dai canh gioi moi (tribulation)
     usage: /dokiep
     permission: hcontrol.use
+    
+  ascend:
+    description: Ascension - thang cap endgame sau CHAN TIEN level 10
+    usage: /ascend [info]
+    aliases: [ascension, thangcap]
+    permission: hcontrol.use
+    
+  worldboss:
+    description: World Boss system - quản lý world boss (ENDGAME)
+    usage: /worldboss [spawn|info|force]
+    aliases: [wb, boss]
+    permission: hcontrol.admin
    
   hc:
     description: HControl main command
@@ -54,6 +66,70 @@ commands:
     description: Set role cho player khac (admin only)
     usage: /setrole <player> <role> | /setrole <player> remove | /setrole clearall | /setrole list
     permission: hcontrol.admin
+    
+  aidebug:
+    description: AI debug commands (testing)
+    usage: /aidebug [info|clear]
+    aliases: [aid]
+    permission: hcontrol.admin
+    
+  itemtest:
+    description: Item test commands (PHASE 8A testing)
+    usage: /itemtest [equip|unequip|stats|list]
+    aliases: [itest, itemdebug]
+  class:
+    description: Class system command (PHASE 5)
+    usage: /class <set|info|list> [classType]
+    permission: op
+    permission: hcontrol.admin
+    
+  skill:
+    description: Player skill system (PHASE 6)
+    usage: /skill [list|available|learn|cast|bind|unbind|hotbar|info]
+    aliases: [sk, skills]
+    permission: hcontrol.use
+    
+  skillbook:
+    description: Tao skill book item (admin)
+    usage: /skillbook <skillId> [rarity] [player]
+    aliases: [bikip]
+    permission: hcontrol.admin
+    
+  sect:
+    description: Sect system - Mon phai
+    usage: /sect [create|info|list|join|leave|invite|kick|promote|demote|transfer|disband|members]
+    aliases: [monphai, guild]
+    permission: hcontrol.use
+    
+  master:
+    description: Master-Disciple system - Bai su
+    usage: /master [request|accept|deny|invite|join|decline|leave|kick|teach|list|toggle|title|disciples]
+    aliases: [sufu, baisu, disciple]
+    permission: hcontrol.use
+    
+  askill:
+    description: Admin skill commands - backdoor
+    usage: /askill [list|info|give|remove|setmastery|setrefinement|create|delete|reload|bypass|instances|stats]
+    aliases: [adminskill, as]
+    permission: hcontrol.admin.skill
+    
+  hadmin:
+    description: HControl Admin - backdoor tong hop
+    usage: /hadmin [player|realm|sect|master|reload|stats]
+    aliases: [hca, hcontroladmin]
+    permission: hcontrol.admin
+    
+  nameplate:
+    description: Nameplate system - Hien thi ten
+    usage: /nameplate [toggle|refresh]
+    aliases: [np, bangten]
+    permission: hcontrol.use
+    
+  bubbletest:
+    description: Test chat bubble - Hien thi bubble tren dau player
+    usage: /bubbletest <message> [duration]
+    aliases: [btest, chatbubble]
+    permission: hcontrol.use
 
 permissions:
   hcontrol.use:
@@ -62,4 +138,8 @@ permissions:
     
   hcontrol.admin:
     description: Admin commands
+    default: op
+    
+  hcontrol.admin.skill:
+    description: Admin skill system commands (backdoor)
     default: op

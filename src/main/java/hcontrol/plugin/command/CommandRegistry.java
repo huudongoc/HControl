@@ -1,6 +1,11 @@
 package hcontrol.plugin.command;
 
 import hcontrol.plugin.core.CoreContext;
+import hcontrol.plugin.master.MasterManager;
+import hcontrol.plugin.master.MasterService;
+import hcontrol.plugin.sect.SectManager;
+import hcontrol.plugin.sect.SectService;
+import hcontrol.plugin.ui.skill.SkillMenuGUI;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -86,6 +91,15 @@ public class CommandRegistry {
             coreContext.getUIContext()
         ));
         
+        // Ascension command - ENDGAME
+        register("ascend", () -> new AscensionCommand(
+            coreContext.getPlayerContext().getPlayerManager(),
+            coreContext.getCultivationContext().getAscensionService()
+        ));
+        
+        // World Boss command - ENDGAME
+        register("worldboss", () -> new WorldBossCommand());
+        
         // Spawn boss command
         register("spawnboss", () -> new SpawnBossCommand(
             coreContext.getEntityContext().getBossManager()
@@ -115,6 +129,104 @@ public class CommandRegistry {
             coreContext.getCultivationContext().getRoleService()
         ));
         
+        // AI Debug command (PHASE 7 testing)
+        register("aidebug", () -> new AIDebugCommand());
+        
+        // Item Test command (PHASE 8A testing)
+        // Lazy load ItemService trong command để tránh null khi command đăng ký trước ItemContext init
+        register("itemtest", () -> new ItemTestCommand(
+            coreContext.getPlayerContext().getPlayerManager()
+        ));
+        
+        // Class command (PHASE 5)
+        // Lazy load ClassService trong command để tránh null khi command đăng ký trước ClassContext init
+        register("class", () -> new ClassCommand(
+            coreContext.getPlayerContext().getPlayerManager()
+        ));
+        
+        // Chat Bubble Test command
+        register("bubbletest", () -> new ChatBubbleTestCommand(
+            coreContext.getPlayerContext().getPlayerManager()
+        ));
+        
         logger.info("[PHASE 0] ✓ Commands đã được đăng ký!");
+    }
+    
+    /**
+     * SECT SYSTEM: Register sect command
+     * Gọi riêng sau khi SectManager đã được init
+     */
+    public void registerSectCommand(SectService sectService) {
+        if (sectService == null) {
+            logger.warning("[SECT] SectService chưa được init, skip sect command!");
+            return;
+        }
+        
+        SectCommand sectCommand = new SectCommand(
+            sectService,
+            coreContext.getPlayerContext().getPlayerManager()
+        );
+        
+        PluginCommand command = plugin.getCommand("sect");
+        if (command != null) {
+            command.setExecutor(sectCommand);
+            command.setTabCompleter(sectCommand);
+            logger.info("[SECT] ✓ Sect command đã được đăng ký!");
+        }
+    }
+    
+    /**
+     * MASTER SYSTEM: Register master command
+     */
+    public void registerMasterCommand(MasterService masterService) {
+        if (masterService == null) {
+            logger.warning("[MASTER] MasterService chưa được init, skip master command!");
+            return;
+        }
+        
+        MasterCommand masterCommand = new MasterCommand(
+            masterService,
+            coreContext.getPlayerContext().getPlayerManager()
+        );
+        
+        PluginCommand command = plugin.getCommand("master");
+        if (command != null) {
+            command.setExecutor(masterCommand);
+            command.setTabCompleter(masterCommand);
+            logger.info("[MASTER] ✓ Master command đã được đăng ký!");
+        }
+    }
+    
+    /**
+     * PHASE 6: Register Skill command
+     * Gọi riêng sau khi PlayerSkillService đã được init
+     * @return SkillMenuGUI để đăng ký listener
+     */
+    public SkillMenuGUI registerSkillCommand() {
+        // Check if skill service is ready
+        if (coreContext.getPlayerContext().getSkillService() == null) {
+            logger.warning("[PHASE 6] SkillService chưa được init, skip skill command!");
+            return null;
+        }
+        
+        // Tạo SkillMenuGUI
+        SkillMenuGUI menuGUI = new SkillMenuGUI(coreContext.getPlayerContext().getSkillService());
+        
+        // Tạo SkillCommand và inject MenuGUI
+        SkillCommand skillCommand = new SkillCommand(
+            coreContext.getPlayerContext().getPlayerManager(),
+            coreContext.getPlayerContext().getSkillService()
+        );
+        skillCommand.setMenuGUI(menuGUI);
+        
+        // Register command
+        PluginCommand command = plugin.getCommand("skill");
+        if (command != null) {
+            command.setExecutor(skillCommand);
+            command.setTabCompleter(skillCommand);
+        }
+        
+        logger.info("[PHASE 6] ✓ Skill command + GUI đã được đăng ký!");
+        return menuGUI;
     }
 }

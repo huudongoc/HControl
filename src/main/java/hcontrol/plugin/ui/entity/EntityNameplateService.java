@@ -7,6 +7,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -60,6 +61,9 @@ public class EntityNameplateService {
     public void markForInit(LivingEntity entity) {
         //  Guard 1: KHÔNG apply cho Player
         if (entity instanceof Player) return;
+        
+        //  Guard 2: KHÔNG apply cho ArmorStand (chat bubbles, dialogs)
+        if (entity instanceof ArmorStand) return;
         
         UUID uuid = entity.getUniqueId();
         
@@ -121,6 +125,9 @@ public class EntityNameplateService {
         //  Guard 2: KHÔNG bao giờ init cho Player
         if (entity instanceof Player) return;
         
+        //  Guard 3: KHÔNG bao giờ init cho ArmorStand (chat bubbles, dialogs)
+        if (entity instanceof ArmorStand) return;
+        
         UUID uuid = entity.getUniqueId();
         
         //  Guard 3: Đã initialized rồi thì chỉ update
@@ -155,6 +162,9 @@ public class EntityNameplateService {
         //  Guard 2: KHÔNG bao giờ update cho Player
         if (entity instanceof Player) return;
         
+        //  Guard 3: KHÔNG bao giờ update cho ArmorStand (chat bubbles, dialogs)
+        if (entity instanceof ArmorStand) return;
+        
         UUID uuid = entity.getUniqueId();
         
         //  Guard 3: Profile phải tồn tại
@@ -175,7 +185,7 @@ public class EntityNameplateService {
     private LivingEntity getEntityByUUID(UUID uuid) {
         try {
             org.bukkit.entity.Entity entity = Bukkit.getEntity(uuid);
-            if (entity instanceof LivingEntity && !(entity instanceof Player)) {
+            if (entity instanceof LivingEntity && !(entity instanceof Player) && !(entity instanceof ArmorStand)) {
                 return (LivingEntity) entity;
             }
             return null;
@@ -202,6 +212,11 @@ public class EntityNameplateService {
         //  Guard 1: KHÔNG bao giờ update nameplate cho Player (BẮT BUỘC)
         if (entity instanceof Player) {
             return; // KHÔNG set custom name cho player
+        }
+        
+        //  Guard 2: KHÔNG bao giờ update nameplate cho ArmorStand (chat bubbles, dialogs)
+        if (entity instanceof ArmorStand) {
+            return; // KHÔNG set custom name cho ArmorStand
         }
         
         //  Guard 2: Entity validation

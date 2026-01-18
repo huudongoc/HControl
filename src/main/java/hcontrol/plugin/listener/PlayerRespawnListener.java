@@ -55,11 +55,17 @@ public class PlayerRespawnListener implements Listener {
         player.setFoodLevel(20);
         player.setSaturation(20.0f);
         
-        // Update UI (ActionBar + Scoreboard + Nameplate)
-        // Delay 2 ticks de dam bao player da respawn xong hoan toan
+        // Update UI NGAY LẬP TỨC (attempt 1)
+        healthService.syncHealth(player, profile);
+        
+        // Update UI LẦN 2 sau delay (để đảm bảo client nhận được)
+        // Delay 10 ticks (0.5s) để đảm bảo player đã respawn xong hoàn toàn và client ready
         org.bukkit.Bukkit.getScheduler().runTaskLater(
             CoreContext.getInstance().getPlugin(),
             () -> {
+                // Force update health service LẦN 2 (sẽ update tablist)
+                healthService.syncHealth(player, profile);
+                
                 // Update scoreboard
                 if (scoreboardService != null) {
                     scoreboardService.updateScoreboard(player);
@@ -74,7 +80,7 @@ public class PlayerRespawnListener implements Listener {
                 // Optional: Gui message thong bao
                 player.sendMessage("§a✦ Hồi sinh thành công!");
             },
-            0L // không delay vì respawn hoàn toàn, update ngay (0 ticks delay)
+            10L // Delay 10 ticks (0.5s) để client sync xong
         );
     }   
 }

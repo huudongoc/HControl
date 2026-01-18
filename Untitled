@@ -1,0 +1,2 @@
+Any code under /legacy is read-only.
+New code MUST NOT depend on legacy packages.

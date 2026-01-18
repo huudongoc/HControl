@@ -1,180 +1,171 @@
 package hcontrol.plugin.ui.chat;
 
+import hcontrol.plugin.master.MasterManager;
 import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.model.Title;
-import hcontrol.plugin.model.TitleRarity;
 import hcontrol.plugin.player.PlayerProfile;
+import hcontrol.plugin.sect.Sect;
+import hcontrol.plugin.sect.SectManager;
+import hcontrol.plugin.sect.SectMember;
+import hcontrol.plugin.sect.SectRank;
+import hcontrol.plugin.ui.player.NameplateService;
+import org.bukkit.entity.Player;
 
 /**
  * CHAT FORMAT SERVICE
- * Format chat message voi khung mau dep dua tren title/role cua player
- * Neu khong co title, format theo canh gioi (don gian hon)
+ * Format chat message: [Thanh Vân][Sư phụ] Player: nội dung
+ * 🔥 PHASE 5: Reuse NameplateData từ NameplateService
+ * 📌 Không tự build prefix - chỉ format từ data có sẵn
  */
 public class ChatFormatService {
     
+    // Inject NameplateService để reuse data
+    private NameplateService nameplateService;
+    
+    // Optional dependencies cho bubble format (sect rank, admin status)
+    private SectManager sectManager;
+    private MasterManager masterManager;
+    
+    public ChatFormatService() {
+        // Dependencies sẽ được set từ CoreContext
+    }
+    
+    public void setNameplateService(NameplateService nameplateService) {
+        this.nameplateService = nameplateService;
+    }
+    
+    public void setSectManager(SectManager sectManager) {
+        this.sectManager = sectManager;
+    }
+    
+    public void setMasterManager(MasterManager masterManager) {
+        this.masterManager = masterManager;
+    }
+    
     /**
-     * Format chat message voi khung mau dep
+     * Format chat message: [CảnhGiới Level][MônPhái][DanhHiệu] PlayerName ❤HP%: message
+     * 🔥 Reuse NameplateData từ NameplateService
+     * 
+     * 📌 LƯU Ý: Bukkit AsyncPlayerChatEvent.setFormat() cần placeholder:
+     * - %1$s = player name
+     * - %2$s = message
+     * 
      * @param profile Player profile (co the null)
      * @param playerName Ten player
      * @param message Tin nhan chat
-     * @return Formatted message voi khung mau
+     * @return Formatted message với placeholder
      */
+    // public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
+    //     // 🔥 Reuse NameplateData từ NameplateService
+    //     if (profile != null) {
+    //         Player player = profile.getPlayer();
+    //         if (player != null && player.isOnline()) {
+    //             if (nameplateService != null) {
+    //                 // Lấy format đầy đủ từ NameplateService (realm, sect, title, HP)
+    //                 return nameplateService.buildChatMessage(player, message);
+    //             }
+    //         }
+    //     }
+        
+    //     // Fallback: nếu không có profile hoặc nameplateService null
+    //     return "§7%1$s: §f%2$s";
+    // }
+
     public String formatChatMessage(PlayerProfile profile, String playerName, String message) {
-        TitleRarity rarity = TitleRarity.COMMON;
-        String titleIcon = "";
-        String titleName = "";
-        CultivationRealm realm = null;
-        
-        // Lay realm neu co profile
-        if (profile != null) {
-            realm = profile.getRealm();
-            
-            // Lay title neu co
-            if (profile.getActiveTitle() != null) {
-                Title title = profile.getActiveTitle();
-                if (title != Title.NONE) {
-                    rarity = title.getRarity();
-                    titleIcon = title.getIcon();
-                    titleName = title.getDisplayName();
-                }
-            }
-        }
-        
-        // Neu co title (co titleName) -> dung format title (dep)
-        // Neu khong co title -> dung format realm (don gian)
-        if (!titleName.isEmpty()) {
-            return buildChatFrame(rarity, titleIcon, titleName, playerName, message, realm);
-        } else {
-            // Khong co title -> format theo realm (don gian hon)
-            return formatRealmChat(realm, playerName, message);
+
+    // 🔥 Reuse NameplateData từ NameplateService
+    if (profile != null) {
+        Player player = profile.getPlayer();
+        if (player != null && player.isOnline() && nameplateService != null) {
+            return nameplateService.buildChatMessage(player, message);
         }
     }
+
+    // ✅ Fallback an toàn – KHÔNG format string
+    return "§7" + playerName + "§7: §f" + message;
+}
+
     
     /**
-     * Xay dung khung chat dep theo rarity (format 1 dong cho chat box)
-     */
-    private String buildChatFrame(TitleRarity rarity, String titleIcon, String titleName, 
-                                  String playerName, String message, CultivationRealm realm) {
-        switch (rarity) {
-            case ADMIN:
-                return formatAdminChat(titleIcon, titleName, playerName, message, realm);
-            case MYTHIC:
-                return formatMythicChat(titleIcon, titleName, playerName, message, realm);
-            case LEGENDARY:
-                return formatLegendaryChat(titleIcon, titleName, playerName, message, realm);
-            case EPIC:
-                return formatEpicChat(titleIcon, titleName, playerName, message, realm);
-            case RARE:
-                return formatRareChat(titleIcon, titleName, playerName, message, realm);
-            case SPECIAL:
-                return formatSpecialChat(titleIcon, titleName, playerName, message, realm);
-            case EVENT:
-                return formatEventChat(titleIcon, titleName, playerName, message, realm);
-            default: // COMMON
-                return formatRealmChat(realm, playerName, message);
-        }
-    }
-    
-    /**
-     * Format chat cho ADMIN - Khung do dam voi hieu ung
-     */
-    private String formatAdminChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§4§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§4§l║ §c§l" + titleIcon + "§c§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §4§l║";
-    }
-    
-    /**
-     * Format chat cho MYTHIC - Khung do voi vien dep
-     */
-    private String formatMythicChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§c§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§c§l╔═ §6§l" + titleIcon + "§6§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §c§l═╗";
-    }
-    
-    /**
-     * Format chat cho LEGENDARY - Khung vang/cam dep
-     */
-    private String formatLegendaryChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§6§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§6§l┏━ §e§l" + titleIcon + "§e§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §6§l━┓";
-    }
-    
-    /**
-     * Format chat cho EPIC - Khung tim
-     */
-    private String formatEpicChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§5§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§5§l╭─ §d§l" + titleIcon + "§d§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §5§l─╮";
-    }
-    
-    /**
-     * Format chat cho RARE - Khung xanh la
-     */
-    private String formatRareChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§a§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§a§l┌─ §2§l" + titleIcon + "§2§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §a§l─┐";
-    }
-    
-    /**
-     * Format chat cho SPECIAL - Khung xanh duong
-     */
-    private String formatSpecialChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§b§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§b§l┌─ §3§l" + titleIcon + "§3§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §b§l─┐";
-    }
-    
-    /**
-     * Format chat cho EVENT - Khung vang su kien
-     */
-    private String formatEventChat(String titleIcon, String titleName, String playerName, String message, CultivationRealm realm) {
-        String titlePart = titleName.isEmpty() ? "" : " §7[§e§l" + titleName + "§7]";
-        String realmPart = (realm != null && titleName.isEmpty()) ? " §8[" + realm.getColor() + realm.getDisplayName() + "§8]" : "";
-        return "§e§l┌─ §6§l" + titleIcon + "§6§l" + playerName + titlePart + realmPart + " §7» §f" + message + " §e§l─┐";
-    }
-    
-    /**
-     * Format chat theo CANH GIOI (don gian, khong dep bang roles)
-     * Dung khi khong co title hoac title la COMMON
-     */
-    private String formatRealmChat(CultivationRealm realm, String playerName, String message) {
-        if (realm == null) {
-            // Khong co realm -> format don gian nhat
-            return "§8┌─ §7" + playerName + " §8─┐ §7» §f" + message;
-        }
-        
-        String realmColor = realm.getColor();
-        String realmName = realm.getDisplayName();
-        
-        // Format don gian voi canh gioi (khong co khung dep nhu roles)
-        return "§8[§r" + realmColor + realmName + "§8] §7" + playerName + " §7» §f" + message;
-    }
-    
-    /**
-     * Format bubble text don gian cho chat bubble (khong co khung phuc tap)
-     * Hien thi title icon neu co, neu khong hien thi realm
+     * Format bubble text đẹp cho chat bubble
+     * Hiển thị: [Title Icon] [Sect Rank] [Admin/VIP] message
+     * 🔥 Format đẹp với rank màu sắc và admin status
      */
     public String formatBubbleText(PlayerProfile profile, String message) {
-        if (profile != null) {
-            // Uu tien title icon
-            if (profile.getActiveTitle() != null) {
-                Title title = profile.getActiveTitle();
-                if (title != Title.NONE) {
-                    return title.getIcon() + " §f" + message;
+        if (profile == null) {
+            return "§f" + message;
+        }
+        
+        Player player = profile.getPlayer();
+        if (player == null || !player.isOnline()) {
+            return "§f" + message;
+        }
+        
+        StringBuilder prefix = new StringBuilder();
+        
+        // 1. Title icon (ưu tiên cao nhất)
+        Title title = profile.getActiveTitle();
+        if (title != null && title != Title.NONE) {
+            prefix.append(title.getIcon()).append(" ");
+        }
+        
+        // 2. Sect rank với màu đẹp (nếu có)
+        if (sectManager != null) {
+            Sect sect = sectManager.getPlayerSect(player.getUniqueId());
+            if (sect != null) {
+                SectMember member = sect.getMember(player.getUniqueId());
+                if (member != null) {
+                    SectRank rank = member.getRank();
+                    String rankColor = getSectRankColor(rank);
+                    
+                    // Rút gọn tên môn phái nếu dài
+                    String sectName = sect.getName();
+                    if (sectName.length() > 6) {
+                        sectName = sectName.substring(0, 5) + "..";
+                    }
+                    
+                    prefix.append(rankColor).append("[").append(sectName).append("] ");
                 }
             }
-            
-            // Neu khong co title, hien thi realm (don gian)
+        }
+        
+        // 3. Admin/VIP status (nếu có)
+        if (player.isOp() || player.hasPermission("hcontrol.admin")) {
+            // Check title có phải ADMIN/DEVELOPER không
+            if (title == Title.ADMIN || title == Title.DEVELOPER) {
+                prefix.append(title.getIcon()).append(" ");
+            } else {
+                // Nếu không có title admin nhưng là op → hiển thị admin icon
+                prefix.append("§c§l✦ ");
+            }
+        } else if (title == Title.VIP) {
+            prefix.append(title.getIcon()).append(" ");
+        }
+        
+        // 4. Realm color (fallback nếu không có gì)
+        if (prefix.length() == 0) {
             CultivationRealm realm = profile.getRealm();
             if (realm != null) {
-                return realm.getColor() + "[" + realm.getDisplayName() + "] §f" + message;
+                prefix.append(realm.getColor()).append(" ");
             }
         }
-        return "§f" + message;
+        
+        return prefix.toString() + "§f" + message;
+    }
+    
+    /**
+     * Lấy màu theo sect rank (giống NameplateService.buildSectTag)
+     */
+    private String getSectRankColor(SectRank rank) {
+        if (rank == null) return "§7";
+        
+        return switch (rank) {
+            case LEADER -> "§6§l";        // Vàng đậm - Chưởng Môn
+            case VICE_LEADER -> "§6";     // Vàng - Phó Môn
+            case ELDER -> "§e";           // Vàng nhạt - Trưởng Lão
+            case CORE_DISCIPLE -> "§a";   // Xanh lá - Chân Truyền
+            case INNER_DISCIPLE -> "§2";  // Xanh đậm - Nội Môn
+            case OUTER_DISCIPLE -> "§7";  // Xám - Ngoại Môn
+        };
     }
 }

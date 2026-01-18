@@ -1,10 +1,10 @@
 package hcontrol.plugin.entity;
 
-import org.bukkit.entity.LivingEntity;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.bukkit.entity.LivingEntity;
 
 /**
  * PHASE 7 — ENTITY MANAGER
@@ -79,5 +79,13 @@ public class EntityManager {
      */
     public int size() {
         return entities.size();
+    }
+    
+    /**
+     * Get tat ca entity profiles
+     * Return collection de iterate (for AI tick)
+     */
+    public java.util.Collection<EntityProfile> getAll() {
+        return entities.values();
     }
 }

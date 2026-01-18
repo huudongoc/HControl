@@ -9,6 +9,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
+import java.util.Random;
+
 /**
  * PLAYER UI SERVICE
  * Hien thi thong tin player khi join/quit
@@ -27,32 +29,34 @@ public class PlayerUIService {
     }
     
     public void handlePlayerJoin(Player player) {
-        // Broadcast join message
+
+        // ===== Broadcast join message (toan server) =====
+        Bukkit.broadcastMessage(ChatColor.DARK_GRAY + "☯ ━━━━━━━━━━━━━━━━━━━━━ ☯");
         Bukkit.broadcastMessage(
-            ChatColor.GREEN + "✦ " + 
-            ChatColor.AQUA + player.getName() + 
-            ChatColor.GRAY + " da tham gia server " +
-            ChatColor.GREEN + "✦"
+            ChatColor.GRAY + "  ✦ " + ChatColor.WHITE + player.getName()
+            + ChatColor.GRAY + " đã bước vào thế giới tu hành"
         );
-        
-        // Lay profile de hien thi thong tin
+        Bukkit.broadcastMessage(ChatColor.DARK_GRAY + "☯ ━━━━━━━━━━━━━━━━━━━━━ ☯");
+    
+        // ===== Lay profile =====
         PlayerProfile profile = playerManager.get(player.getUniqueId());
         if (profile == null) {
-            // Fallback neu chua load xong
+            // Fallback neu profile chua load xong
             sendBasicWelcome(player);
             return;
         }
-        
-        // Hien thi thong tin cultivator chi tiet
+    
+        // ===== Hien thi thong tin cultivator =====
         displayCultivatorInfo(player, profile);
-        
-        // Title
+    
+        // ===== Title chao mung =====
         player.sendTitle(
-            ChatColor.GOLD + "✦ " + profile.getRealm().toString() + ChatColor.GOLD + " ✦",
-            ChatColor.YELLOW + "➤ " + player.getName() + " ➤",
-            10, 70, 20
+            ChatColor.GOLD + "✦ " + profile.getRealm().getDisplayName() + " ✦",
+            ChatColor.GRAY + "➤ Đạo hữu " + ChatColor.WHITE + player.getName() + ChatColor.GRAY + " đã đến ➤",
+            10, 60, 20
         );
     }
+    
     
     /**
      * Hien thi day du thong tin cultivator
@@ -63,7 +67,7 @@ public class PlayerUIService {
         player.sendMessage("");
         
         // Canh gioi + tier (KHONG hien thi level so) - su dung DisplayFormatService
-        String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getLevel());
+        String realmTierText = displayFormatService.formatRealmTier(profile.getRealm(), profile.getRealmLevel());
         player.sendMessage("§7  ► Canh gioi: " + realmTierText);
         
         // Tu vi progress - su dung CultivationProgressService
@@ -107,17 +111,30 @@ public class PlayerUIService {
      * Welcome message don gian (fallback)
      */
     private void sendBasicWelcome(Player player) {
-        player.sendMessage(ChatColor.GOLD + "✦ ═══════════════════ ✦");
-        player.sendMessage(ChatColor.AQUA + "    Chao mung den server!");
-        player.sendMessage(ChatColor.GOLD + "✦ ═══════════════════ ✦");
+        player.sendMessage(ChatColor.DARK_GRAY + "☯ ━━━━━━━━━━━━━━━━━━━━━ ☯");
+        player.sendMessage(ChatColor.GRAY + "  ✦ " + ChatColor.WHITE + "Chào mừng đến với thế giới tu hành");
+        player.sendMessage(ChatColor.DARK_GRAY + "☯ ━━━━━━━━━━━━━━━━━━━━━ ☯");
     }
     
+    private String[] quitMessages = {
+        "đã rời khỏi thế giới tu hành",
+        "tạm lui khỏi con đường tu đạo",
+        "đã bế quan rời server",
+        "đã rời khỏi cõi trần"
+    };
     public void handlePlayerQuit(Player player) {
       
         
-        // Broadcast quit message
-        Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
-        Bukkit.broadcastMessage(ChatColor.GRAY + "    ➜ " + player.getName() + ChatColor.DARK_GRAY + " đã rời khỏi server");
-        Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
+        // // Broadcast quit message
+        // Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
+        // Bukkit.broadcastMessage(ChatColor.GRAY + "    ➜ " + player.getName() + ChatColor.DARK_GRAY + " đã rời khỏi server");
+        // Bukkit.broadcastMessage(ChatColor.RED + "⚠ ━━━━━━━━━━━━━━━━━━━ ⚠");
+        
+        
+        String msg = quitMessages[new Random().nextInt(quitMessages.length)];
+
+        Bukkit.broadcastMessage(ChatColor.DARK_GRAY + "☯ "
+                + ChatColor.WHITE + player.getName()
+                + ChatColor.GRAY + " " + msg);
     }
 }

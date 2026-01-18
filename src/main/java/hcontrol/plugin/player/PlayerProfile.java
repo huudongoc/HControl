@@ -61,6 +61,22 @@ public class PlayerProfile implements LivingActor {
     private Title activeTitle;  // danh hieu dang trang bi
     private final List<Title> unlockedTitles;  // danh hieu da mo khoa
     
+    // SKILL SYSTEM - PHASE 6
+    private final java.util.Set<String> learnedSkills;  // skills da hoc
+    private final java.util.Map<Integer, String> skillHotbar;  // slot 1-9 -> skillId
+    
+    // ITEM SYSTEM - PHASE 8A
+    private final java.util.Map<hcontrol.plugin.item.EquipmentSlot, String> equippedItems;  // slot -> itemId
+    
+    // IDENTITY SYSTEM - PHASE 5
+    private hcontrol.plugin.identity.PlayerIdentity identity;  // identity layer
+    
+    // CLASS SYSTEM - PHASE 5
+    private hcontrol.plugin.classsystem.ClassProfile classProfile;  // nullable - chưa chọn class
+    
+    // ASCENSION SYSTEM - ENDGAME
+    private hcontrol.plugin.model.AscensionProfile ascensionProfile;  // ascension layer (sau CHANTIEN 10)
+    
     // LINK STATS
     private final PlayerStats stats;
     
@@ -78,9 +94,17 @@ public class PlayerProfile implements LivingActor {
         this.realmLevel = 1;  // level 1 trong canh gioi
         this.cultivation = 0L;  // chua co tu vi
         
-        // khoi tao spiritual root (random)
-        this.spiritualRoot = SpiritualRoot.randomSpiritualRoot();
-        this.rootQuality = RootQuality.randomQuality();
+        // khoi tao spiritual root (random) - sử dụng service nếu có
+        hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+        if (ctx != null && ctx.getPlayerContext() != null && ctx.getPlayerContext().getSpiritualRootService() != null) {
+            hcontrol.plugin.service.SpiritualRootService rootService = ctx.getPlayerContext().getSpiritualRootService();
+            this.spiritualRoot = rootService.randomSpiritualRoot();
+            this.rootQuality = rootService.randomRootQuality();
+        } else {
+            // Fallback nếu context chưa sẵn sàng
+            this.spiritualRoot = SpiritualRoot.randomSpiritualRoot();
+            this.rootQuality = RootQuality.randomQuality();
+        }
             
         // khoi tao dao heart & state
         this.daoHeart = 100.0;  // dao tam hoan hao
@@ -114,6 +138,22 @@ public class PlayerProfile implements LivingActor {
         this.unlockedTitles = new ArrayList<>();
         this.unlockedTitles.add(Title.NONE);  // mac dinh mo khoa NONE
         
+        // khoi tao skill system - PHASE 6
+        this.learnedSkills = new java.util.HashSet<>();
+        this.skillHotbar = new java.util.HashMap<>();
+        
+        // khoi tao item system - PHASE 8A
+        this.equippedItems = new java.util.HashMap<>();
+        
+        // khoi tao identity system - PHASE 5
+        this.identity = new hcontrol.plugin.identity.PlayerIdentity();  // default identity
+        
+        // khoi tao class system - PHASE 5
+        this.classProfile = null;  // chua chon class
+        
+        // khoi tao ascension system - ENDGAME
+        this.ascensionProfile = new hcontrol.plugin.model.AscensionProfile();  // bat dau tu level 0
+        
         // khoi tao stats
         this.stats = new PlayerStats();
         this.stats.setLevel(this.level);
@@ -145,6 +185,7 @@ public class PlayerProfile implements LivingActor {
 
     public void setLevel(int level) {
         this.level = level;
+        this.realmLevel = level;  // sync realmLevel với level
         this.stats.setLevel(level); // sync level vao stats
     }
 
@@ -212,8 +253,10 @@ public class PlayerProfile implements LivingActor {
         CultivationRealm next = realm.getNext();
         if (next != null && canBreakthrough()) {
             this.realm = next;
+            this.level = 1;  // reset level ve 1
             this.realmLevel = 1;  // reset ve level 1 trong canh gioi moi
             this.cultivation = 0L;  // reset tu vi
+            this.stats.setLevel(1);  // sync level vao stats
         }
     }
     
@@ -685,6 +728,137 @@ public class PlayerProfile implements LivingActor {
     @Override
     public org.bukkit.entity.LivingEntity getEntity() {
         return Bukkit.getPlayer(uuid);
+    }
+    
+    // ========== SKILL SYSTEM - PHASE 6 ==========
+    
+    /**
+     * Learn skill
+     */
+    public void learnSkill(String skillId) {
+        learnedSkills.add(skillId);
+    }
+    
+    /**
+     * Check if player has learned skill
+     */
+    public boolean hasLearnedSkill(String skillId) {
+        return learnedSkills.contains(skillId);
+    }
+    
+    /**
+     * Get all learned skills
+     */
+    public java.util.Set<String> getLearnedSkills() {
+        return new java.util.HashSet<>(learnedSkills);
+    }
+    
+    /**
+     * Bind skill to hotbar slot (1-9)
+     */
+    public void bindSkill(int slot, String skillId) {
+        if (slot < 1 || slot > 9) return;
+        skillHotbar.put(slot, skillId);
+    }
+    
+    /**
+     * Get skill at hotbar slot
+     */
+    public String getSkillAtSlot(int slot) {
+        return skillHotbar.get(slot);
+    }
+    
+    /**
+     * Unbind skill from slot
+     */
+    public void unbindSkill(int slot) {
+        skillHotbar.remove(slot);
+    }
+    
+    // ========== ITEM SYSTEM - PHASE 8A ==========
+    
+    /**
+     * Equip item vào slot
+     */
+    public void equipItem(hcontrol.plugin.item.EquipmentSlot slot, String itemId) {
+        equippedItems.put(slot, itemId);
+    }
+    
+    /**
+     * Unequip item từ slot
+     */
+    public void unequipItem(hcontrol.plugin.item.EquipmentSlot slot) {
+        equippedItems.remove(slot);
+    }
+    
+    /**
+     * Get item ở slot
+     */
+    public String getItemAtSlot(hcontrol.plugin.item.EquipmentSlot slot) {
+        return equippedItems.get(slot);
+    }
+    
+    /**
+     * Get tất cả equipped items
+     */
+    public java.util.Map<hcontrol.plugin.item.EquipmentSlot, String> getEquippedItems() {
+        return new java.util.HashMap<>(equippedItems);
+    }
+    
+    // ========== CLASS SYSTEM - PHASE 5 ==========
+    
+    /**
+     * Get class profile
+     */
+    public hcontrol.plugin.classsystem.ClassProfile getClassProfile() {
+        return classProfile;
+    }
+    
+    /**
+     * Set class profile
+     */
+    public void setClassProfile(hcontrol.plugin.classsystem.ClassProfile classProfile) {
+        this.classProfile = classProfile;
+    }
+    
+    // ========== ASCENSION SYSTEM - ENDGAME ==========
+    
+    /**
+     * Get ascension profile
+     */
+    public hcontrol.plugin.model.AscensionProfile getAscensionProfile() {
+        return ascensionProfile;
+    }
+    
+    /**
+     * Check có thể ascension không
+     * Chỉ mở khi: realm == CHANTIEN && level == 10
+     */
+    public boolean canAscend() {
+        return realm == CultivationRealm.CHANTIEN && level >= realm.getMaxLevelInRealm();
+    }
+    
+    /**
+     * Check if player has class
+     */
+    public boolean hasClass() {
+        return classProfile != null;
+    }
+    
+    /**
+     * Get all hotbar bindings
+     */
+    public java.util.Map<Integer, String> getSkillHotbar() {
+        return new java.util.HashMap<>(skillHotbar);
+    }
+    
+    // ========== IDENTITY SYSTEM - PHASE 5 ==========
+    
+    /**
+     * Get player identity (read-only)
+     */
+    public hcontrol.plugin.identity.PlayerIdentity getIdentity() {
+        return identity;
     }
 }
 

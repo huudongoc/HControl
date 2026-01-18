@@ -11,6 +11,7 @@ import hcontrol.plugin.model.BreakthroughResult;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
 import hcontrol.plugin.service.BreakthroughService;
+import hcontrol.plugin.service.TribulationService;
 import hcontrol.plugin.ui.tribulation.TribulationUI;
 import hcontrol.plugin.ui.tribulation.UiState;
 import hcontrol.plugin.ui.tribulation.UiStateService;
@@ -19,22 +20,26 @@ import hcontrol.plugin.ui.tribulation.UiStateService;
  * TRIBULATION INPUT LISTENER (DO KIEP)
  * Bat phim F/Q khi dang o trang thai tribulation confirm
  * Do kiep = len dai canh gioi (PHAMNHAN -> LUYENKHI, etc.)
+ * 🔥 Sử dụng TribulationService để xử lý logic thiên kiếp
  */
 public class TribulationInputListener implements Listener {
 
     private final UiStateService uiStateService;
     private final TribulationUI tribulationUI;
+    private final TribulationService tribulationService;
     private final BreakthroughService breakthroughService;
     private final PlayerManager playerManager;
 
     public TribulationInputListener(
         UiStateService uiStateService,
         TribulationUI tribulationUI,
+        TribulationService tribulationService,
         BreakthroughService breakthroughService,
         PlayerManager playerManager
     ) {
         this.uiStateService = uiStateService;
         this.tribulationUI = tribulationUI;
+        this.tribulationService = tribulationService;
         this.breakthroughService = breakthroughService;
         this.playerManager = playerManager;
     }
@@ -62,16 +67,24 @@ public class TribulationInputListener implements Listener {
             return;
         }
 
-        // Bat dau thien kiep
-        tribulationUI.startTribulation(p, () -> {
-            // Xu ly ket qua dot pha
-            BreakthroughResult result = breakthroughService.attemptBreakthrough(profile);
+        // Set state: đang trong thiên kiếp
+        uiStateService.setState(p.getUniqueId(), UiState.TRIBULATION_IN_PROGRESS);
+
+        // 🔥 Sử dụng TribulationService để xử lý logic thiên kiếp (4 phase animation)
+        tribulationService.startTribulation(p, profile, false, (result) -> {
+            // Clear state khi kết thúc
+            uiStateService.clear(p.getUniqueId());
             
+            // Xu ly ket qua dot pha
             switch (result) {
                 case SUCCESS -> {
                     p.sendMessage("§a§l✔ ĐỘ KIẾP THÀNH CÔNG!");
                     p.sendMessage("§7Ngươi đã tiến vào §e" + profile.getRealm().getDisplayName());
                     p.sendTitle("§6§l⚡ ĐỘ KIẾP THÀNH CÔNG ⚡", "§e" + profile.getRealm().getDisplayName(), 10, 60, 20);
+                }
+                case TRIBULATION_FAILED -> {
+                    // Đã được TribulationService xử lý (nội thương, đạo tâm giảm)
+                    p.sendTitle("§c§l✖ THẤT BẠI", "§7Thiên kiếp quá mạnh...", 10, 60, 20);
                 }
                 case INTERNAL_INJURY_MINOR, INTERNAL_INJURY_MODERATE, INTERNAL_INJURY_SEVERE -> {
                     p.sendMessage("§c✖ Độ kiếp thất bại - Nội thương!");

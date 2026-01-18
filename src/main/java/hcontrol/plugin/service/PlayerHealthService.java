@@ -3,6 +3,7 @@ package hcontrol.plugin.service;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 
+import hcontrol.plugin.model.CultivationRealm;
 import hcontrol.plugin.player.PlayerProfile;
 
 /**
@@ -112,13 +113,11 @@ public class PlayerHealthService {
         updateTabListName(player, profile);
         
         // Sync nameplate (HP hien thi tren dau player)
+        // CHANGED: Update SYNC de tranh delay trong combat (cooldown 100ms da du de tranh lag)
         var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getNameplateService();
         if (nameplateService != null) {
-            // Dung async task de tranh lag neu update nhieu
-            org.bukkit.Bukkit.getScheduler().runTask(
-                hcontrol.plugin.core.CoreContext.getInstance().getPlugin(),
-                () -> nameplateService.updateNameplate(player)
-            );
+            // Chỉ update HP (dùng cache static prefix)
+            nameplateService.updateHP(player);
         }
     }
     
@@ -170,20 +169,34 @@ public class PlayerHealthService {
         if (player.isDead()) {
             player.setWalkSpeed(0.0f);  // Disable walking
             player.setFlySpeed(0.0f);   // Disable flying
-
-                var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
+        }
+        
+        // Update scoreboard 1 LẦN để hiện HP = 0
+        // Fix: không update trong if(isDead) để tránh duplicate
+        var scoreboardService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getScoreboardService();
         if (scoreboardService != null) {
             scoreboardService.updateScoreboard(player);
         }
-        }
-
     }
 
     /**
      * Update tablist display name voi HP hien tai
-     * Format: [Realm] PlayerName HP% ❤ 85%
+     * Format: [LK][Thanh Vân] PlayerName ❤85%
+     * 🔥 Reuse NameplateData từ NameplateService
      */
     private void updateTabListName(Player player, PlayerProfile profile) {
+        // Reuse NameplateData từ NameplateService
+        var nameplateService = hcontrol.plugin.core.CoreContext.getInstance().getUIContext().getNameplateService();
+        if (nameplateService != null) {
+            String displayName = nameplateService.buildTabListName(player);
+            if (displayName != null) {
+                player.setPlayerListName(displayName);
+                forceTabListRefresh(player);
+                return;
+            }
+        }
+        
+        // Fallback nếu NameplateService không available
         double currentHP = profile.getCurrentHP();
         double maxHP = profile.getStats().getMaxHP();
         double hpPercent = maxHP > 0 ? (currentHP / maxHP) * 100.0 : 100.0;
@@ -200,16 +213,38 @@ public class PlayerHealthService {
             hpColor = "§c";  // do
         }
         
-        // Format: [LK] PlayerName ❤ 85%
-        String realmShort = profile.getRealm().getShortName();
-        String displayName = String.format("%s§7[%s] §f%s %s❤ %.0f%%",
-            profile.getRealm().getColor(),
-            realmShort,
+        // Format fallback: [CảnhGiới Level] PlayerName ❤ 85% (hiển thị đầy đủ, không viết tắt)
+        CultivationRealm realm = profile.getRealm();
+        String realmName = realm.getDisplayName();
+        int level = profile.getRealmLevel();
+        String displayName = String.format("%s[%s %d] §f%s %s❤ %.0f%%",
+            realm.getColor(),
+            realmName,
+            level,
             player.getName(),
             hpColor,
             hpPercent
         );
         
         player.setPlayerListName(displayName);
+        forceTabListRefresh(player);
+    }
+    
+    /**
+     * Force refresh tablist để clients update display name
+     */
+    private void forceTabListRefresh(Player player) {
+        // Minecraft tự động sync player list name khi:
+        // 1. Player join/quit
+        // 2. Player change world
+        // 3. Server gọi updateDisplayName()
+        
+        // Không cần làm gì thêm - Bukkit API tự động sync
+        // NHƯNG nếu vẫn có issue, có thể dùng:
+        // - Hide/show player (heavy operation)
+        // - Send custom packet (cần ProtocolLib)
+        
+        // For now: just rely on Bukkit sync
+        // Nếu vẫn delay, có thể do client-side cache
     }
 }

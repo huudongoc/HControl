@@ -58,10 +58,12 @@ public enum SpiritualRoot {
     
     /**
      * Random spiritual root
-     * Mac dinh: NGU HANH (WOOD)
-     * TODO: Implement rarity-based random (PHASE 8)
+     * @deprecated Sử dụng SpiritualRootService.randomSpiritualRoot() thay thế
+     * Enum method này chỉ return WOOD, service có logic đầy đủ với rarity
      */
+    @Deprecated
     public static SpiritualRoot randomSpiritualRoot() {
-        return WOOD;  // mac dinh Moc can
+        // Fallback nếu service chưa sẵn sàng
+        return WOOD;
     }
 }

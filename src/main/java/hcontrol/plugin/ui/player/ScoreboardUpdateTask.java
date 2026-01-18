@@ -23,6 +23,11 @@ public class ScoreboardUpdateTask extends BukkitRunnable {
     @Override
     public void run() {
         Bukkit.getOnlinePlayers().forEach(player -> {
+            // Skip dead players - scoreboard đã được update trong handleDeath()
+            if (player.isDead()) {
+                return;
+            }
+            
             if (playerManager.isOnline(player.getUniqueId())) {
                 scoreboardService.updateScoreboard(player);
             }

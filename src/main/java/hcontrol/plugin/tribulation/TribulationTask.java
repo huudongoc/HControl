@@ -34,7 +34,14 @@ public class TribulationTask extends BukkitRunnable {
         this.context = new TribulationContext(player.getUniqueId(), fromRealm, toRealm);
         this.onComplete = onComplete;
         this.soundService = hcontrol.plugin.core.CoreContext.getInstance().getSoundService();
-        this.tribulationLogicService = new TribulationLogicService();
+        // 🔥 Sử dụng TribulationLogicService từ context thay vì khởi tạo trực tiếp
+        hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+        if (ctx != null && ctx.getCultivationContext() != null && ctx.getCultivationContext().getTribulationLogicService() != null) {
+            this.tribulationLogicService = ctx.getCultivationContext().getTribulationLogicService();
+        } else {
+            // Fallback nếu context chưa sẵn sàng
+            this.tribulationLogicService = new hcontrol.plugin.service.TribulationLogicService();
+        }
         this.phaseTick = 0;
     }
 

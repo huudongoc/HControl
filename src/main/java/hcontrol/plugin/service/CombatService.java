@@ -1,11 +1,17 @@
 package hcontrol.plugin.service;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
 import hcontrol.plugin.core.CoreContext;
@@ -30,7 +36,38 @@ public class CombatService {
     private final DamageEffectService effectService;
     private final EntityManager entityManager;
     private NameplateService nameplateService;  // inject sau tu CoreContext
+    private hcontrol.plugin.item.ItemService itemService;  // PHASE 8A: inject sau tu ItemContext
+    private hcontrol.plugin.classsystem.ClassService classService;  // PHASE 5: inject sau tu ClassContext
     
+    // Track last attacker cho moi player (de hien thi trong death message)
+    // Key: victim UUID, Value: attacker info (UUID + timestamp + weapon)
+    private final Map<UUID, AttackerInfo> lastAttackers = new HashMap<>();
+    
+    /**
+     * Thong tin ve attacker
+     */
+    public static class AttackerInfo {
+        private final UUID attackerUUID;
+        private final boolean isPlayer;
+        private final long timestamp;
+        private final ItemStack weapon; // null neu khong co weapon dac biet
+        
+        public AttackerInfo(UUID attackerUUID, boolean isPlayer, ItemStack weapon) {
+            this.attackerUUID = attackerUUID;
+            this.isPlayer = isPlayer;
+            this.timestamp = System.currentTimeMillis();
+            this.weapon = weapon;
+        }
+        
+        public UUID getAttackerUUID() { return attackerUUID; }
+        public boolean isPlayer() { return isPlayer; }
+        public long getTimestamp() { return timestamp; }
+        public ItemStack getWeapon() { return weapon; }
+        
+        public boolean isExpired(long timeoutMs) {
+            return System.currentTimeMillis() - timestamp > timeoutMs;
+        }
+    }
     
     public CombatService(PlayerManager playerManager, Plugin plugin, 
                         DamageEffectService effectService, EntityManager entityManager) {
@@ -38,6 +75,41 @@ public class CombatService {
         this.plugin = plugin;
         this.effectService = effectService;
         this.entityManager = entityManager;
+        
+        // Cleanup expired attackers moi 30 giay
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                cleanupExpiredAttackers();
+            }
+        }.runTaskTimer(plugin, 600L, 600L); // moi 30 giay
+    }
+    
+    /**
+     * Cleanup expired attackers (qua 5 phut)
+     */
+    private void cleanupExpiredAttackers() {
+        long timeout = 5 * 60 * 1000; // 5 phut
+        lastAttackers.entrySet().removeIf(entry -> entry.getValue().isExpired(timeout));
+    }
+    
+    /**
+     * Lay last attacker info cho player
+     */
+    public AttackerInfo getLastAttacker(UUID victimUUID) {
+        AttackerInfo info = lastAttackers.get(victimUUID);
+        if (info != null && info.isExpired(5 * 60 * 1000)) {
+            lastAttackers.remove(victimUUID);
+            return null;
+        }
+        return info;
+    }
+    
+    /**
+     * Xoa last attacker info (sau khi chet)
+     */
+    public void clearLastAttacker(UUID victimUUID) {
+        lastAttackers.remove(victimUUID);
     }
     
     /**
@@ -45,6 +117,20 @@ public class CombatService {
      */
     public void setNameplateService(NameplateService nameplateService) {
         this.nameplateService = nameplateService;
+    }
+    
+    /**
+     * PHASE 8A: Inject ItemService (goi tu ItemContext)
+     */
+    public void setItemService(hcontrol.plugin.item.ItemService itemService) {
+        this.itemService = itemService;
+    }
+    
+    /**
+     * PHASE 5: Inject ClassService (goi tu ClassContext)
+     */
+    public void setClassService(hcontrol.plugin.classsystem.ClassService classService) {
+        this.classService = classService;
     }
     
     // ===== MILESTONE 4: UNIFIED COMBAT (LIVING ACTOR) =====
@@ -57,6 +143,14 @@ public class CombatService {
      * @param techniqueModifier modifier cong phap (1.0 = pham phap)
      */
     public void handleCombat(LivingActor attacker, LivingActor defender, double techniqueModifier) {
+        handleCombat(attacker, defender, techniqueModifier, null);
+    }
+    
+    /**
+     * PHASE 5A — Handle combat với skill support
+     * @param skillId Skill ID đang được dùng (null nếu đánh thường)
+     */
+    public void handleCombat(LivingActor attacker, LivingActor defender, double techniqueModifier, String skillId) {
         // CHECK: Defender da chet - khong cho tan cong
         if (defender.getCurrentHP() <= 0) {
             return; // Defender da chet, khong xu ly damage
@@ -66,6 +160,40 @@ public class CombatService {
         LivingEntity defenderEntity = defender.getEntity();
         if (defenderEntity != null && defenderEntity.isDead()) {
             return; // Entity da chet trong game, khong xu ly damage
+        }
+        
+        // ===== TRACK LAST ATTACKER (neu defender la Player) =====
+        if (defenderEntity instanceof Player defenderPlayer) {
+            LivingEntity attackerEntity = attacker.getEntity();
+            if (attackerEntity != null) {
+                UUID attackerUUID = attackerEntity.getUniqueId();
+                boolean isPlayer = attackerEntity instanceof Player;
+                
+                // Lay weapon neu attacker la Player
+                ItemStack weapon = null;
+                if (isPlayer) {
+                    Player attackerPlayer = (Player) attackerEntity;
+                    ItemStack item = attackerPlayer.getInventory().getItemInMainHand();
+                    if (item != null && item.getType() != Material.AIR) {
+                        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+                        if (meta != null) {
+                            boolean hasLore = meta.hasLore();
+                            java.util.List<String> lore = hasLore ? meta.getLore() : null;
+                            if (meta.hasDisplayName() || (hasLore && lore != null && !lore.isEmpty())) {
+                                weapon = item.clone(); // Clone de tranh thay doi
+                            }
+                        }
+                    }
+                }
+                
+                // Luu last attacker
+                lastAttackers.put(defenderPlayer.getUniqueId(), new AttackerInfo(attackerUUID, isPlayer, weapon));
+                
+                // DEBUG LOG
+                String attackerName = isPlayer ? ((Player) attackerEntity).getName() : attackerEntity.getType().name();
+                String weaponInfo = weapon != null ? " với vũ khí đặc biệt" : "";
+                //System.out.println("[DEBUG] Lưu attacker: " + attackerName + " -> " + defenderPlayer.getName() + weaponInfo);
+            }
         }
         
         // ===== TINH DAMAGE =====
@@ -93,13 +221,111 @@ public class CombatService {
         // Random dao factor (nho - khong phai crit)
         double daoFactor = 0.9 + (random.nextDouble() * 0.2);  // 0.9 - 1.1
         
-        // FINAL DAMAGE
-        double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
+        // 🔥 Spiritual Root damage bonus (nếu attacker là player)
+        double rootDamageBonus = 1.0;
+        if (attacker instanceof PlayerProfile attackerProfile) {
+            hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+            if (ctx != null && ctx.getSpiritualRootService() != null) {
+                hcontrol.plugin.service.SpiritualRootService rootService = ctx.getSpiritualRootService();
+                double bonus = rootService.getDamageBonus(attackerProfile.getSpiritualRoot());
+                rootDamageBonus = 1.0 + (bonus / 100.0);  // Convert +50% -> 1.5x
+            }
+        }
+        
+        // FINAL DAMAGE (tính base damage trước)
+        double damage = baseDamage * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor * rootDamageBonus;
+        
+        // PHASE 8A: Apply item stat bonuses vào final damage (sau tất cả modifiers)
+        // Item bonus được scale theo các modifiers để giữ balance
+        if (attacker instanceof PlayerProfile attackerProfile && itemService != null) {
+            double itemAttackBonus = itemService.getStat(attackerProfile, hcontrol.plugin.item.StatType.ATTACK);
+            if (itemAttackBonus > 0) {
+                // Apply item bonus với cùng modifiers như base damage
+                double itemDamageBonus = itemAttackBonus * realmSuppression * techniqueModifier * (1 - mitigation) * daoFactor;
+                damage += itemDamageBonus;
+                
+                // Debug log (có thể comment sau)
+                plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + 
+                    " có item ATTACK bonus: " + itemAttackBonus + 
+                    " → thêm damage: " + String.format("%.2f", itemDamageBonus) + 
+                    " (total: " + String.format("%.2f", damage) + ")");
+            }
+        }
+        
+        // PHASE 5: Apply class modifiers (sau item bonus)
+        if (attacker instanceof PlayerProfile attackerProfile && classService != null) {
+            hcontrol.plugin.classsystem.ClassProfile classProfile = attackerProfile.getClassProfile();
+            
+            // Debug: Check class profile
+            if (classProfile == null) {
+                // Player chưa chọn class - không có modifiers
+                // plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + " chưa có class profile");
+            } else {
+                hcontrol.plugin.classsystem.modifier.ModifierContext modifierCtx = 
+                    new hcontrol.plugin.classsystem.modifier.ModifierContext(attacker, defender, skillId);
+                
+                var modifiers = classService.getModifiers(attackerProfile);
+                // Debug: Check modifiers
+                // plugin.getLogger().info("[DEBUG] Player " + attackerProfile.getName() + 
+                //     " class=" + classProfile.getType() + " có " + modifiers.size() + " modifiers");
+                
+                for (hcontrol.plugin.classsystem.modifier.ClassModifier modifier : modifiers) {
+                    if (modifier.getType() == hcontrol.plugin.classsystem.modifier.ModifierType.DAMAGE) {
+                        double oldDamage = damage;
+                        damage = modifier.modify(attacker, modifierCtx, damage);
+                        if (damage != oldDamage) {
+                            plugin.getLogger().info("[DEBUG] Class modifier applied: " + 
+                                classProfile.getType() + 
+                                " (skill=" + (skillId != null ? skillId : "none") + ")" +
+                                " → damage: " + String.format("%.2f", oldDamage) + 
+                                " → " + String.format("%.2f", damage));
+                        }
+                    }
+                }
+            }
+        }
+        
+        // ASCENSION SYSTEM - ENDGAME: Apply ascension power multiplier (sau class modifiers, trước apply damage)
+        if (attacker instanceof PlayerProfile attackerProfile) {
+            hcontrol.plugin.model.AscensionProfile ascension = attackerProfile.getAscensionProfile();
+            if (ascension != null && ascension.isAscended()) {
+                double ascensionPower = ascension.getAscensionPower();
+                damage *= ascensionPower;
+                
+                // Debug log (có thể comment sau)
+                plugin.getLogger().info("[DEBUG] Ascension power applied: " + 
+                    attackerProfile.getName() + 
+                    " (level " + ascension.getAscensionLevel() + 
+                    ", power " + String.format("%.2f", ascensionPower) + "x)" +
+                    " → damage: " + String.format("%.2f", damage));
+            }
+        }
         
         // ===== APPLY DAMAGE =====
         
         double newHP = Math.max(0, defender.getCurrentHP() - damage);
         defender.setCurrentHP(newHP);
+        
+        // WORLD BOSS PARTICIPATION TRACKING - Track damage khi player đánh world boss
+        if (attacker instanceof PlayerProfile attackerProfile && 
+            defender instanceof EntityProfile defenderProfile) {
+            // Check xem defender có phải world boss không
+            hcontrol.plugin.core.CoreContext ctx = hcontrol.plugin.core.CoreContext.getInstance();
+            if (ctx != null && ctx.getWorldBossManager() != null) {
+                // Check xem entity có phải world boss không
+                UUID defenderUUID = defenderProfile.getUUID();
+                hcontrol.plugin.module.boss.BossEntity boss = 
+                    ctx.getBossManager().getBoss(defenderUUID);
+                if (boss != null && boss.getType() == hcontrol.plugin.module.boss.BossType.WORLD_BOSS) {
+                    // Track participation
+                    ctx.getWorldBossManager().trackDamage(
+                        attackerProfile.getUuid(),
+                        defenderUUID,
+                        damage
+                    );
+                }
+            }
+        }
         
         // ===== SYNC VANILLA HEALTH (NEU CO BUKKIT ENTITY) =====
         
@@ -203,6 +429,14 @@ public class CombatService {
      * REFACTORED: Wrapper around handleCombat()
      */
     public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile) {
+        handlePlayerAttack(attacker, target, attackerProfile, null);
+    }
+    
+    /**
+     * PHASE 5A — Handle player attack với skill support
+     * @param skillId Skill ID đang được dùng (null nếu đánh thường)
+     */
+    public void handlePlayerAttack(Player attacker, LivingEntity target, PlayerProfile attackerProfile, String skillId) {
         // CHECK: Target da chet - khong xu ly damage
         if (target.isDead()) {
             return; // Target da chet, khong xu ly damage
@@ -222,7 +456,7 @@ public class CombatService {
             }
             
             // Dung unified combat
-            handleCombat(attackerProfile, targetProfile, techniqueModifier);
+            handleCombat(attackerProfile, targetProfile, techniqueModifier, skillId);
             return;
         }
         
@@ -235,7 +469,7 @@ public class CombatService {
         }
         
         // Dung unified combat
-        handleCombat(attackerProfile, mobProfile, techniqueModifier);
+        handleCombat(attackerProfile, mobProfile, techniqueModifier, skillId);
     }
     
     // LOAI BO calculateDamage / checkCrit / checkDodge

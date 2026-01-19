@@ -105,6 +105,11 @@ public class CommandRegistry {
             coreContext.getEntityContext().getBossManager()
         ));
         
+        // Zone command (admin)
+        register("zone", () -> new ZoneCommand(
+            coreContext.getEntityContext().getZoneManager()
+        ));
+        
         // Title command
         register("title", () -> new TitleCommand(
             coreContext.getPlayerContext().getPlayerManager(),

@@ -46,6 +46,11 @@ commands:
     usage: /spawnboss <name> [type]
     permission: hcontrol.admin
     
+  zone:
+    description: Quản lý zone spawn config (set mob, realm, level, loot)
+    usage: /zone [create|set|list|delete]
+    permission: hcontrol.admin
+    
   title:
     description: Quan ly danh hieu
     usage: /title [list|equip|unequip]

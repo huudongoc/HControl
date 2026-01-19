@@ -7,6 +7,7 @@ import hcontrol.plugin.ai.BrainRegistry;
 import hcontrol.plugin.entity.EntityManager;
 import hcontrol.plugin.entity.EntityRegistry;
 import hcontrol.plugin.entity.EntityService;
+import hcontrol.plugin.entity.ZoneManager;
 import hcontrol.plugin.module.boss.BossManager;
 import hcontrol.plugin.module.boss.WorldBossManager;
 import hcontrol.plugin.service.AscensionService;
@@ -23,6 +24,7 @@ public class EntityContext {
     
     private final EntityManager entityManager;
     private final EntityRegistry entityRegistry;
+    private final ZoneManager zoneManager;
     private final EntityService entityService;
     private final BossManager bossManager;
     
@@ -41,7 +43,9 @@ public class EntityContext {
     public EntityContext() {
         this.entityManager = new EntityManager();
         this.entityRegistry = new EntityRegistry();
+        this.zoneManager = new ZoneManager();
         this.entityService = new EntityService(entityManager, entityRegistry);
+        this.entityService.setZoneManager(zoneManager);  // ✅ Set zone manager vào entity service
         this.bossManager = new BossManager();
         this.brainRegistry = new BrainRegistry();
         this.skillRegistry = new SkillRegistry();
@@ -82,6 +86,7 @@ public class EntityContext {
     
     public EntityManager getEntityManager() { return entityManager; }
     public EntityRegistry getEntityRegistry() { return entityRegistry; }
+    public ZoneManager getZoneManager() { return zoneManager; }
     public EntityService getEntityService() { return entityService; }
     public BossManager getBossManager() { return bossManager; }
     public BrainRegistry getBrainRegistry() { return brainRegistry; }

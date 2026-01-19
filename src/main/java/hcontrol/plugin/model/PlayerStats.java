@@ -84,7 +84,10 @@ public class PlayerStats {
     
     /**
      * Get maxHP with realm multiplier applied
-     * Realm multiplier: realm cao hon -> baseHP cao hon tu nhien
+     * 
+     * 🌟 CÁCH 2 — CHIA SCALE: HP vs TU VI
+     * - Tu vi scale: 3^realm (đã implement trong LevelService)
+     * - HP scale: (2.0)^realm (tách riêng để combat không nổ số)
      * 
      * 📌 Luật khóa: PlayerStats KHÔNG lưu realm, realm luôn được truyền từ ngoài vào
      * 
@@ -96,7 +99,16 @@ public class PlayerStats {
         if (realm == null) {
             return (int)baseHP;  // Không apply multiplier nếu realm == null
         }
-        return (int)(baseHP * realm.getStatMultiplier());
+        
+        // ✅ HP scale: (2.0)^realm (tách riêng với tu vi scale 3^realm)
+        // PHAMNHAN (ordinal 0): 2.0^0 = 1.0
+        // LUYENKHI (ordinal 1): 2.0^1 = 2.0
+        // TRUCCO (ordinal 2): 2.0^2 = 4.0
+        // KIMDAN (ordinal 3): 2.0^3 = 8.0
+        // ...
+        double hpScale = Math.pow(2.0, realm.ordinal());
+        
+        return (int)(baseHP * hpScale);
     }
     
     /**

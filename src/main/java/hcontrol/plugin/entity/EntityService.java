@@ -1,6 +1,7 @@
 package hcontrol.plugin.entity;
 
 import hcontrol.plugin.model.CultivationRealm;
+import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.EntityType;
 
@@ -14,6 +15,7 @@ public class EntityService {
     
     private final EntityManager entityManager;
     private final EntityRegistry entityRegistry;
+    private ZoneManager zoneManager;  // Optional - có thể null
     
     public EntityService(EntityManager entityManager, EntityRegistry entityRegistry) {
         this.entityManager = entityManager;
@@ -21,12 +23,26 @@ public class EntityService {
     }
     
     /**
+     * Set zone manager (optional - để override realm từ zone config)
+     */
+    public void setZoneManager(ZoneManager zoneManager) {
+        this.zoneManager = zoneManager;
+    }
+    
+    /**
      * Khoi tao profile cho entity moi spawn
-     * Su dung template tu registry
+     * Su dung template tu registry hoặc zone config
      */
     public EntityProfile initializeEntity(LivingEntity entity) {
         UUID uuid = entity.getUniqueId();
         EntityType type = entity.getType();
+        Location spawnLoc = entity.getLocation();
+        
+        // ✅ Kiểm tra zone config trước (nếu có)
+        ZoneSpawnConfig zoneConfig = null;
+        if (zoneManager != null) {
+            zoneConfig = zoneManager.getZoneAt(spawnLoc);
+        }
         
         // lay template
         EntityRegistry.EntityTemplate template = entityRegistry.getTemplate(type);
@@ -37,13 +53,24 @@ public class EntityService {
             template = entityRegistry.getDefaultTemplate(entityMaxHP);
         }
         
-        // tao profile theo template
+        // ✅ Override realm và level từ zone config nếu có
+        CultivationRealm realm = template.realm;
+        int level = template.level;
+        
+        if (zoneConfig != null) {
+            // Override realm từ zone
+            realm = zoneConfig.getDefaultRealm();
+            // Override level từ zone range
+            level = zoneConfig.getRandomLevel();
+        }
+        
+        // tao profile theo template (với realm/level từ zone nếu có)
         EntityProfile profile = new EntityProfile(
             uuid,
             type,
             entity.getCustomName(), // co the null
-            template.realm,
-            template.level,
+            realm,  // ✅ Dùng realm từ zone config nếu có
+            level,  // ✅ Dùng level từ zone config nếu có
             template.maxHP,
             template.attack,
             template.defense

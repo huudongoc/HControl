@@ -7,7 +7,7 @@ version = "1.0.0"
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(17))  // ✅ Java 17 để tương thích với Paper 1.20.4
     }
 }
 

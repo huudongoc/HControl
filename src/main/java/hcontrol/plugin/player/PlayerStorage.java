@@ -126,6 +126,20 @@ public class PlayerStorage {
         int ascensionLevel = yaml.getInt("ascensionLevel", 0);
         profile.getAscensionProfile().setAscensionLevel(ascensionLevel);
 
+        // load class system - PHASE 5 (class type + mastery)
+        String classTypeName = yaml.getString("class.type", null);
+        if (classTypeName != null && !classTypeName.isBlank()) {
+            try {
+                hcontrol.plugin.classsystem.ClassType type = hcontrol.plugin.classsystem.ClassType.valueOf(classTypeName);
+                hcontrol.plugin.classsystem.ClassProfile cp = new hcontrol.plugin.classsystem.ClassProfile(type);
+                int mastery = yaml.getInt("class.masteryLevel", 1);
+                cp.setMasteryLevel(mastery);
+                profile.setClassProfile(cp);
+            } catch (IllegalArgumentException e) {
+                // invalid class type in file, ignore
+            }
+        }
+
         return profile;
     }
 
@@ -193,6 +207,13 @@ public class PlayerStorage {
         
         // save ascension system - ENDGAME
         yaml.set("ascensionLevel", profile.getAscensionProfile().getAscensionLevel());
+
+        // save class system - PHASE 5
+        hcontrol.plugin.classsystem.ClassProfile cp = profile.getClassProfile();
+        if (cp != null) {
+            yaml.set("class.type", cp.getType().name());
+            yaml.set("class.masteryLevel", cp.getMasteryLevel());
+        }
 
         try {
             yaml.save(file);

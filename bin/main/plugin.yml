@@ -18,6 +18,18 @@ commands:
     description: Do kiep - breakthrough len dai canh gioi moi (tribulation)
     usage: /dokiep
     permission: hcontrol.use
+    
+  ascend:
+    description: Ascension - thang cap endgame sau CHAN TIEN level 10
+    usage: /ascend [info]
+    aliases: [ascension, thangcap]
+    permission: hcontrol.use
+    
+  worldboss:
+    description: World Boss system - quản lý world boss (ENDGAME)
+    usage: /worldboss [spawn|info|force]
+    aliases: [wb, boss]
+    permission: hcontrol.admin
    
   hc:
     description: HControl main command
@@ -32,6 +44,11 @@ commands:
   spawnboss:
     description: Spawn test boss (debug)
     usage: /spawnboss <name> [type]
+    permission: hcontrol.admin
+    
+  zone:
+    description: Quản lý zone spawn config (set mob, realm, level, loot)
+    usage: /zone [create|set|list|delete]
     permission: hcontrol.admin
     
   title:
@@ -59,6 +76,16 @@ commands:
     description: AI debug commands (testing)
     usage: /aidebug [info|clear]
     aliases: [aid]
+    permission: hcontrol.admin
+    
+  itemtest:
+    description: Item test commands (PHASE 8A testing)
+    usage: /itemtest [equip|unequip|stats|list]
+    aliases: [itest, itemdebug]
+  class:
+    description: Class system command (PHASE 5)
+    usage: /class <set|info|list> [classType]
+    permission: op
     permission: hcontrol.admin
     
   skill:
@@ -102,6 +129,18 @@ commands:
     usage: /nameplate [toggle|refresh]
     aliases: [np, bangten]
     permission: hcontrol.use
+    
+  bubbletest:
+    description: Test chat bubble - Hien thi bubble tren dau player
+    usage: /bubbletest <message> [duration]
+    aliases: [btest, chatbubble]
+    permission: hcontrol.use
+    
+  autospawn:
+    description: Quản lý hệ thống spawn tự động
+    usage: /autospawn [start|stop|pos1|pos2|setarea|cleararea|info|interval|radius]
+    aliases: [aspawn, mobspawn]
+    permission: hcontrol.admin
 
 permissions:
   hcontrol.use:

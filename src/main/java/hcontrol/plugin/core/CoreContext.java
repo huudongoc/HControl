@@ -302,6 +302,12 @@ public class CoreContext {
                 playerContext.getPlayerManager()
             );
             eventRegistry.registerEvents(tribulationInputListener);
+
+            // Register ClassMenu listener (UI for selecting class)
+            hcontrol.plugin.ui.classsystem.ClassMenuListener classMenuListener = new hcontrol.plugin.ui.classsystem.ClassMenuListener(
+                playerContext.getPlayerManager()
+            );
+            eventRegistry.registerEvents(classMenuListener);
             
             // Start auto-save task (5 phut)
             AutoSaveTask autoSaveTask = new AutoSaveTask(

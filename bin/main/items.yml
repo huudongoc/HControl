@@ -1,0 +1,75 @@
+# PHASE 8A — ITEMS CONFIG
+# Item templates - data-driven
+
+items:
+  # ===== VŨ KHÍ (WEAPON) =====
+  basic_sword:
+    display_name: "§fKiếm Cơ Bản"
+    type: WEAPON
+    slot: HAND
+    min_realm: PHAMNHAN
+    min_level: 1
+    stats:
+      ATTACK: 10.0
+    material: IRON_SWORD
+    lore:
+      - "§7Vũ khí cơ bản"
+      - "§7Công kích +10"
+  
+  iron_sword:
+    display_name: "§7Kiếm Sắt"
+    type: WEAPON
+    slot: HAND
+    min_realm: PHAMNHAN
+    min_level: 3
+    stats:
+      ATTACK: 25.0
+    material: IRON_SWORD
+    lore:
+      - "§7Vũ khí tầm trung"
+      - "§7Công kích +25"
+  
+  # ===== GIÁP (ARMOR) =====
+  basic_helmet:
+    display_name: "§fMũ Cơ Bản"
+    type: ARMOR
+    slot: HEAD
+    min_realm: PHAMNHAN
+    min_level: 1
+    stats:
+      DEFENSE: 5.0
+      HP: 20.0
+    material: LEATHER_HELMET
+    lore:
+      - "§7Giáp cơ bản"
+      - "§7Phòng thủ +5"
+      - "§7Sinh mạng +20"
+  
+  basic_chestplate:
+    display_name: "§fÁo Giáp Cơ Bản"
+    type: ARMOR
+    slot: CHEST
+    min_realm: PHAMNHAN
+    min_level: 1
+    stats:
+      DEFENSE: 10.0
+      HP: 40.0
+    material: LEATHER_CHESTPLATE
+    lore:
+      - "§7Giáp cơ bản"
+      - "§7Phòng thủ +10"
+      - "§7Sinh mạng +40"
+  
+  # ===== PHÁP BẢO (ARTIFACT) =====
+  spirit_ring:
+    display_name: "§9Nhẫn Linh Khí"
+    type: ARTIFACT
+    slot: HAND
+    min_realm: LUYENKHI
+    min_level: 1
+    stats:
+      LINGQI: 50.0
+    material: GOLDEN_APPLE
+    lore:
+      - "§7Pháp bảo tăng linh khí"
+      - "§7Linh khí +50"

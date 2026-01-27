@@ -1,5 +1,16 @@
 package hcontrol.plugin.command;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
+
 import hcontrol.plugin.classsystem.ClassProfile;
 import hcontrol.plugin.classsystem.ClassService;
 import hcontrol.plugin.classsystem.ClassType;
@@ -7,16 +18,6 @@ import hcontrol.plugin.core.ClassContext;
 import hcontrol.plugin.core.CoreContext;
 import hcontrol.plugin.player.PlayerManager;
 import hcontrol.plugin.player.PlayerProfile;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.Player;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * PHASE 5 — CLASS COMMAND
@@ -105,7 +106,18 @@ public class ClassCommand implements CommandExecutor, TabCompleter {
         // Set class profile
         ClassProfile classProfile = new ClassProfile(classType);
         profile.setClassProfile(classProfile);
-        
+
+        // Persist immediately to storage (if available)
+        try {
+            CoreContext ctx = CoreContext.getInstance();
+            if (ctx != null && ctx.getPlayerContext() != null && ctx.getPlayerContext().getPlayerStorage() != null) {
+                ctx.getPlayerContext().getPlayerStorage().save(profile);
+            }
+        } catch (Exception e) {
+            // ignore persistence errors but log to sender
+            player.sendMessage("§cLỗi khi lưu class: " + e.getMessage());
+        }
+
         player.sendMessage("§a✓ Đã set class: §e" + classType);
         player.sendMessage("§7Mastery Level: §e" + classProfile.getMasteryLevel());
     }
@@ -143,6 +155,15 @@ public class ClassCommand implements CommandExecutor, TabCompleter {
      * List tất cả class types
      */
     private void handleList(Player player) {
+        // Open GUI if possible
+        try {
+            hcontrol.plugin.ui.classsystem.ClassMenuGUI menu = new hcontrol.plugin.ui.classsystem.ClassMenuGUI(playerManager);
+            menu.open(player);
+            return;
+        } catch (Throwable t) {
+            // Fallback to text list
+        }
+
         player.sendMessage("§6=== CLASS TYPES ===");
         for (ClassType type : ClassType.values()) {
             player.sendMessage("§7- §e" + type);

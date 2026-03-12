@@ -98,7 +98,9 @@ public class CommandRegistry {
         ));
         
         // World Boss command - ENDGAME
-        register("worldboss", () -> new WorldBossCommand());
+        register("worldboss", () -> new hcontrol.plugin.module.boss.WorldBossCommand(
+            coreContext.getEntityContext().getWorldBossManager()
+        ));
         
         // Spawn boss command
         register("spawnboss", () -> new SpawnBossCommand(

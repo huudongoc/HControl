@@ -17,6 +17,10 @@ public class BossEntity {
     private double maxHealth;
     private String displayName;
     
+    // Phase and abilities (for World Boss)
+    private BossPhaseManager phaseManager;
+    private BossAbilityService abilityService;
+    
     public BossEntity(LivingEntity entity, String bossName, BossType type) {
         this.entity = entity;
         this.bossName = bossName;
@@ -74,6 +78,44 @@ public class BossEntity {
      */
     public boolean isDead() {
         return entity.isDead() || entity.getHealth() <= 0;
+    }
+    
+    /**
+     * Set phase manager (for World Boss)
+     */
+    public void setPhaseManager(BossPhaseManager phaseManager) {
+        this.phaseManager = phaseManager;
+    }
+    
+    /**
+     * Set ability service (for World Boss)
+     */
+    public void setAbilityService(BossAbilityService abilityService) {
+        this.abilityService = abilityService;
+    }
+    
+    /**
+     * Update phase (nếu có phase manager)
+     */
+    public boolean updatePhase() {
+        if (phaseManager != null) {
+            return phaseManager.updatePhase();
+        }
+        return false;
+    }
+    
+    /**
+     * Get phase manager
+     */
+    public BossPhaseManager getPhaseManager() {
+        return phaseManager;
+    }
+    
+    /**
+     * Get ability service
+     */
+    public BossAbilityService getAbilityService() {
+        return abilityService;
     }
     
     // Getters

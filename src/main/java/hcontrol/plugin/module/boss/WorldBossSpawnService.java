@@ -157,6 +157,15 @@ public class WorldBossSpawnService {
         bossManager.registerBoss(boss);
         currentWorldBoss = boss;
         
+        // Set up phase manager and abilities
+        BossPhaseManager phaseManager = new BossPhaseManager(boss, avgAscensionLevel);
+        BossAbilityService abilityService = new BossAbilityService(plugin, boss, avgAscensionLevel);
+        boss.setPhaseManager(phaseManager);
+        boss.setAbilityService(abilityService);
+        
+        // Start ability scheduler
+        abilityService.startAbilityScheduler();
+        
         // Tạo participation tracking cho boss mới
         if (worldBossManager != null) {
             WorldBossParticipation participation = new WorldBossParticipation(entity.getUniqueId());
